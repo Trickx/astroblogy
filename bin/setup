@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+if [ -d "vendor/bundle" ]; then
+  echo "Removing old vendor/bundle to avoid architecture-specific gem conflicts..."
+  rm -rf vendor/bundle
+fi
+
+bundle config set --local path 'vendor/bundle'
+BUNDLE_FORCE_RUBY_PLATFORM=1 bundle install
+
+echo "Setup complete. Run 'bundle exec jekyll serve' to start the site."

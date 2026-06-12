@@ -81,7 +81,14 @@ Gallery index lives at `/galerie/`, individual detail pages at `/galerie/:slug/`
 Requires Ruby ≥ 2.6 and Bundler.
 
 ```bash
-bundle install --path vendor/bundle
+./bin/setup
+```
+
+If you switch between Intel and Apple Silicon on macOS, remove the old vendor bundle before reinstalling:
+
+```bash
+rm -rf vendor/bundle
+./bin/setup
 ```
 
 ---
@@ -134,8 +141,8 @@ meta:                                  # Optional key/value pairs rendered in th
       - 25× Darks / Bias / Flats
   - label: Equipment                   # Bullet list rendered as <ul>
     value: |
-      - Skywatcher Explorer 150P
-      - Canon 7D Mark II
+      - Sky-Watcher Explorer 150P
+      - Canon EOS 7D Mark II
       - Sky-Watcher EQ6R Pro
 
 video: /assets/videos/andromeda-timelapse.mp4  # Optional: adds a video section below the image
