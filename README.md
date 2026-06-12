@@ -1,4 +1,4 @@
-# Trick's Astro Gallery
+# [Trick's Astro Gallery](https://trickx.github.io/Astro-Gallery/)
 
 A static astrophotography portfolio built with [Jekyll](https://jekyllrb.com/).  
 Gallery index lives at `/galerie/`, individual detail pages at `/galerie/:slug/`.
