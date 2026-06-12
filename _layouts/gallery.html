@@ -1,0 +1,47 @@
+---
+layout: default
+---
+
+{% assign grouped_photos = site.photos | sort: 'order' | group_by: 'category' %}
+
+<section class="section-intro">
+  <h1>Trick's Astro Gallery</h1>
+  <div class="category-links" aria-label="Jump to category section">
+    <div class="category-link-list">
+      {% for group in grouped_photos %}
+        <a class="button" href="#category-{{ group.name | slugify }}">{{ group.name }}</a>
+      {% endfor %}
+    </div>
+    <div class="category-action-links">
+      <a class="button" href="https://trickx.github.io/">Blog</a>
+      <a class="button" href="https://trickx.github.io/moon-and-darkness-calendar/">Calendar</a>
+      <a class="button" href="https://trickx.github.io/PixInsight-Workflow-Doc/">PI Workflow</a>
+      <a class="button" href="https://trickx.github.io/filter-compare.html">Filter Comparator</a>
+      <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
+    </div>
+  </div>
+</section>
+
+{% for group in grouped_photos %}
+  <section class="gallery-section" id="category-{{ group.name | slugify }}">
+    <div class="section-heading">
+      <p class="section-label">{{ group.name }}</p>
+      <p class="section-count">{{ group.items | size }} items</p>
+    </div>
+
+    <div class="gallery-grid">
+      {% for photo in group.items %}
+        <a class="gallery-card" href="{{ photo.url | relative_url }}">
+          <img src="{{ photo.image | relative_url }}" alt="{{ photo.title }}">
+          {% if photo.video %}
+            <span class="media-badge">Video</span>
+          {% endif %}
+          <span class="gallery-overlay">
+            <span class="gallery-title">{{ photo.title }}</span>
+            <span class="gallery-summary">{{ photo.summary }}</span>
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+    <meta name="description" content="{{ page.summary | default: site.description }}">
+    <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+  </head>
+  <body{% if page.body_class %} class="{{ page.body_class }}"{% endif %}>
+    <div class="page-shell">
+      <main>
+        {{ content }}
+      </main>
+    </div>
+  </body>
+</html>

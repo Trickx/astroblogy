@@ -1,0 +1,29 @@
+title: Star Gallery
+description: Static photo gallery with hover text and detail pages.
+lang: en
+contact_email: "trickx-astro@web.de"
+baseurl: ""
+url: ""
+markdown: kramdown
+permalink: pretty
+
+collections:
+  photos:
+    output: true
+    permalink: /galerie/:slug/
+
+defaults:
+  - scope:
+      path: ""
+      type: "photos"
+    values:
+      layout: photo
+      body_class: photo-page
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+exclude:
+  - README.md
+  - Gemfile.lock

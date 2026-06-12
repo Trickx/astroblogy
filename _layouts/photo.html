@@ -1,0 +1,169 @@
+---
+layout: default
+---
+
+{% assign sorted_photos = site.photos | sort: 'title' %}
+{% assign previous_photo = nil %}
+{% assign next_photo = nil %}
+{% assign found_current = false %}
+{% assign first_photo = sorted_photos.first %}
+{% assign last_photo = sorted_photos.last %}
+{% for item in sorted_photos %}
+  {% if found_current and next_photo == nil %}
+    {% assign next_photo = item %}
+    {% break %}
+  {% endif %}
+
+  {% if item.url == page.url %}
+    {% assign found_current = true %}
+  {% else %}
+    {% unless found_current %}
+      {% assign previous_photo = item %}
+    {% endunless %}
+  {% endif %}
+{% endfor %}
+
+{% if previous_photo == nil %}
+  {% assign previous_photo = last_photo %}
+{% endif %}
+
+{% if next_photo == nil %}
+  {% assign next_photo = first_photo %}
+{% endif %}
+
+<article class="photo-detail">
+  <div class="detail-grid">
+    <figure
+      class="detail-figure zoomable-figure"
+      aria-label="Click image to zoom"
+      data-overlay-base="{{ '/overlay/' | append: page.slug | relative_url }}"
+      {% if page.overlay %}data-overlay="{{ page.overlay | relative_url }}"{% endif %}
+    >
+      <div class="detail-media-stage">
+        <img class="detail-base-image" src="{{ page.image | relative_url }}" alt="{{ page.title }}">
+      </div>
+
+      {% if previous_photo %}
+        <a class="detail-nav-btn detail-nav-prev" href="{{ previous_photo.url | relative_url }}" aria-label="Previous image">
+          &#10094;
+        </a>
+      {% endif %}
+
+      {% if next_photo %}
+        <a class="detail-nav-btn detail-nav-next" href="{{ next_photo.url | relative_url }}" aria-label="Next image">
+          &#10095;
+        </a>
+      {% endif %}
+    </figure>
+
+    <div class="detail-copy">
+      <p class="eyebrow">{{ page.category }}</p>
+      <h1>{{ page.title }}</h1>
+      <p class="lead">{{ page.summary }}</p>
+
+      {% if page.meta %}
+        <dl class="meta-list">
+          {% for entry in page.meta %}
+            <div>
+              <dt>{{ entry.label }}</dt>
+              <dd>{{ entry.value | markdownify }}</dd>
+            </div>
+          {% endfor %}
+        </dl>
+      {% endif %}
+
+      <a class="back-link detail-back-link" href="{{ '/galerie/' | relative_url }}">Back to gallery</a>
+    </div>
+  </div>
+
+  {% assign detail_text = content | strip %}
+  {% unless detail_text == "" %}
+    <section class="detail-description" aria-label="Image description">
+      {{ content }}
+    </section>
+  {% endunless %}
+
+  {% if page.video %}
+    <section class="detail-video">
+      <h2>Video</h2>
+      <video controls preload="metadata" playsinline>
+        <source src="{{ page.video | relative_url }}" type="video/mp4">
+        Your browser cannot play this video.
+      </video>
+    </section>
+  {% endif %}
+
+</article>
+
+<script>
+  (function () {
+    var figure = document.querySelector('.zoomable-figure');
+    if (!figure) return;
+
+    var image = figure.querySelector('.detail-base-image');
+    if (!image) return;
+
+    var overlayImage = document.createElement('img');
+    overlayImage.className = 'detail-overlay-image';
+    overlayImage.alt = '';
+    overlayImage.setAttribute('aria-hidden', 'true');
+
+    var explicitOverlay = figure.getAttribute('data-overlay');
+    var overlayBase = figure.getAttribute('data-overlay-base');
+    var galleryOverlayBase = '{{ "/assets/images/gallery/overlay/" | append: page.slug | relative_url }}';
+    var overlayCandidates = explicitOverlay
+      ? [explicitOverlay]
+      : [
+          galleryOverlayBase + '.svg',
+          galleryOverlayBase + '.png',
+          galleryOverlayBase + '.jpg',
+          galleryOverlayBase + '.jpeg',
+          galleryOverlayBase + '.webp',
+          overlayBase + '.svg',
+          overlayBase + '.png',
+          overlayBase + '.jpg',
+          overlayBase + '.jpeg',
+          overlayBase + '.webp'
+        ];
+
+    function tryLoadOverlay(index) {
+      if (index >= overlayCandidates.length) return;
+
+      var test = new Image();
+      test.onload = function () {
+        overlayImage.src = overlayCandidates[index];
+        var stage = figure.querySelector('.detail-media-stage');
+        if (!stage) return;
+        stage.appendChild(overlayImage);
+        figure.classList.add('has-overlay');
+      };
+      test.onerror = function () {
+        tryLoadOverlay(index + 1);
+      };
+      test.src = overlayCandidates[index];
+    }
+
+    tryLoadOverlay(0);
+
+    figure.addEventListener('mouseenter', function () {
+      if (!figure.classList.contains('has-overlay')) return;
+      figure.classList.add('is-overlay-visible');
+    });
+
+    figure.addEventListener('mouseleave', function () {
+      figure.classList.remove('is-overlay-visible');
+    });
+
+    figure.addEventListener('click', function (event) {
+      var rect = image.getBoundingClientRect();
+      var x = ((event.clientX - rect.left) / rect.width) * 100;
+      var y = ((event.clientY - rect.top) / rect.height) * 100;
+
+      image.style.transformOrigin = x + '% ' + y + '%';
+      if (overlayImage.parentNode) {
+        overlayImage.style.transformOrigin = x + '% ' + y + '%';
+      }
+      figure.classList.toggle('is-zoomed');
+    });
+  })();
+</script>
