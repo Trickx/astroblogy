@@ -10,20 +10,20 @@ meta:
   - label: Constellation
     value: Ursa Major
   - label: Catalog
-    value: M97 (NGC 3587), M 08 (NGC 3556)
+    value: |
+      - M97, NGC 3587
+      - M108, NGC 3556
   - label: Image Acquisition
     value: |
-      - RGB 120 x 150s.
-      - 25x Darks
-      - 25x Bias
-      - 25x Flats
+      - Date: 29.04.2026
+      - RGB 64 x 300s
   - label: Equipment
     value: |
-      - Skywatcher Explorer 150P 750mm f/5.6''
-      - Canon 7D Mark II (no-astromod)
+      - Sky-Watcher Explorer 150P 750mm f/5.6''
+      - Canon EOS 7D Mark II (no-astromod)
       - Sky-Watcher EQ6R Pro
       - Zwo Asi 120mm Mini Guide Cam
-      - AsiAir Pro Astro-Computer
+      - AsiAir Astro-Computer
 
 
 ---

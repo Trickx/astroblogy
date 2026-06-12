@@ -8,7 +8,9 @@ meta:
   - label: Object Type
     value: Moon image
   - label: Image Acquisition
-    value: Various one shot color images.
+    value: |
+      - Date: 07.09.2025
+      - Various one shot color images.
   - label: Equipment
     value: |
       - Maksutov MC 10/1000

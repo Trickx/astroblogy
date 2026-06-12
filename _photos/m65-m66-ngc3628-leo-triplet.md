@@ -6,15 +6,28 @@ image: /assets/images/gallery/m65-m66-ngc3628-leo-triplet.jpg
 summary: Triple system of M65, M66, and NGC 3628 in Leo.
 meta:
   - label: Object Type
-    value: Galaxy group
+    value: Galaxy Group
   - label: Constellation
     value: Leo
   - label: Catalog
-    value: M65 / M66 / NGC 3628
+    value: |
+      - M65
+      - M66
+      - NGC 3628
   - label: Image Acquisition
-    value: Three-galaxy composition from the input image set.
+    value: |
+      - Date: 22.03.2026
+      - RGB 88 x 120s
   - label: Equipment
-    value: User equipment data not specified.
+    value: |
+      - Sky-Watcher Explorer 150P 750mm f/5.6''
+      - Canon EOS 1200D (no-astromod)
+      - Sky-Watcher EQ6R Pro
+      - Zwo Asi 120mm Mini Guide Cam
+      - AsiAir Astro-Computer
 ---
 
-This target is categorized as a galaxy group and sorted into the sample gallery.
+First session with my 2nd hand Skywatcher 150P on a EQ6-R Pro controlled by ASIAir.  
+All new to me.
+
+Happy about the result! :-)

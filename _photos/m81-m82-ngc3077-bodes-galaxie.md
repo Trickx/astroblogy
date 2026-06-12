@@ -1,5 +1,5 @@
 ---
-title: M81 M82 NGC3077
+title: Bode's Galaxy and Companions
 category: Galaxies
 order: 7
 image: /assets/images/gallery/m81-m82-ngc3077-bodes-galaxie.jpg
@@ -10,11 +10,22 @@ meta:
   - label: Constellation
     value: Ursa Major
   - label: Catalog
-    value: M81 / M82 / NGC 3077
+    value: |
+      - M81
+      - M82
+      - NGC3077
   - label: Image Acquisition
-    value: Bode group framing from the input image set.
+    value: |
+      - Date: 08.04.2026
+      - RGB 130 x 180s
   - label: Equipment
-    value: User equipment data not specified.
+    value: |
+      - Sky-Watcher Explorer 150P 750mm f/5.6''
+      - Canon EOS 1200D (no-astromod)
+      - Sky-Watcher EQ6R Pro
+      - Zwo Asi 120mm Mini Guide Cam
+      - AsiAir Astro-Computer
 ---
 
-Sample page based on the sorted original file from the input folder.
+Another getting-to-know session with my EQ6R setup.  
+The setup caused a few issues at first, but once it was running, the meridian flip worked smoothly as well.

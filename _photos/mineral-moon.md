@@ -10,14 +10,14 @@ meta:
       - Moon
   - label: Image Acquisition
     value: |
+      - Date: 25.05.2026
       - RGB 292 x 10ms (stacked)
   - label: Equipment
     value: |
-      - Skywatcher Explorer 150P 750mm f/5.6''
-      - Canon 7D Mark II (no-astromod)
+      - Sky-Watcher Explorer 150P 750mm f/5.6''
+      - Canon EOS 7D Mark II (no-astromod)
       - Sky-Watcher EQ6R Pro
-      - Zwo Asi 120mm Mini Guide Cam
-      - AsiAir Pro Astro-Computer
+      - AsiAir Astro-Computer
 ---
 
 Make a virtue out of necessity!
