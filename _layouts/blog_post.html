@@ -1,0 +1,78 @@
+---
+layout: default
+---
+
+<nav class="category-links blog-top-links" aria-label="Blog navigation links">
+  <div class="category-link-list">
+    <a class="button" href="{{ '/blog/' | relative_url }}">Blog Home</a>
+    <a class="button" href="{{ '/galerie/' | relative_url }}">Gallery</a>
+  </div>
+  <div class="category-action-links">
+    <a class="button" href="{{ '/pixinsight-workflow/' | relative_url }}">PI Workflow</a>
+    <a class="button" href="https://trickx.github.io/filter-compare.html">Filter Comparator</a>
+    <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
+  </div>
+</nav>
+
+<article class="photo-detail blog-detail">
+  <div class="blog-layout">
+    <aside class="blog-toc" aria-label="Chapter navigation">
+      <p class="section-label">Chapters</p>
+      <nav>
+        <ul id="blog-toc-list"></ul>
+      </nav>
+    </aside>
+
+    <div class="blog-main">
+      {% if page.image %}
+        <figure class="blog-hero-image">
+          <img src="{{ page.image | relative_url }}" alt="{{ page.title }}">
+        </figure>
+      {% endif %}
+
+      <p class="eyebrow">Blog</p>
+      <h1>{{ page.title }}</h1>
+      {% if page.date %}
+        <p class="blog-meta">{{ page.date | date: "%Y-%m-%d" }}</p>
+      {% endif %}
+
+      <div class="blog-content" id="blog-content">
+        {{ content }}
+      </div>
+
+      <a class="back-link blog-back-link" href="{{ '/blog/' | relative_url }}">Back to blog overview</a>
+    </div>
+  </div>
+</article>
+
+<script>
+  (function () {
+    var tocList = document.getElementById('blog-toc-list');
+    var content = document.getElementById('blog-content');
+    if (!tocList || !content) return;
+
+    var headings = content.querySelectorAll('h2, h3');
+    if (!headings.length) {
+      tocList.innerHTML = '<li><a href="#">No chapters</a></li>';
+      return;
+    }
+
+    headings.forEach(function (heading) {
+      if (!heading.id) {
+        heading.id = heading.textContent.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+      }
+
+      var item = document.createElement('li');
+      if (heading.tagName.toLowerCase() === 'h3') {
+        item.className = 'subchapter';
+      }
+
+      var link = document.createElement('a');
+      link.href = '#' + heading.id;
+      link.textContent = heading.textContent;
+
+      item.appendChild(link);
+      tocList.appendChild(item);
+    });
+  })();
+</script>

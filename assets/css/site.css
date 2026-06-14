@@ -54,11 +54,29 @@ body.photo-page {
   background: rgb(9, 21, 36);
 }
 
+body.blog-page {
+  background: rgb(9, 21, 36);
+}
+
 .photo-page .photo-detail {
   background: transparent;
   border: 0;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.blog-page .page-shell {
+  width: min(calc(100% - 2rem), 1260px);
+}
+
+.blog-page .blog-detail {
+  margin-top: 0;
+  width: auto;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 28px;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
 }
 
 .site-header {
@@ -188,6 +206,11 @@ body.photo-page {
   margin-left: 0;
 }
 
+.blog-top-links {
+  margin-top: 0.15rem;
+  margin-bottom: 0.9rem;
+}
+
 .gallery-section {
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -239,6 +262,11 @@ body.photo-page {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.blog-page .gallery-overlay {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .media-badge {
@@ -514,6 +542,83 @@ body.photo-page {
   margin-bottom: 0;
 }
 
+.blog-detail {
+  padding: clamp(1.25rem, 2.6vw, 2.2rem);
+}
+
+.blog-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.blog-toc {
+  position: sticky;
+  top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1rem;
+  background: rgba(5, 12, 22, 0.68);
+}
+
+.blog-toc nav ul {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.blog-toc a {
+  color: var(--muted);
+}
+
+.blog-toc a:hover,
+.blog-toc a:focus-visible {
+  color: var(--accent);
+}
+
+.blog-toc .subchapter {
+  padding-left: 0.8rem;
+}
+
+.blog-main {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(1.1rem, 2vw, 1.6rem);
+  background: rgba(5, 12, 22, 0.68);
+}
+
+.blog-hero-image {
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin-bottom: 1.2rem;
+}
+
+.blog-meta {
+  color: var(--muted);
+  margin: 0.2rem 0 1rem;
+}
+
+.blog-content {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.blog-content > :first-child {
+  margin-top: 0;
+}
+
+.blog-content > :last-child {
+  margin-bottom: 0;
+}
+
+.blog-back-link {
+  margin-top: 1.25rem;
+}
+
 .contact-form {
   display: grid;
   gap: 0.65rem;
@@ -618,5 +723,13 @@ body.photo-page {
 
   .contact-link {
     margin-left: 0;
+  }
+
+  .blog-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .blog-toc {
+    position: static;
   }
 }

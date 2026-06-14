@@ -2,8 +2,9 @@ site_name: PixInsight Workflow Doku
 site_description: Dokumentation eines PixInsight-Workflows mit mkdocs-material
 site_author: Sven Kopetzki
 site_url: https://tricx.de/pixinsight-workflow/
-repo_name: PixDoc
-repo_url: https://github.com/Trickx/PixInsight-Workflow-Doc/
+
+repo_name: Home
+repo_url: https://tricx.de/
 
 nav:
   - Start: index.md
@@ -49,3 +50,6 @@ plugins:
 
 extra_css:
   - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/home.js

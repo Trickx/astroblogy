@@ -5,7 +5,7 @@ layout: default
 {% assign grouped_photos = site.photos | sort: 'order' | group_by: 'category' %}
 
 <section class="section-intro">
-  <h1>Trick's AstroBlogy</h1>
+  <h1>Tricx' AstroBlogy</h1>
   <div class="category-links" aria-label="Jump to category section">
     <div class="category-link-list">
       {% for group in grouped_photos %}
@@ -13,8 +13,7 @@ layout: default
       {% endfor %}
     </div>
     <div class="category-action-links">
-      <a class="button" href="https://trickx.github.io/">Blog</a>
-      <a class="button" href="https://trickx.github.io/moon-and-darkness-calendar/">Calendar</a>
+      <a class="button" href="{{ '/blog/' | relative_url }}">Blog</a>
       <a class="button" href="{{ '/pixinsight-workflow/' | relative_url }}">PI Workflow</a>
       <a class="button" href="https://trickx.github.io/filter-compare.html">Filter Comparator</a>
       <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
@@ -31,8 +30,9 @@ layout: default
 
     <div class="gallery-grid">
       {% for photo in group.items %}
+        {% assign thumb_image = photo.image | replace: '/assets/images/gallery/', '/assets/images/gallery/thumbs/' %}
         <a class="gallery-card" href="{{ photo.url | relative_url }}">
-          <img src="{{ photo.image | relative_url }}" alt="{{ photo.title }}">
+          <img src="{{ thumb_image | relative_url }}" alt="{{ photo.title }}">
           {% if photo.video %}
             <span class="media-badge">Video</span>
           {% endif %}

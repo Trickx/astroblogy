@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" version="1.1" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <title>VeraLux StarComposer</title>
+  <desc>Star reconstruction and composition engine</desc>
+  
+  <!-- Background -->
+  <rect width="64" height="64" fill="#1a1a2e" rx="8"/>
+  
+  <!-- Large star (main) -->
+  <g id="star-main" transform="translate(32,28)">
+    <!-- Outer glow -->
+    <circle cx="0" cy="0" r="10" fill="#4a69ff" opacity="0.3"/>
+    <!-- Core -->
+    <circle cx="0" cy="0" r="5" fill="#ffffff"/>
+    <!-- Spikes -->
+    <path d="M 0,-12 L 0,12" stroke="#ffffff" stroke-width="1.5" opacity="0.7"/>
+    <path d="M -12,0 L 12,0" stroke="#ffffff" stroke-width="1.5" opacity="0.7"/>
+    <path d="M -8.5,-8.5 L 8.5,8.5" stroke="#ffffff" stroke-width="1" opacity="0.5"/>
+    <path d="M 8.5,-8.5 L -8.5,8.5" stroke="#ffffff" stroke-width="1" opacity="0.5"/>
+  </g>
+  
+  <!-- Small stars (composition) -->
+  <g id="stars-small">
+    <!-- Top right star -->
+    <circle cx="50" cy="15" r="2.5" fill="#a0c4ff"/>
+    <path d="M 50,10 L 50,20" stroke="#a0c4ff" stroke-width="0.8" opacity="0.6"/>
+    <path d="M 45,15 L 55,15" stroke="#a0c4ff" stroke-width="0.8" opacity="0.6"/>
+    
+    <!-- Bottom left star -->
+    <circle cx="14" cy="50" r="2" fill="#ff9a8b"/>
+    <path d="M 14,46 L 14,54" stroke="#ff9a8b" stroke-width="0.7" opacity="0.6"/>
+    <path d="M 10,50 L 18,50" stroke="#ff9a8b" stroke-width="0.7" opacity="0.6"/>
+    
+    <!-- Right star -->
+    <circle cx="52" cy="44" r="1.8" fill="#ffd89b"/>
+    <path d="M 52,40 L 52,48" stroke="#ffd89b" stroke-width="0.6" opacity="0.6"/>
+    <path d="M 48,44 L 56,44" stroke="#ffd89b" stroke-width="0.6" opacity="0.6"/>
+  </g>
+  
+  <!-- Composition arrows/flow -->
+  <g id="flow" opacity="0.4">
+    <path d="M 42,20 L 48,16" stroke="#88aaff" stroke-width="1.2" fill="none" stroke-dasharray="2,2"/>
+    <path d="M 22,38 L 16,48" stroke="#88aaff" stroke-width="1.2" fill="none" stroke-dasharray="2,2"/>
+    <path d="M 40,32 L 50,40" stroke="#88aaff" stroke-width="1.2" fill="none" stroke-dasharray="2,2"/>
+  </g>
+  
+  <!-- VeraLux branding accent -->
+  <path d="M 8,8 L 14,8" stroke="#ffb000" stroke-width="2" stroke-linecap="round"/>
+</svg>

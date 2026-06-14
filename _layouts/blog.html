@@ -1,0 +1,49 @@
+---
+layout: default
+---
+
+{% assign all_posts = site.blogs | default: empty %}
+{% assign posts = all_posts | sort: 'date' | reverse %}
+
+<section class="section-intro">
+  <h1>AstroBlogy Stories</h1>
+
+  <div class="category-links" aria-label="Quick actions">
+    <div class="category-link-list">
+      <a class="button" href="{{ '/galerie/' | relative_url }}">Gallery</a>
+    </div>
+    <div class="category-action-links">
+      <a class="button" href="{{ '/pixinsight-workflow/' | relative_url }}">PI Workflow</a>
+      <a class="button" href="https://trickx.github.io/filter-compare.html">Filter Comparator</a>
+      <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
+    </div>
+  </div>
+</section>
+
+<section class="gallery-section">
+  <div class="section-heading">
+    <p class="section-label">Latest posts</p>
+    <p class="section-count">{{ posts | size }} items</p>
+  </div>
+
+  <div class="gallery-grid">
+    {% for post in posts %}
+      {% if post.image contains '/assets/images/gallery/' %}
+        {% assign thumb_image = post.image | replace: '/assets/images/gallery/', '/assets/images/gallery/thumbs/' %}
+      {% else %}
+        {% assign thumb_image = post.image %}
+      {% endif %}
+      <a class="gallery-card" href="{{ post.url | relative_url }}">
+        {% if post.image %}
+          <img src="{{ thumb_image | relative_url }}" alt="{{ post.title }}">
+        {% else %}
+          <img src="{{ '/assets/images/gallery/thumbs/mineral-moon.jpg' | relative_url }}" alt="{{ post.title }}">
+        {% endif %}
+        <span class="gallery-overlay">
+          <span class="gallery-title">{{ post.title }}</span>
+          <span class="gallery-summary">{{ post.summary }}</span>
+        </span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
