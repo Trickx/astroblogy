@@ -54,7 +54,7 @@ jobs:
         run: |
           mkdocs build \
             --config-file ./pixinsight-workflow-src/mkdocs.yml \
-            --site-dir ./_site/pixinsight-workflow
+            --site-dir "$GITHUB_WORKSPACE/_site/pixinsight-workflow"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
