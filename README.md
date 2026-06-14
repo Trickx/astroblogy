@@ -1,4 +1,4 @@
-# [Trick's Astro Blogy](https://tricx.de/)
+# [Trick's Astro Blogy](http://tricx.de/)
 
 A static astrophotography portfolio built with [Jekyll](https://jekyllrb.com/).  
 Gallery index lives at `/galerie/`, individual detail pages at `/galerie/:slug/`.
