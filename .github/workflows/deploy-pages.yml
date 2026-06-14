@@ -33,10 +33,20 @@ jobs:
           source: ./
           destination: ./_site
 
-      - name: Fetch PixInsight Workflow source
+      - name: Checkout PixInsight Workflow source
+        uses: actions/checkout@v4
+        with:
+          repository: Trickx/PixInsight-Workflow-Doc
+          path: ./pixinsight-workflow-src
+          token: ${{ secrets.PIXDOC_REPO_TOKEN != '' && secrets.PIXDOC_REPO_TOKEN || github.token }}
+
+      - name: Validate PixInsight Workflow checkout
         run: |
-          git clone --depth 1 https://github.com/Trickx/PixInsight-Workflow-Doc.git ./pixinsight-workflow-src
-          test -f ./pixinsight-workflow-src/mkdocs.yml
+          if [ ! -f ./pixinsight-workflow-src/mkdocs.yml ]; then
+            echo "PixInsight-Workflow-Doc checkout failed or mkdocs.yml missing."
+            echo "If the repository is private, set repo secret PIXDOC_REPO_TOKEN with read access to Trickx/PixInsight-Workflow-Doc."
+            exit 1
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
