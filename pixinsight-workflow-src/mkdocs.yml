@@ -1,0 +1,51 @@
+site_name: PixInsight Workflow Doku
+site_description: Dokumentation eines PixInsight-Workflows mit mkdocs-material
+site_author: Sven Kopetzki
+site_url: https://tricx.de/pixinsight-workflow/
+repo_name: PixDoc
+repo_url: https://github.com/Trickx/PixInsight-Workflow-Doc/
+
+nav:
+  - Start: index.md
+  - Folder Structure: schritte/folder-structure.md
+  - Imaging Catalog: schritte/meridian.md
+  - Workflow: workflow.md
+  - Schritte:
+      - 01 Blink (Frame-Check): schritte/blink.md
+      - 02 Weighted Batch Preprocessing: schritte/weighted-batch-preprocessing.md
+      - 03 Fast Batch Preprocessing (optional): schritte/fast-batch-preprocessing.md
+      - 04 Dynamic Background Extraction: schritte/dynamic-background-extraction.md
+      - 05 GraXpert (optional): schritte/graxpert.md
+      - 06 Gradient Correction (optional): schritte/gradient-correction.md
+      - 07 Multiscale Gradient Correction (optional): schritte/multiscale-gradient-correction.md
+      - 08 Background Neutralization: schritte/background-neutralization.md
+      - 09 BlurXTerminator Correct Only (optional): schritte/blur-xterminator-correct-only.md
+      - 10 Image Solver: schritte/image-solver.md
+      - 11 Spectrophotometric Color Calibration: schritte/spectrophotometric-color-calibration.md
+      - 12 Photometric Color Calibration (optional): schritte/photometric-color-calibration.md
+      - 13 NoiseXTerminator: schritte/noise-xterminator.md
+      - 14 BlurXTerminator: schritte/blur-xterminator.md
+      - 15 StarXTerminator: schritte/star-xterminator.md
+      - 16 StarComposer: schritte/star-composer.md
+      - 17 Multiscale Adaptive Stretch: schritte/multiscale-adaptive-stretch.md
+
+theme:
+  name: material
+  language: de
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - tables
+
+plugins:
+  - search
+
+extra_css:
+  - stylesheets/extra.css

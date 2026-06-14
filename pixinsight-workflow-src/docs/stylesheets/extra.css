@@ -1,0 +1,10 @@
+.step-icon {
+  float: left;
+  width: 84px;
+  height: auto;
+  margin: 0 16px 12px 0;
+}
+
+.step-icon-clear {
+  clear: both;
+}
