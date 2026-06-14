@@ -27,12 +27,6 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
-
       - name: Validate local PixInsight Workflow sources
         run: |
           if [ ! -f ./pixinsight-workflow-src/mkdocs.yml ]; then
@@ -54,7 +48,13 @@ jobs:
         run: |
           mkdocs build \
             --config-file ./pixinsight-workflow-src/mkdocs.yml \
-            --site-dir "$GITHUB_WORKSPACE/_site/pixinsight-workflow"
+            --site-dir "$GITHUB_WORKSPACE/pixinsight-workflow"
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
