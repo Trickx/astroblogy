@@ -1,12 +1,8 @@
 ---
 title: Subframe Preselection with Siril
-date: 2026-06-10
+date: 07.06.2026
 summary: Workflow for selecting better subframes in Siril using FWHM, roundness, and background metrics.
 image: /assets/images/blog/siril/BackgroundAnimation.gif
----
-
----
-layout: default
 ---
 
 ### Selection Parameters: Background, FWHM, and Quality
@@ -113,4 +109,3 @@ The image based on the selection shows in some areas more noise, nothing what NX
 That's all I was able to see.
 Conclusion? Hm, build your own opinion...
 
-[back](./)

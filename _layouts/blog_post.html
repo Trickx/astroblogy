@@ -19,18 +19,20 @@ layout: default
     <aside class="blog-toc" aria-label="Chapter navigation">
       <p class="section-label">Chapters</p>
       <nav>
-        <ul id="blog-toc-list"></ul>
+        <ul id="blog-toc-list">
+          <li><a href="#blog-top">{{ page.title }}</a></li>
+        </ul>
       </nav>
     </aside>
 
     <div class="blog-main">
+      <span id="blog-top"></span>
       {% if page.image %}
         <figure class="blog-hero-image">
           <img src="{{ page.image | relative_url }}" alt="{{ page.title }}">
         </figure>
       {% endif %}
 
-      <p class="eyebrow">Blog</p>
       <h1>{{ page.title }}</h1>
       {% if page.date %}
         <p class="blog-meta">{{ page.date | date: "%Y-%m-%d" }}</p>
@@ -40,7 +42,9 @@ layout: default
         {{ content }}
       </div>
 
-      <a class="back-link blog-back-link" href="{{ '/blog/' | relative_url }}">Back to blog overview</a>
+      <div class="blog-bottom-links">
+        <a class="back-link" href="#blog-top">Top</a>
+      </div>
     </div>
   </div>
 </article>

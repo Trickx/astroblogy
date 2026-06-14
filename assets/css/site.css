@@ -9,6 +9,7 @@
   --accent-soft: rgba(216, 163, 74, 0.18);
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   --max-width: 1180px;
+  --blog-nav-height: 4.5rem;
 }
 
 * {
@@ -56,6 +57,8 @@ body.photo-page {
 
 body.blog-page {
   background: rgb(9, 21, 36);
+  overflow: hidden;
+  height: 100dvh;
 }
 
 .photo-page .photo-detail {
@@ -67,16 +70,34 @@ body.blog-page {
 
 .blog-page .page-shell {
   width: min(calc(100% - 2rem), 1260px);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 0 0;
+  overflow: hidden;
+}
+
+.blog-page .page-shell > main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .blog-page .blog-detail {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   margin-top: 0;
   width: auto;
   margin-left: 0;
   margin-right: 0;
-  border-radius: 28px;
+  border-radius: 28px 28px 0 0;
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  padding: clamp(1.25rem, 2.6vw, 2.2rem) clamp(1.25rem, 2.6vw, 2.2rem) 0;
 }
 
 .site-header {
@@ -192,6 +213,7 @@ body.blog-page {
 .category-link-list {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -207,8 +229,11 @@ body.blog-page {
 }
 
 .blog-top-links {
-  margin-top: 0.15rem;
-  margin-bottom: 0.9rem;
+  flex-shrink: 0;
+  padding: 0.6rem 0;
+  background: rgba(7, 17, 31, 0.92);
+  backdrop-filter: blur(12px);
+  margin-bottom: 1.2rem;
 }
 
 .gallery-section {
@@ -544,18 +569,23 @@ body.blog-page {
 
 .blog-detail {
   padding: clamp(1.25rem, 2.6vw, 2.2rem);
+  display: flex;
+  flex-direction: column;
 }
 
 .blog-layout {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 1.2rem;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .blog-toc {
-  position: sticky;
-  top: 1rem;
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 1rem;
@@ -584,6 +614,7 @@ body.blog-page {
 }
 
 .blog-main {
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: clamp(1.1rem, 2vw, 1.6rem);
@@ -615,7 +646,38 @@ body.blog-page {
   margin-bottom: 0;
 }
 
+.blog-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.blog-content table th,
+.blog-content table td {
+  border: 1px solid var(--line);
+  padding: 0.55rem 0.85rem;
+  text-align: left;
+}
+
+.blog-content table th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.blog-content table tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .blog-back-link {
+  margin-top: 1.25rem;
+}
+
+.blog-bottom-links {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   margin-top: 1.25rem;
 }
 
