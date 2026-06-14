@@ -138,7 +138,7 @@ body {
 }
 
 .md-typeset h1 {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.3rem, 3vw, 2rem);
   line-height: 1.08;
 }
 

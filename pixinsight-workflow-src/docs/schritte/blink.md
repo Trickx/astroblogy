@@ -9,8 +9,4 @@
 
 ## Ziel
 
-Platzhalter fuer Beschreibung, Eingabedaten und Parameter.
-
-## Notizen
-
-- Wird spaeter mit konkreten Projektwerten befuellt.
+[FITS Blaster](https://astrophoto-app.com/) ist ein kostenloses macOS-Programm zur schnellen Qualitätsbewertung und Aussortierung (Culling) von Astrofotografie-Aufnahmen im FITS-Format. Es analysiert automatisch Kennzahlen wie FWHM, Sternanzahl, Exzentrizität und Signal-Rausch-Verhältnis (SNR), um unscharfe oder fehlerhafte Einzelbilder zu erkennen. Anschließend können schlechte Aufnahmen vor dem Stacking bequem ausgewählt und aussortiert werden. Das Programm ist speziell für einen schnellen, nativen Workflow auf dem Mac ausgelegt.

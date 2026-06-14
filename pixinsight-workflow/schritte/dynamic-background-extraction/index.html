@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://tricx.de/pixinsight-workflow/schritte/dynamic-background-extraction/">
       
       
-        <link rel="prev" href="../fast-batch-preprocessing/">
+        <link rel="prev" href="../gradient-correction/">
       
       
         <link rel="next" href="../graxpert/">
@@ -446,14 +446,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../fast-batch-preprocessing/" class="md-nav__link">
+      <a href="../gradient-correction/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    03 Fast Batch Preprocessing (optional)
+    03 Gradient Correction (optional)
   
 
     
@@ -545,10 +545,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notizen" class="md-nav__link">
+  <a href="#ausgangslage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notizen
+        Ausgangslage
       
     </span>
   </a>
@@ -599,90 +599,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../gradient-correction/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    06 Gradient Correction (optional)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../multiscale-gradient-correction/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    07 Multiscale Gradient Correction (optional)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../background-neutralization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    08 Background Neutralization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../blur-xterminator-correct-only/" class="md-nav__link">
         
   
@@ -690,7 +606,7 @@
   <span class="md-ellipsis">
     
   
-    09 BlurXTerminator Correct Only (optional)
+    06 BlurXTerminator Correct Only (optional)
   
 
     
@@ -718,7 +634,7 @@
   <span class="md-ellipsis">
     
   
-    10 Image Solver
+    07 Image Solver
   
 
     
@@ -746,7 +662,7 @@
   <span class="md-ellipsis">
     
   
-    11 Spectrophotometric Color Calibration
+    08 Spectrophotometric Color Calibration
   
 
     
@@ -774,7 +690,7 @@
   <span class="md-ellipsis">
     
   
-    12 Photometric Color Calibration (optional)
+    09 Photometric Color Calibration (optional)
   
 
     
@@ -802,7 +718,7 @@
   <span class="md-ellipsis">
     
   
-    13 NoiseXTerminator
+    10 NoiseXTerminator
   
 
     
@@ -830,7 +746,7 @@
   <span class="md-ellipsis">
     
   
-    14 BlurXTerminator
+    11 BlurXTerminator
   
 
     
@@ -858,7 +774,7 @@
   <span class="md-ellipsis">
     
   
-    15 StarXTerminator
+    12 StarXTerminator
   
 
     
@@ -886,7 +802,7 @@
   <span class="md-ellipsis">
     
   
-    16 StarComposer
+    13 StarComposer
   
 
     
@@ -914,7 +830,7 @@
   <span class="md-ellipsis">
     
   
-    17 Multiscale Adaptive Stretch
+    14 Multiscale Adaptive Stretch
   
 
     
@@ -973,10 +889,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notizen" class="md-nav__link">
+  <a href="#ausgangslage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notizen
+        Ausgangslage
       
     </span>
   </a>
@@ -1005,11 +921,39 @@
 <div class="step-icon-clear"></div>
 
 <h2 id="ziel">Ziel</h2>
-<p>Platzhalter fuer Beschreibung, Eingabedaten und Parameter.</p>
-<h2 id="notizen">Notizen</h2>
+<p>Dynamic Background Extraction (DBE) ist ebenso wie die <a href="../gradient-correction/">Gradient Correction</a> ein Werkzeug zur Entfernung unerwünschter Hintergrundgradienten und Helligkeitsunterschiedn. Der Arbeitsablauf unterscheided sich jedoch, da hier gezielt Hintergrundproben (Samples) platziert werden.</p>
+<h2 id="ausgangslage">Ausgangslage</h2>
+<p>Das Bild unten zeigt die Ausgangslage aus Schritt <a href="../gradient-correction/">Gradient Correction</a>. Wir befinden uns noch in der linearen Bildberarbeitung. Sämtliche Bilder sind per Scree transfer Function gestreckt.</p>
+<p><img src="../../assets/screenshots/GC_Result_OKsettings.jpg" alt="Ergebnis mit angepassten Settings" /></p>
+<p>Folgende Parameter sind zu setzen:</p>
 <ul>
-<li>Wird spaeter mit konkreten Projektwerten befuellt.</li>
+<li>
+<p><strong>Tolerance</strong> Die Samples sollten keine Strukturen beinhalten, lediglich den Hintergrund. Größere Werte erlauben höhe Abweichungen.</p>
+</li>
+<li>
+<p><strong>Default Sample Radius</strong> Sind die Samples zu klein treten mitunter farbfehler im Hintergrund auf.</p>
+</li>
+<li>
+<p><strong>Samples per rox</strong> Nicht übertreiben. :-)</p>
+</li>
+<li>
+<p><strong>Correction</strong> Ich nutze fast immer Substaction, wenn ich es nicht vergesse und nichts passiert.</p>
+</li>
+<li>
+<p><strong>Replace target image</strong> bestimmt ob ein neues Bild erzeugt wird oder das Original überschrieben wird.</p>
+</li>
 </ul>
+<p><img src="../../assets/screenshots/DBG_Samples.png" alt="Ergebnis mit angepassten Settings" /></p>
+<p>Das Ergebnis der Korrektur kann sich scjon fast sehen lassen. Mich stören noch die Farbfehler im Hintergrund.</p>
+<p><img src="../../assets/screenshots/DBE_Result.jpg" alt="Ergebnis mit angepassten Settings" /></p>
+<p>Das entsprechende Hintergrundmodell ist im folgenden Bild dargestellt.</p>
+<p><img src="../../assets/screenshots/DBG_Modell.jpg" alt="Ergebnis mit angepassten Settings" /></p>
+<p>Mit größeren Samples wird die Hintergrundfarbe besser gemittelt.</p>
+<p><img src="../../assets/screenshots/DBG_Samples2.png" alt="Ergebnis mit angepassten Settings" /></p>
+<p>Das Ergebnis der Korrektur mit vergrößerten Samples sollte sich nun gut entrauschen lassen.</p>
+<p><img src="../../assets/screenshots/DBE_Result2.jpg" alt="Ergebnis mit angepassten Settings" /></p>
+<p>Das neue Hintergrundmodell ist ist weniger bunt.</p>
+<p><img src="../../assets/screenshots/DBG_Modell2.jpg" alt="Ergebnis mit angepassten Settings" /></p>
 
 
 
