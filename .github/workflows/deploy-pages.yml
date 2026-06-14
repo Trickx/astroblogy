@@ -33,6 +33,28 @@ jobs:
           source: ./
           destination: ./_site
 
+      - name: Checkout PixInsight Workflow source
+        uses: actions/checkout@v4
+        with:
+          repository: Trickx/PixInsight-Workflow-Doc
+          path: ./.pixinsight-workflow-src
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install MkDocs
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs-material
+
+      - name: Build PixInsight Workflow docs
+        run: |
+          mkdocs build \
+            --config-file ./.pixinsight-workflow-src/mkdocs.yml \
+            --site-dir ./_site/pixinsight-workflow
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
