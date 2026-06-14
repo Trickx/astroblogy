@@ -33,11 +33,10 @@ jobs:
           source: ./
           destination: ./_site
 
-      - name: Checkout PixInsight Workflow source
-        uses: actions/checkout@v4
-        with:
-          repository: Trickx/PixInsight-Workflow-Doc
-          path: ./.pixinsight-workflow-src
+      - name: Fetch PixInsight Workflow source
+        run: |
+          git clone --depth 1 https://github.com/Trickx/PixInsight-Workflow-Doc.git ./pixinsight-workflow-src
+          test -f ./pixinsight-workflow-src/mkdocs.yml
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -52,7 +51,7 @@ jobs:
       - name: Build PixInsight Workflow docs
         run: |
           mkdocs build \
-            --config-file ./.pixinsight-workflow-src/mkdocs.yml \
+            --config-file ./pixinsight-workflow-src/mkdocs.yml \
             --site-dir ./_site/pixinsight-workflow
 
       - name: Upload artifact
