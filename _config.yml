@@ -2,8 +2,8 @@ title: Star Gallery
 description: Static photo gallery with hover text and detail pages.
 lang: en
 contact_email: "trickx-astro@web.de"
-baseurl: "/Astro-Gallery"
-url: ""
+baseurl: ""
+url: "https://tricx.de"
 markdown: kramdown
 permalink: pretty
 
