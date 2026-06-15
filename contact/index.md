@@ -4,6 +4,18 @@ layout: default
 permalink: /contact/
 ---
 
+<nav class="category-links blog-top-links" aria-label="Blog navigation links">
+  <div class="category-link-list">
+    <a class="button" href="{{ '/blog/' | relative_url }}">Blog Home</a>
+    <a class="button" href="{{ '/galerie/' | relative_url }}">Gallery</a>
+  </div>
+  <div class="category-action-links">
+    <a class="button" href="{{ '/pixinsight-workflow/' | relative_url }}">PI Workflow</a>
+    <a class="button" href="{{ '/filter-compare/' | relative_url }}">Filter Comparator</a>
+    <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
+  </div>
+</nav>
+
 <section class="section-intro">
   <p class="eyebrow">Contact</p>
   <h1>Write me an email</h1>
