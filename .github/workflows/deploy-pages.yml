@@ -53,6 +53,12 @@ jobs:
             --config-file ./pixinsight-workflow-src/mkdocs.yml \
             --site-dir "$GITHUB_WORKSPACE/pixinsight-workflow"
 
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          cache: 'bundler'
+
       - name: Build with Jekyll (bundle)
         run: |
           gem install bundler
