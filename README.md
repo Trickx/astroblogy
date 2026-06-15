@@ -95,8 +95,25 @@ rm -rf vendor/bundle
 
 ## Local development
 
+This repository contains two site parts:
+
+1. The main Jekyll-based blog/portfolio.
+2. The PixInsight workflow docs under `pixinsight-workflow-src`, which are built with MkDocs.
+
+### Build and test locally
+
 ```bash
-bundle exec jekyll serve
+# Build the PixInsight workflow docs into the public folder
+python3 -m mkdocs build --config-file ./pixinsight-workflow-src/mkdocs.yml --site-dir "$PWD/pixinsight-workflow"
+
+# Build the Jekyll site for the main blog/portfolio
+bundle exec jekyll build
+```
+
+### Serve the Jekyll site locally
+
+```bash
+bundle exec jekyll serve --watch
 ```
 
 Open [http://127.0.0.1:4000/](http://127.0.0.1:4000/).

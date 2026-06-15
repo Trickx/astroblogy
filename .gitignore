@@ -1,6 +1,45 @@
+# Jekyll build output
 _site/
 .jekyll-cache/
 .sass-cache/
+
+# Bundler / Ruby
 vendor/
 .bundle/
 Gemfile.lock
+
+# MkDocs / generated PixInsight docs
+pixinsight-workflow/
+pixinsight-workflow-src/pixinsight-workflow/site/
+pixinsight-workflow-src/pixinsight-workflow/.cache/
+
+# Python
+*.pyc
+__pycache__/
+.env
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Build artifacts
+dist/
+build/
+pip-wheel-metadata/
+
+# Logs and reports
+*.log
+coverage/
+htmlcov/
+
+# MkDocs / local site build cache
+pixinsight-workflow-src/_site/
+pixinsight-workflow-src/.jekyll-cache/
