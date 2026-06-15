@@ -53,11 +53,11 @@ jobs:
             --config-file ./pixinsight-workflow-src/mkdocs.yml \
             --site-dir "$GITHUB_WORKSPACE/pixinsight-workflow"
 
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
+      - name: Build with Jekyll (bundle)
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3
+          bundle exec jekyll build --destination ./_site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
