@@ -1,9 +1,18 @@
 # Folder Structure
 
-Diese Seite beschreibt die Verzeichnisstruktur.
+Ich folge im Wesentlichen der [Beschreibung auf Mac Observatory](https://macobservatory.com/organize-astrophotography-data-library-mac/).
 
-Ich folge im Wesentlichen der Beschreibung auf Mac Observatory:
-https://macobservatory.com/organize-astrophotography-data-library-mac/
+Der Ansatz ist eine Objekt-First Ordner-Struktur, der jedoch Jahreszahlen vorangestellt werden.
+
+Ziele meiner Ordnerstruktur sind:
+
+- Erweiterbarkeit über lange Zeiträume
+- Übersichtlichkeit
+- Multi-Session-Unterstützung
+- Kompatibilität zu
+    - [Siril](https://siril.org/)
+    - [Meridian](https://macobservatory.com/meridian-deep-sky-imaging-catalog/)
+    - [Pixinsight](https://pixinsight.com/)
 
 #### Single Session Structure
 ```text

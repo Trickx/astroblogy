@@ -113,15 +113,39 @@ body {
   padding: 0.5rem;
 }
 
+.md-sidebar--secondary .md-sidebar__scrollwrap,
+.md-sidebar--secondary .md-nav__list,
+.md-sidebar--secondary .md-nav__link {
+  background: rgba(8, 18, 34, 0.95);
+  color: var(--wf-text) !important;
+}
+
+.md-nav__link,
+.md-nav__link:visited {
+  color: var(--wf-text) !important;
+}
+
 .md-nav__link--active,
 .md-nav__link:focus,
 .md-nav__link:hover {
-  color: var(--wf-accent);
+  color: var(--wf-accent) !important;
 }
 
 .md-nav__item--section > .md-nav__link {
   color: var(--wf-text) !important;
   font-weight: 700;
+}
+
+button.md-top.md-icon {
+  color: var(--wf-text) !important;
+  background: rgba(8, 18, 34, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+button.md-top.md-icon:hover,
+button.md-top.md-icon:focus {
+  color: var(--wf-accent) !important;
 }
 
 .md-sidebar .md-nav__title {
@@ -196,6 +220,11 @@ body {
 .md-search-result a:hover,
 .md-search-result a:focus {
   color: var(--wf-text) !important;
+}
+
+/* Hide Material for MkDocs footer credit on every generated page */
+footer .md-footer-meta {
+  display: none !important;
 }
 
 .md-search-result__meta {

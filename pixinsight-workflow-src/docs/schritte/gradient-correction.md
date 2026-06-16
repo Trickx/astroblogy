@@ -25,6 +25,8 @@ Als Beipiel soll hier ein Bild der Walgalaxie (NGC 4631) dienen. Es wurde am 22.
 
 Meine typischen Starteinstellungen unterscheiden sich etwas von den Standardeinstellungen in Pixinsight. Der folgende Screenshot zeigt meinen Startpunkt, der oft schon bei geringem Gradienten ausreicht.
 
+## 1. Versuch
+
 <img src="../../assets/screenshots/GC_StartSetting.png" alt="Gradient Correction Start Settings" />
 
 Das Ergebnis ist an sich nicht schlecht, aber es reicht nicht um diesen dunklen Donut zu entfernen.
@@ -50,6 +52,8 @@ Ein niedriger Wert erfasst auch kleinere, lokale Helligkeitsänderungen und erze
 
 1. **Modellglättung** Zusammen mit der Modellskala ermöglicht dieser Parameter eine feine Steuerung des Glättungsgrades lokaler Hintergrundverläufe. 
 
+## 2. Versuch
+
 Der Donut wurde recht gut entfernt. Es bleiben noch Gradienten in beiden Ecken unten llinks sowie unten rechts. Diese werden wir im nächsten Schritt [Dynamic Background Extraction](dynamic-background-extraction.md) angehen.
 
 <img src="../../assets/screenshots/GC_Result_OKsettings.jpg" alt="Ergebnis mit angepassten Settings" />
@@ -57,3 +61,19 @@ Der Donut wurde recht gut entfernt. Es bleiben noch Gradienten in beiden Ecken u
 Im neuen Gradientenmodell zeigt sich nun der Donut deutlicher.
 
 <img src="../../assets/screenshots/GC_gradient_model_ok.jpg" alt="Gradient Correction Modell" />
+
+## 3. Versuch 
+
+Wie im Schritt [Dynamic Background Extraction](dynamic-background-extraction.md) beschrieben, traten farbige Flecken im Hintergrund auf. Daher wurde hier weiter an den Parametern gespielt um in einem einzigen Schritt die Gradienten im Hintergrund entfernen zu können.
+
+Durch weitere Iterationen konnten folgende agressive Werte ermittelt werden.
+
+<img src="../../assets/screenshots/GC_Settings_3.png" alt="Gradient Correction Setting 3" />
+
+Das Ergbniss zeigt keinen Gradienten mehr, auch sind keine farbige Flecken entstanden.
+
+<img src="../../assets/screenshots/GC_Result_3.jpg" alt="GC Ergebniss mit finalen Settings" />
+
+Wie man anhand des Modells erkennt, bezahlt man den Erfolg mit etwas Verlust an Kontur im Bereich der Galaxien.
+
+<img src="../../assets/screenshots/GC_gradient_model_3.jpg" alt="Finales Hintergrundmodell" />

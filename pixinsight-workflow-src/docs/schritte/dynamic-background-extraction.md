@@ -26,6 +26,8 @@ Folgende Parameter sind zu setzen:
 
 - **Replace target image** bestimmt ob ein neues Bild erzeugt wird oder das Original überschrieben wird.
 
+## 1. Versuch
+
 <img src="../../assets/screenshots/DBG_Samples.png" alt="Ergebnis mit angepassten Settings" />
 
 Das Ergebnis der Korrektur kann sich scjon fast sehen lassen. Mich stören noch die Farbfehler im Hintergrund.
@@ -36,6 +38,8 @@ Das entsprechende Hintergrundmodell ist im folgenden Bild dargestellt.
 
 <img src="../../assets/screenshots/DBG_Modell.jpg" alt="Ergebnis mit angepassten Settings" />
 
+## 2. Versuch 
+
 Mit größeren Samples wird die Hintergrundfarbe besser gemittelt.
 
 <img src="../../assets/screenshots/DBG_Samples2.png" alt="Ergebnis mit angepassten Settings" />
@@ -44,6 +48,10 @@ Das Ergebnis der Korrektur mit vergrößerten Samples sollte sich nun gut entrau
 
 <img src="../../assets/screenshots/DBE_Result2.jpg" alt="Ergebnis mit angepassten Settings" />
 
-Das neue Hintergrundmodell ist ist weniger bunt.
+## Fazit 
+
+Das neue Hintergrundmodell ist weniger bunt. Jedoch sollte das Modell einen Grauverlauf zeigen und keine farbigen Flecken ins Bild bringen. Vermutlich sollte man mehrere Durchläufe einer Hintergrundkorrektur oder eine zu starke Korrektur vermeiden. Ich werde weiter an den Parametern im vorherigen Schritt der [Gradient Correction](gradient-correction.md) erneut spielen um die Dynamic Background Extraction vermeiden zu können.
 
 <img src="../../assets/screenshots/DBG_Modell2.jpg" alt="Ergebnis mit angepassten Settings" />
+
+Also weiter zurück zur [Gradient Correction](gradient-correction.md).
