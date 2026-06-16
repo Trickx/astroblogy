@@ -32,6 +32,11 @@ permalink: /contact/
   </form>
 </section>
 
+## Impressum
+
+<div id="impressum-content"></div>
+<noscript>Bitte JavaScript aktivieren, um das Impressum anzuzeigen.</noscript>
+
 <script>
   (function () {
     var form = document.getElementById('contact-mail-form');
@@ -47,6 +52,21 @@ permalink: /contact/
     var mailboxUser = decode([116, 114, 105, 99, 107, 120, 45, 97, 115, 116, 114, 111]);
     var mailboxDomain = decode([119, 101, 98, 46, 100, 101]);
     var recipient = mailboxUser + '@' + mailboxDomain;
+
+    var impressumTarget = document.getElementById('impressum-content');
+    if (impressumTarget) {
+      var impressumLines = [
+        decode([83, 118, 101, 110, 32, 75, 111, 112, 101, 116, 122, 107, 105]),
+        decode([80, 108, 97, 110, 101, 116, 101, 110, 115, 116, 114, 97, 223, 101, 32, 56, 53]),
+        decode([51, 49, 50, 55, 53, 32, 76, 101, 104, 114, 116, 101]),
+        decode([68, 101, 117, 116, 115, 99, 104, 108, 97, 110, 100]),
+        '',
+        decode([69, 45, 77, 97, 105, 108, 58]) + ' ' + recipient
+      ];
+
+      impressumTarget.textContent = impressumLines.join('\n');
+      impressumTarget.style.whiteSpace = 'pre-line';
+    }
 
     form.addEventListener('submit', function (event) {
       event.preventDefault();
