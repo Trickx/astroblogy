@@ -9,7 +9,9 @@ vendor/
 Gemfile.lock
 
 # MkDocs / generated PixInsight docs
-pixinsight-workflow/
+pixinsight-workflow/*
+!pixinsight-workflow/stylesheets/
+!pixinsight-workflow/stylesheets/extra.css
 pixinsight-workflow-src/pixinsight-workflow/site/
 pixinsight-workflow-src/pixinsight-workflow/.cache/
 
