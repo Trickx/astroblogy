@@ -10,8 +10,8 @@ nav:
   - Start: index.md
   - Folder Structure: schritte/folder-structure.md
   - Imaging Catalog: schritte/meridian.md
-  - Workflow: workflow.md
-  - Schritte:
+  #- Workflow: workflow.md
+  - OSC-Workflow:
       - 01 Blink (Frame-Check): schritte/blink.md
       - 02 Weighted Batch Preprocessing: schritte/weighted-batch-preprocessing.md
 #      - 03 Fast Batch Preprocessing (optional): schritte/fast-batch-preprocessing.md

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
     <meta name="description" content="{{ page.summary | default: site.description }}">
+    {% if page.robots %}<meta name="robots" content="{{ page.robots }}">{% endif %}
     <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
   </head>
   <body{% if page.body_class %} class="{{ page.body_class }}"{% endif %}>

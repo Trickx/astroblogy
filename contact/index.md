@@ -2,6 +2,7 @@
 title: Contact
 layout: default
 permalink: /contact/
+robots: noindex, nofollow, noarchive
 ---
 
 <nav class="category-links blog-top-links" aria-label="Blog navigation links">
