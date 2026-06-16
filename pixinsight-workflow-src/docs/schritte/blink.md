@@ -11,6 +11,8 @@
 
 [FITS Blaster](https://astrophoto-app.com/) ist ein kostenloses macOS-Programm zur schnellen Qualitätsbewertung und Aussortierung (Culling) von Astrofotografie-Aufnahmen im FITS-Format. Es analysiert automatisch Kennzahlen wie FWHM, Sternanzahl, Exzentrizität und Signal-Rausch-Verhältnis (SNR), um unscharfe oder fehlerhafte Einzelbilder zu erkennen. Anschließend können schlechte Aufnahmen vor dem Stacking bequem ausgewählt und aussortiert werden. 
 
+Siril bietet ebenso einen [Prozess zur Frameauswahl, den ich hier beschrieben](/blog/subframe-preselection-with-siril/) habe. Jedoch bevorzuge ich dieser Tage Fits Blaster.
+
 ### Integration in den Workflow
 
 FITS Blaster erzeugt keine eigenen Projektdateien und versucht nicht, PixInsight oder Siril zu ersetzen. Stattdessen dient es als vorgeschaltete Qualitätskontrolle. Aussortierte Frames werden in einen **Rejected**-Ordner verschoben.
@@ -18,6 +20,7 @@ FITS Blaster erzeugt keine eigenen Projektdateien und versucht nicht, PixInsight
 ### Qualitätsanalyse
 
 Die App berechnet automatisch Qualitätsmetriken direkt aus den FITS-Daten:
+
 - FWHM (Sternschärfe)
 - Sternexzentrizität
 - SNR (Signal-Rausch-Verhältnis)

@@ -3,6 +3,9 @@
   --wf-bg-deep: #050b14;
   --wf-panel: rgba(8, 18, 34, 0.78);
   --wf-panel-strong: #0f1f38;
+  --wf-table-bg: rgba(9, 21, 40, 0.88);
+  --wf-table-head-bg: rgba(22, 45, 82, 0.95);
+  --wf-table-row-alt: rgba(15, 31, 56, 0.72);
   --wf-text: #edf4ff;
   --wf-muted: #9eb4d1;
   --wf-line: rgba(192, 215, 255, 0.18);
@@ -10,6 +13,9 @@
   --wf-accent: #d8a34a;
   --wf-accent-soft: rgba(216, 163, 74, 0.2);
   --wf-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+
+  /* Fallback when Material hasn't set data-md-color-scheme yet. */
+  --md-default-bg-color: transparent;
 }
 
 [data-md-color-scheme="default"],
@@ -195,6 +201,40 @@ button.md-top.md-icon:focus {
 
 .md-typeset pre > code {
   border-radius: 14px;
+}
+
+.md-typeset table:not([class]) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.2rem 0;
+  font-size: 0.78rem;
+  background: var(--wf-table-bg) !important;
+}
+
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  border: 1px solid var(--wf-line);
+  padding: 0.55rem 0.85rem;
+  text-align: left;
+}
+
+.md-typeset table:not([class]) th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--wf-text);
+  letter-spacing: 0.04em;
+}
+
+.md-typeset table:not([class]) td {
+  background: transparent;
+  color: var(--wf-muted);
+}
+
+.md-typeset table:not([class]) tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.md-typeset table:not([class]) tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .md-search__form {

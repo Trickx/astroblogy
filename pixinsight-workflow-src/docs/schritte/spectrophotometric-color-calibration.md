@@ -6,8 +6,10 @@
 
 ## Ziel
 
-Platzhalter fuer Beschreibung, Eingabedaten und Parameter.
+Die Spectrophotometric Color Calibration (SPCC) ist ein Verfahren zur physikalisch fundierten Farbkalibrierung von Astrofotos.
+SPCC vergleicht die Farben der Sterne in einem Bild mit den Farben realer Sterne aus wissenschaftlichen Sternkatalogen.
+Dabei werden nicht nur die Positionen der Sterne berücksichtigt, sondern auch deren spektrale Eigenschaften.
 
-## Notizen
+## Settings
 
-- Wird spaeter mit konkreten Projektwerten befuellt.
+<img src="../../assets/screenshots/SPCC.png" alt="Spectrophotometric Color Calibration Einstellungen" />

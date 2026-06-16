@@ -4,10 +4,6 @@
 
 <div class="step-icon-clear"></div>
 
-## Settings
-
-<img src="../../assets/screenshots/BXT_correct_only.png" alt="BlurXTerminator Correct Only Einstellungen" />
-
 ## Ziel
 
 - Optimierung des Bildes für weitere Prozesschritte wie Plate Solving und SPCC.
@@ -28,3 +24,7 @@
 - Keine Schärfung von Galaxien- oder Nebeldetails
 - Keine Wiederherstellung feiner Strukturen
 - Keine Erhöhung des lokalen Kontrasts durch Schärfung
+
+## Settings
+
+<img src="../../assets/screenshots/BXT_correct_only.png" alt="BlurXTerminator Correct Only Einstellungen" />
