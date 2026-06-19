@@ -102,7 +102,9 @@ Ok, these are just numbers. But is it visible?
 The following screenshots where taken after Spectrophotometric Color Calibration, Auto Background Extraction and Stretching with Veralux Hypermetric Strectch.
 
 ![Side By Side Comparison 1](/assets/images/blog/siril/SideBySide1.png)
+
 ![Side By Side Comparison 2](/assets/images/blog/siril/SideBySide2.png)
+
 ![Side By Side Comparison 3](/assets/images/blog/siril/SideBySide3.png)
 
 The image based on the selection shows in some areas more noise, nothing what NXT or other tools can't handle.

@@ -313,6 +313,13 @@ body.blog-page {
   font-size: 1.2rem;
 }
 
+.gallery-meta {
+  color: rgba(237, 244, 255, 0.72);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .gallery-summary {
   color: rgba(237, 244, 255, 0.84);
   line-height: 1.5;
@@ -625,7 +632,7 @@ body.blog-page {
   border-radius: 20px;
   border: 1px solid var(--line);
   overflow: hidden;
-  margin-bottom: 1.2rem;
+  margin: 0 0 1.2rem;
 }
 
 .blog-meta {
@@ -644,6 +651,18 @@ body.blog-page {
 
 .blog-content > :last-child {
   margin-bottom: 0;
+}
+
+.blog-content p:has(> img) {
+  line-height: 0;
+  font-size: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 1.2rem 0;
+}
+
+.blog-content img {
+  vertical-align: bottom;
 }
 
 .blog-content table {

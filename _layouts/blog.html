@@ -41,6 +41,9 @@ layout: default
         {% endif %}
         <span class="gallery-overlay">
           <span class="gallery-title">{{ post.title }}</span>
+          {% if post.date %}
+            <span class="gallery-meta">{{ post.date | date: "%Y-%m-%d" }}</span>
+          {% endif %}
           <span class="gallery-summary">{{ post.summary }}</span>
         </span>
       </a>
