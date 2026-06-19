@@ -45,9 +45,8 @@ Last but not least, the design shall be simple.
 ![EAF BRacket](/assets/images/blog/canon/EAF_Bracket.png)
 
 ### References
+![Makerworld Screenshot](/assets/images/blog/canon/Makerworld.png)
+* [Makerworld 3D Printer Files](https://makerworld.com/en/models/2952751-canon-70-300mm-l-is-usm-astro-rig)
 
-* [Makerworld 3D Printer Files]()
-
-
-![Fusion 360](/assets/images/blog/canon/Fusion360.png)
+![Fusion 360 Screenshot](/assets/images/blog/canon/Fusion360.png)
 * [Fusion360 Design File (f3z)](/assets/images/blog/canon/Canon_70-300mm_L_IS_USM_Astro_Rig.f3z)
