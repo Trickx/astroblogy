@@ -1,52 +1,72 @@
 ---
-title: Astro Rig for Canon EF 70-300mm L ISM USM
+title: Astro Rig for Canon EF 70-300mm L IS USM
 date: 19.06.2026
-summary: Description and documentation of my Canon astro-rig including CAD files.
+summary: Documentation of my custom astro rig for the Canon EF 70-300mm L IS USM, including CAD files and 3D-printable parts.
 image: /assets/images/blog/canon/AstroRigCanon.jpg
 ---
 
-There are many 3D-printed setups available in the web to mount a photo lens + camera combination onto a astro mount. All of them have their pros and cons. This is my version based on a Fusion360 design, which I gonna share with you.
+There are many 3D-printed solutions available for mounting a camera and telephoto lens on an equatorial mount, each with its own advantages and drawbacks. This project is my take on the concept, designed in Fusion 360 and shared here for anyone who may find it useful.
+
+![Astro Rig Canon](/assets/images/blog/canon/AstroRigCanon2.jpg)
 
 ## Considerations
 
-### Dove Tail Rails
-Let's start bottom up. I don't like applying forces to 3D printed parts more than necessary. So, I decided to go with off-the-shelf dove tail to mount everything onto my astro mount.
-My ones are labelled "Angeleyes" and are easily being found at AliExpress when searching for "Angelyes Dovetail Plate". My bottom one has a length of 180mm and the top one 150mm.
-This way I'm also flexible to attach a mounting bracket for an auto focusser.
+### Dovetail Rails
 
-![Search Sequence](/assets/images/blog/canon/AstroRigCanonRendered.png)
+Let's start from the bottom. I prefer to avoid applying unnecessary loads to 3D-printed parts, so I decided to use off-the-shelf dovetail rails for mounting the entire setup to the telescope mount.
+
+The rails I use are sold under the "Angeleyes" brand and can easily be found on AliExpress by searching for "Angeleyes Dovetail Plate". The bottom rail is 180 mm long, while the top rail measures 150 mm.
+
+Using standard rails also keeps the design flexible, allowing additional accessories such as an autofocus bracket to be attached. Although a 150 mm rail would have been sufficient for the base, the longer rail provides more freedom when balancing the rig.
+
+![Fusion360 Rendering](/assets/images/blog/canon/AstroRigCanonRendered.png)
+
+### Belt Type & Pulley
+
+For reasons of availability and cost, I chose a 6 mm wide GT2 timing belt instead of T2.5 or other belt profiles. The current setup uses a GT2 timing belt with 180 teeth (360 mm pitch length).
+
+The drive pulley features 12 teeth, resulting in a maximum gear ratio of 12:160. When selecting the pulley, pay close attention to the internal bore. My ZWO EAF uses an output shaft with a diameter of only 4 mm, so not every off-the-shelf pulley will fit.
 
 ### Lens Mounting Brackets
 
-There is not much much to write about the lens mounting brackets. The brackets are mountes onto the dove tail rail with M5 screws.
-The conncetion between top and bottom part is fixed with a M4 screw. The desigen includes holes for corresponding DIN hex nuts.
-Tape to protect lens.
+There is not much to say about the lens brackets themselves. The design was inspired by this [Makerworld model](https://makerworld.com/de/models/155596-canon-70-200-f-4-usm-rig).
 
+The brackets are attached to the dovetail rail using M5 screws, while the upper and lower bracket sections are joined with an M4 screw. The design includes pockets for standard DIN hex nuts.
 
-### Drive Belt
+To prevent scratches on the lens, I applied a layer of Tesa PET Fleece Tape 51608 between the lens and the brackets. The tape is relatively thin but should still be taken into account when determining the bracket diameters.
 
-My honor goes to Raúl Pérez  who published a [Parametric GT2 pulley on Grabcad](https://grabcad.com/library/parametric-gt2-pulley-1). His work simplified designing the needed GT2 ring mounted on the lens.
-My desire was to have the option to rotate endlessly without hitting any end point. 
+### Drive Belt Ring
 
-I printed the GT2 ring with TPU to achieve required flexibility to gently shift if onto the rubber ring of the lens without any further glue or something.
+Special thanks go to Raúl Pérez for publishing his [Parametric GT2 Pulley on GrabCAD](https://grabcad.com/library/parametric-gt2-pulley-1). His work greatly simplified the design of the GT2 ring that mounts around the lens.
+
+One of my main goals was to allow unlimited rotation without mechanical end stops.
+
+The GT2 ring was printed in TPU, providing enough flexibility to gently slide it over the lens's rubber focus ring without requiring glue or additional fasteners.
 
 ![GT2 TPU Lens Ring](/assets/images/blog/canon/GT2_Ring_TPU.png)
 
-My first design was prepared for PLA or PETG. I turned out being overengineered, but would also work. If you can't print TPU try this one.
+My initial design was intended for PLA or PETG. In retrospect, it turned out to be somewhat overengineered, but it works perfectly well. If TPU printing is not an option, this version is a suitable alternative.
 
 ![GT2 Lens Ring](/assets/images/blog/canon/GT2_Ring.png)
 
+Both versions provide a length of 160 teeth (320 mm pitch length).
+
 ### ZWO EAF Mounting Bracket
 
-On one hand side, the bracket shall be adjustable in length to support multiple belt sizes and lens diameters.
-On the other hand side, it shall be possible to remove the tension from the belt to not stress the lens over a long period of time.
-Last but not least, the design shall be simple.
+The mounting bracket was designed with several requirements in mind:
 
-![EAF BRacket](/assets/images/blog/canon/EAF_Bracket.png)
+- Adjustable length to accommodate different belt sizes and lens diameters
+- Ability to release belt tension when the system is stored for extended periods
+- A simple and easy-to-print design
+
+![EAF Bracket](/assets/images/blog/canon/EAF_Bracket.png)
 
 ### References
-![Makerworld Screenshot](/assets/images/blog/canon/Makerworld.png)
+
 * [Makerworld 3D Printer Files](https://makerworld.com/en/models/2952751-canon-70-300mm-l-is-usm-astro-rig)
 
-![Fusion 360 Screenshot](/assets/images/blog/canon/Fusion360.png)
+[![Makerworld 3D Printer Files](/assets/images/blog/canon/Makerworld.png)](https://makerworld.com/en/models/2952751-canon-70-300mm-l-is-usm-astro-rig)
+
 * [Fusion360 Design File (f3z)](/assets/images/blog/canon/Canon_70-300mm_L_IS_USM_Astro_Rig.f3z)
+
+[![Fusion360 Design File (f3z)](/assets/images/blog/canon/Fusion360.png)](/assets/images/blog/canon/Canon_70-300mm_L_IS_USM_Astro_Rig.f3z)
