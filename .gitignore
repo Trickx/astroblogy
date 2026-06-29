@@ -12,6 +12,7 @@ Gemfile.lock
 pixinsight-workflow/*
 !pixinsight-workflow/stylesheets/
 !pixinsight-workflow/stylesheets/extra.css
+pixinsight-workflow-src/pixinsight-workflow/
 pixinsight-workflow-src/pixinsight-workflow/site/
 pixinsight-workflow-src/pixinsight-workflow/.cache/
 

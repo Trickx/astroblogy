@@ -11,11 +11,12 @@ Gallery index lives at `/galerie/`, individual detail pages at `/galerie/:slug/`
 2. [Project structure](#project-structure)
 3. [Setup](#setup)
 4. [Local development](#local-development)
-5. [Adding a new photo](#adding-a-new-photo)
-6. [Front matter reference](#front-matter-reference)
-7. [Layouts](#layouts)
-8. [Assets](#assets)
-9. [Configuration](#configuration)
+5. [Cleanup](#cleanup)
+6. [Adding a new photo](#adding-a-new-photo)
+7. [Front matter reference](#front-matter-reference)
+8. [Layouts](#layouts)
+9. [Assets](#assets)
+10. [Configuration](#configuration)
 
 ---
 
@@ -120,6 +121,25 @@ Open [http://127.0.0.1:4000/](http://127.0.0.1:4000/).
 
 Jekyll watches source files automatically and rebuilds on changes.  
 The `_site/` directory is always the build output — never edit files there directly.
+
+---
+
+## Cleanup
+
+To remove all build artifacts and temporary files from the repository, run:
+
+```bash
+./bin/clean.sh
+```
+
+This script removes:
+- **Jekyll build output**: `_site/`, `.jekyll-cache/`, `.sass-cache/`
+- **MkDocs build output**: `pixinsight-workflow/`, `pixinsight-workflow-src/pixinsight-workflow/site/`, `pixinsight-workflow-src/_site/`
+- **Python cache**: `__pycache__/`, `*.pyc`, `.venv/`, `venv/`
+- **Node modules**: `node_modules/`
+- **Log files**: `*.log`
+
+Use this after switching between build systems or to reset the repository to a clean state. The script is safe to run — it only removes directories listed in `.gitignore`.
 
 ---
 

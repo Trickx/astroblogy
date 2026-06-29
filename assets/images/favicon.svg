@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <radialGradient id="star-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fff8e7" stop-opacity="1"/>
+      <stop offset="30%"  stop-color="#f0c060" stop-opacity="0.9"/>
+      <stop offset="70%"  stop-color="#d8a34a" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#d8a34a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="h-spike" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"    stop-color="#d8a34a" stop-opacity="0"/>
+      <stop offset="46%"   stop-color="#d8a34a" stop-opacity="0.85"/>
+      <stop offset="50%"   stop-color="#fff8e7" stop-opacity="1"/>
+      <stop offset="54%"   stop-color="#d8a34a" stop-opacity="0.85"/>
+      <stop offset="100%"  stop-color="#d8a34a" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="v-spike" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"    stop-color="#d8a34a" stop-opacity="0"/>
+      <stop offset="46%"   stop-color="#d8a34a" stop-opacity="0.85"/>
+      <stop offset="50%"   stop-color="#fff8e7" stop-opacity="1"/>
+      <stop offset="54%"   stop-color="#d8a34a" stop-opacity="0.85"/>
+      <stop offset="100%"  stop-color="#d8a34a" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="d1-spike" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"    stop-color="#d8a34a" stop-opacity="0"/>
+      <stop offset="46%"   stop-color="#d8a34a" stop-opacity="0.45"/>
+      <stop offset="50%"   stop-color="#f0c060" stop-opacity="0.55"/>
+      <stop offset="54%"   stop-color="#d8a34a" stop-opacity="0.45"/>
+      <stop offset="100%"  stop-color="#d8a34a" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="d2-spike" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"    stop-color="#d8a34a" stop-opacity="0"/>
+      <stop offset="46%"   stop-color="#d8a34a" stop-opacity="0.45"/>
+      <stop offset="50%"   stop-color="#f0c060" stop-opacity="0.55"/>
+      <stop offset="54%"   stop-color="#d8a34a" stop-opacity="0.45"/>
+      <stop offset="100%"  stop-color="#d8a34a" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="32" height="32" rx="7" fill="#07111f"/>
+
+  <!-- Background star field -->
+  <circle cx="5.5" cy="6.5"  r="0.8" fill="#9eb4d1" opacity="0.55"/>
+  <circle cx="26"  cy="5.5"  r="0.6" fill="#9eb4d1" opacity="0.40"/>
+  <circle cx="27"  cy="25"   r="0.7" fill="#9eb4d1" opacity="0.45"/>
+  <circle cx="5"   cy="26"   r="0.5" fill="#9eb4d1" opacity="0.35"/>
+  <circle cx="28"  cy="13"   r="0.5" fill="#9eb4d1" opacity="0.30"/>
+  <circle cx="3.5" cy="19.5" r="0.45" fill="#9eb4d1" opacity="0.28"/>
+  <circle cx="22"  cy="28"   r="0.45" fill="#9eb4d1" opacity="0.32"/>
+  <circle cx="10"  cy="3"    r="0.4"  fill="#9eb4d1" opacity="0.25"/>
+
+  <!-- Diagonal diffraction spikes (fainter) -->
+  <line x1="6"  y1="6"  x2="26" y2="26" stroke="url(#d1-spike)" stroke-width="1"/>
+  <line x1="26" y1="6"  x2="6"  y2="26" stroke="url(#d2-spike)" stroke-width="1"/>
+
+  <!-- Main diffraction spikes -->
+  <rect x="2"    y="15.3" width="28"  height="1.4" fill="url(#h-spike)"/>
+  <rect x="15.3" y="2"    width="1.4" height="28"  fill="url(#v-spike)"/>
+
+  <!-- Star glow -->
+  <circle cx="16" cy="16" r="6.5" fill="url(#star-glow)"/>
+
+  <!-- Bright core -->
+  <circle cx="16" cy="16" r="2" fill="#fff8e7"/>
+</svg>
