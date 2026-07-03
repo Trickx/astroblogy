@@ -693,27 +693,33 @@ body.blog-page {
   vertical-align: bottom;
 }
 
-.blog-content table {
+.blog-content table,
+.detail-description table {
   border-collapse: collapse;
-  width: 100%;
+  width: auto;
   margin: 1.2rem 0;
   font-size: 0.95rem;
+  border: 1px solid var(--accent);
 }
 
 .blog-content table th,
-.blog-content table td {
-  border: 1px solid var(--line);
+.blog-content table td,
+.detail-description table th,
+.detail-description table td {
+  border: 1px solid var(--accent);
   padding: 0.55rem 0.85rem;
   text-align: left;
 }
 
-.blog-content table th {
+.blog-content table th,
+.detail-description table th {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   letter-spacing: 0.04em;
 }
 
-.blog-content table tr:nth-child(even) td {
+.blog-content table tr:nth-child(even) td,
+.detail-description table tr:nth-child(even) td {
   background: rgba(255, 255, 255, 0.02);
 }
 
