@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="1116.16"
+   height="1159.6801"
+   viewBox="0 0 1116.16 1159.6801"
+   sodipodi:docname="NGC7000_Comparsion2.svg"
+   inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="0.60635534"
+     inkscape:cx="447.75725"
+     inkscape:cy="550.83213"
+     inkscape:window-width="1512"
+     inkscape:window-height="921"
+     inkscape:window-x="0"
+     inkscape:window-y="33"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g1" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Image"
+     id="g1">
+    <text
+       xml:space="preserve"
+       style="font-size:24px;line-height:1.25;font-family:'Andale Mono';-inkscape-font-specification:'Andale Mono, Normal';font-variant-ligatures:none;fill:#f6ffd5"
+       x="575.57013"
+       y="498.0578"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         x="575.57013"
+         y="498.0578"
+         style="fill:#f6ffd5">Canon 70-300mm L IS USM @ 300mm (5.6)</tspan><tspan
+         sodipodi:role="line"
+         x="575.57013"
+         y="528.0578"
+         style="fill:#f6ffd5"
+         id="tspan2">Canon EOS 550D @ ISO 800</tspan><tspan
+         sodipodi:role="line"
+         x="575.57013"
+         y="558.0578"
+         style="fill:#f6ffd5"
+         id="tspan3">Integration: 60 * 180s = 3h</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:24px;line-height:1.25;font-family:'Andale Mono';-inkscape-font-specification:'Andale Mono, Normal';font-variant-ligatures:none;fill:#f6ffd5"
+       x="28.506351"
+       y="584.14246"
+       id="text1-6"><tspan
+         sodipodi:role="line"
+         x="28.506351"
+         y="584.14246"
+         style="fill:#f6ffd5"
+         id="tspan3-0">same night | same location</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:24px;line-height:1.25;font-family:'Andale Mono';-inkscape-font-specification:'Andale Mono, Normal';font-variant-ligatures:none;fill:#f6ffd5"
+       x="574.60919"
+       y="1102.9263"
+       id="text4"><tspan
+         sodipodi:role="line"
+         x="574.60919"
+         y="1102.9263"
+         style="fill:#f6ffd5"
+         id="tspan7">Dwarf3 | Dual Band Filer | Gain 100</tspan><tspan
+         sodipodi:role="line"
+         x="574.60919"
+         y="1132.9263"
+         id="tspan6"
+         style="fill:#f6ffd5">Integration: 161 * 61s = 2:44h</tspan></text>
+  </g>
+</svg>
