@@ -119,6 +119,25 @@ bundle exec jekyll serve --watch
 
 Open [http://127.0.0.1:4000/](http://127.0.0.1:4000/).
 
+### Serve for LAN access (stable host IP mode)
+
+If access via your own host IP (for example `http://192.168.x.x:4000/`) is unreliable with WEBrick, use the LAN script:
+
+```bash
+./bin/dev-lan.sh
+```
+
+This script does the following:
+- Builds MkDocs output into `pixinsight-workflow/`
+- Builds Jekyll once, then keeps rebuilding `_site/` with `jekyll build --watch`
+- Serves `_site/` via Python's static HTTP server on `0.0.0.0:4000`
+
+Optional environment variables:
+
+```bash
+DEV_HOST=0.0.0.0 DEV_PORT=4000 ./bin/dev-lan.sh
+```
+
 Jekyll watches source files automatically and rebuilds on changes.  
 The `_site/` directory is always the build output — never edit files there directly.
 

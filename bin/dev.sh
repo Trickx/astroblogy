@@ -10,4 +10,7 @@ echo "Building Jekyll site..."
 bundle exec jekyll build
 
 echo "Starting interactive Jekyll server (Ctrl+C to stop)..."
-bundle exec jekyll serve --watch
+HOST="${JEKYLL_HOST:-0.0.0.0}"
+PORT="${JEKYLL_PORT:-4000}"
+echo "Serving on http://${HOST}:${PORT}"
+bundle exec jekyll serve --watch --host "$HOST" --port "$PORT"

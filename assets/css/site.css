@@ -767,6 +767,31 @@ body.blog-page {
 }
 
 @media (max-width: 800px) {
+  body.blog-page {
+    overflow: visible;
+    height: auto;
+  }
+
+  .blog-page .page-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    padding-bottom: 2rem;
+  }
+
+  .blog-page .page-shell > main,
+  .blog-page .blog-detail,
+  .blog-layout {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .blog-main,
+  .blog-toc {
+    overflow: visible;
+  }
+
   .site-header,
   .section-heading,
   .detail-grid {
@@ -833,7 +858,16 @@ body.blog-page {
   }
 
   .category-action-links {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
     margin-left: 0;
+  }
+
+  .category-action-links .button {
+    width: 100%;
+    text-align: center;
   }
 
   .contact-link {
