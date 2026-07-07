@@ -39,9 +39,9 @@ if [ -d "pixinsight-workflow-src/.jekyll-cache" ]; then
 fi
 
 # MkDocs site directory (generated in repo root)
-if [ -d "pixinsight-workflow" ] && [ ! -f "pixinsight-workflow/stylesheets/extra.css" ]; then
-    rm -rf pixinsight-workflow/*
-    echo "  ✓ Removed pixinsight-workflow/* (except stylesheets)"
+if [ -d "pixinsight-workflow" ]; then
+    rm -rf pixinsight-workflow/
+    echo "  ✓ Removed pixinsight-workflow/"
 fi
 
 # Python cache

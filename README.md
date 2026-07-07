@@ -111,6 +111,9 @@ python3 -m mkdocs build --config-file ./pixinsight-workflow-src/mkdocs.yml --sit
 bundle exec jekyll build
 ```
 
+`pixinsight-workflow-src/docs/` is the source of truth for the PixInsight docs.
+`pixinsight-workflow/` is generated build output (local and CI) and should not be edited manually.
+
 ### Serve the Jekyll site locally
 
 ```bash
