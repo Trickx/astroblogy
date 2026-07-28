@@ -6,7 +6,7 @@ image: /assets/images/gallery/ic1396-elephants-trunk-nebula.jpg
 summary: IC 1396 is a large emission nebulae, a region of ionized gas, located in the constellation Cepheus about 2,400 light years away from Earth.
 meta:
   - label: Object Type
-    value: Emission Nebala
+    value: Emission Nebula
   - label: Constellation
     value: Cepheus
   - label: Catalog
@@ -15,7 +15,7 @@ meta:
   - label: Image Acquisition
     value: |
       - Date: 08.07 + 10.07.2026
-      - RGB 130 x 180s
+      - RGB 56 + 42 x 180s
   - label: Equipment
     value: |
       - Sky-Watcher Explorer 150P 750mm f/5.6''
