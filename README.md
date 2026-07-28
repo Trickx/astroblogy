@@ -171,7 +171,8 @@ Use this after switching between build systems or to reset the repository to a c
 2. **Place the preview image** in `assets/images/gallery/`, matching the path you set in the `image` field.
 3. *(Optional)* **Add an annotation overlay** (SVG, PNG, or JPG) named `<slug>` inside `assets/images/gallery/overlay/`. It is automatically detected and shown on hover.
 4. *(Optional)* **Add a video** to `assets/videos/` and reference it with the `video` front matter key.
-5. **Run** `bundle exec jekyll build` and check for YAML warnings.
+5. **Generate the thumbnail** by running `python3 bin/generate-thumbs.py`.
+6. **Run** `bundle exec jekyll build` and check for YAML warnings.
 
 ---
 
