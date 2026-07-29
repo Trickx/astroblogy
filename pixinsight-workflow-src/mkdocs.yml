@@ -11,16 +11,16 @@ nav:
   - Folder Structure: schritte/folder-structure.md
   - Imaging Catalog: schritte/meridian.md
   - OSC-Workflow:
-      1. Blink (Frame-Check): schritte/blink.md
-      2. Weighted Batch Preprocessing: schritte/weighted-batch-preprocessing.md
-      3. Hintergrundkorrektur:
-          1. GraXpert: schritte/graxpert.md
-          2. Gradient Correction: schritte/gradient-correction.md
-          4. Dynamic Background Extraction: schritte/dynamic-background-extraction.md
-      4. BlurXTerminator Correct Only (optional): schritte/blur-xterminator-correct-only.md
-      5. Image Solver: schritte/image-solver.md
-      6. Spectrophotometric Color Calibration: schritte/spectrophotometric-color-calibration.md
-      7. Background Neutralisation: schritte/background-neutralization.md
+    - "1. Blink (Frame-Check)": schritte/blink.md
+    - "2. Weighted Batch Preprocessing": schritte/weighted-batch-preprocessing.md
+    - "3. Hintergrundkorrektur":
+      - "1. GraXpert": schritte/graxpert.md
+      - "2. Gradient Correction": schritte/gradient-correction.md
+      - "3. Dynamic Background Extraction": schritte/dynamic-background-extraction.md
+    - "4. BlurXTerminator Correct Only (optional)": schritte/blur-xterminator-correct-only.md
+    - "5. Image Solver": schritte/image-solver.md
+    - "6. Spectrophotometric Color Calibration": schritte/spectrophotometric-color-calibration.md
+    - "7. Background Neutralisation": schritte/background-neutralization.md
 #      9. BlurXTerminator: schritte/blur-xterminator.md
 #      8. NoiseXTerminator: schritte/noise-xterminator.md
 #      10. StarXTerminator: schritte/star-xterminator.md
