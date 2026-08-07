@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0" xmlns="http://www.pixinsight.com/xri" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.pixinsight.com/xri http://pixinsight.com/xri/xri-1.0.xsd">
+   <package
+      fileName="FilterHeaderTool20260807v0100.tar.gz"
+      sha1="1f46e2211b5738c0e791dcaebc41692370befe10"
+      type="script"
+      repo="https://www.tricx.de/pi-scripts/FilterHeaderTool/"
+      releaseDate="20260807"
+      title="Filter Header Tool 1.0.0">
+      <description>
+         <p>
+            Installs the FilterHeaderTool PixInsight feature script with single-image and batch FILTER keyword updates.
+         </p>
+         <p>
+            Installed files:
+            <br/>src/scripts/FilterHeaderTool/FilterHeaderTool.js
+            <br/>src/scripts/FilterHeaderTool/PIFilter_Feature.svg
+            <br/>src/scripts/FilterHeaderTool/filter.txt
+         </p>
+      </description>
+   </package>
+</xri>
