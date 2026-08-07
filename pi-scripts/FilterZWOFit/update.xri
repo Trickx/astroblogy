@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="FilterZWOFit20260807v0101.tar.gz" sha1="8df0b1f3a7568262a6a0da1d9d22e9a193eb69d0" type="script" releaseDate="20260807">
+      <package fileName="FilterZWOFit20260807v0102.tar.gz" sha1="221a7115c571f9dab806fd4fcace0d148b35c9a8" type="script" releaseDate="20260807">
          <title>
-            FilterZWOFit 1.0.1
+         FilterZWOFit 1.0.2
          </title>
          <remove>
             src/scripts/FilterZWOFit/ src/scripts/FilterHeaderTool/
