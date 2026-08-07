@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FilterHeaderTool - PixInsight Update Repository</title>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #172230;
+      --text: #e7edf5;
+      --muted: #a8b6c8;
+      --accent: #64c7ff;
+      --ok: #82e0aa;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1f2e42 0%, var(--bg) 60%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #233244;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2 {
+      margin: 0 0 12px 0;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d8e7f7;
+      word-break: break-all;
+    }
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    ul { margin: 8px 0 0 20px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>FilterHeaderTool</h1>
+      <p>PixInsight Update Repository fuer das Script <strong>FilterHeaderTool</strong>.</p>
+      <p class="ok">Diese Seite ist nur Information. Fuer PixInsight bitte den Repository-Link unten verwenden.</p>
+    </section>
+
+    <section class="card">
+      <h2>Repository URL fuer PixInsight</h2>
+      <p><code>https://tricx.de/pi-scripts/FilterHeaderTool/</code></p>
+      <p>PixInsight erwartet die Basis-URL. Die Metadatei ist:</p>
+      <p><a href="update.xri">update.xri</a> (alternativ <a href="updates.xri">updates.xri</a>)</p>
+    </section>
+
+    <section class="card">
+      <h2>Dateien</h2>
+      <ul>
+        <li><a href="FilterHeaderTool20260807v0100.tar.gz">FilterHeaderTool20260807v0100.tar.gz</a></li>
+        <li><a href="update.xri">update.xri</a></li>
+        <li><a href="updates.xri">updates.xri</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Installation in PixInsight</h2>
+      <ol>
+        <li>Resources > Updates > Manage Repositories</li>
+        <li>Repository hinzufuegen: <code>https://tricx.de/pi-scripts/FilterHeaderTool/</code></li>
+        <li>Check for Updates ausfuehren</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>
