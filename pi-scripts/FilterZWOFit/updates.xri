@@ -1,22 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xri version="1.0" xmlns="http://www.pixinsight.com/xri" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.pixinsight.com/xri http://pixinsight.com/xri/xri-1.0.xsd">
-   <package
-      fileName="FilterZWOFit20260807v0100.tar.gz"
-      sha1="8df0b1f3a7568262a6a0da1d9d22e9a193eb69d0"
-      type="script"
-      repo="https://www.tricx.de/pi-scripts/FilterZWOFit/"
-      releaseDate="20260807"
-      title="FilterZWOFit 1.0.0">
-      <description>
-         <p>
-            Installs the FilterZWOFit PixInsight feature script with single-image and batch FILTER keyword updates.
-         </p>
-         <p>
-            Installed files:
-            <br/>src/scripts/FilterZWOFit/FilterZWOFit.js
-            <br/>src/scripts/FilterZWOFit/FilterZWOFit.svg
-            <br/>src/scripts/FilterZWOFit/filter.txt
-         </p>
-      </description>
-   </package>
+<xri version="1.0">
+   <description>
+      <p>
+         FilterZWOFit PixInsight Script Updates
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.4:1.9.99">
+      <package fileName="FilterZWOFit20260807v0101.tar.gz" sha1="8df0b1f3a7568262a6a0da1d9d22e9a193eb69d0" type="script" releaseDate="20260807">
+         <title>
+            FilterZWOFit 1.0.1
+         </title>
+         <remove>
+            src/scripts/FilterZWOFit/ src/scripts/FilterHeaderTool/
+         </remove>
+         <description>
+            <p>
+               Installs the FilterZWOFit PixInsight feature script with single-image and batch FILTER keyword updates.
+            </p>
+            <p>
+               Installed files:
+               <br/>src/scripts/FilterZWOFit/FilterZWOFit.js
+               <br/>src/scripts/FilterZWOFit/FilterZWOFit.svg
+               <br/>src/scripts/FilterZWOFit/filter.txt
+            </p>
+         </description>
+      </package>
+   </platform>
 </xri>
