@@ -53,6 +53,28 @@
       font-weight: 600;
     }
     ul { margin: 8px 0 0 20px; }
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .shot {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .shot figcaption {
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
   </style>
 </head>
 <body>
@@ -66,17 +88,6 @@
     <section class="card">
       <h2>Repository URL for PixInsight</h2>
       <p><code>https://tricx.de/pi-scripts/FilterZWOFit/</code></p>
-      <p>PixInsight expects the base URL. Metadata files:</p>
-      <p><a href="update.xri">update.xri</a> (alternative: <a href="updates.xri">updates.xri</a>)</p>
-    </section>
-
-    <section class="card">
-      <h2>Files</h2>
-      <ul>
-        <li><a href="FilterZWOFit20260807v0101.tar.gz">FilterZWOFit20260807v0101.tar.gz</a></li>
-        <li><a href="update.xri">update.xri</a></li>
-        <li><a href="updates.xri">updates.xri</a></li>
-      </ul>
     </section>
 
     <section class="card">
@@ -84,8 +95,27 @@
       <ol>
         <li>Resources > Updates > Manage Repositories</li>
         <li>Add repository: <code>https://tricx.de/pi-scripts/FilterZWOFit/</code></li>
+        <li>Accept missing signature</li>
         <li>Run Check for Updates</li>
       </ol>
+    </section>
+
+    <section class="card">
+      <h2>Screenshots</h2>
+      <div class="shots">
+        <figure class="shot">
+          <img src="Download_Selection.png" alt="Download selection in PixInsight update manager" />
+          <figcaption>Download Selection</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="Missing_Signature.png" alt="Missing signature warning" />
+          <figcaption>Missing Signature</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="Script_Menu.png" alt="FilterZWOFit script menu entry" />
+          <figcaption>Script Menu</figcaption>
+        </figure>
+      </div>
     </section>
   </main>
 </body>
