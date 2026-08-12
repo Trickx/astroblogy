@@ -1,1 +1,0 @@
-<Signature developerId="SvenKopetzki" timestamp="2026-08-12T08:00:29.030Z" encoding="Base64">bSg5fTtptxfyVrPKK72Am/nSNH/hQGnMotvhYSmZNyRwKcIs87Z5KlGV0AcSim85kfWBAMNLbNb6CHayjKlpAg==</Signature>
