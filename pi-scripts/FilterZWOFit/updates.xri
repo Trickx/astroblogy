@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="FilterZWOFit20260807v0107.tar.gz" sha1="7afff0dec60f26d4ff8648081ff4d5bd31e27e98" type="script" releaseDate="20260807">
+      <package fileName="FilterZWOFit20260807v0108.tar.gz" sha1="ddf3895ed17b79fea28804c02b3f2c4642b57cec" type="script" releaseDate="20260807">
          <title>
-         FilterZWOFit 1.0.7
+         FilterZWOFit 1.0.8
          </title>
          <remove>
             src/scripts/FilterZWOFit/ src/scripts/FilterHeaderTool/
@@ -20,7 +20,6 @@
             <p>
                Installed files:
                <br/>src/scripts/FilterZWOFit/FilterZWOFit.js
-               <br/>src/scripts/FilterZWOFit/FilterZWOFit.xsgn
                <br/>src/scripts/FilterZWOFit/FilterZWOFit.svg
                <br/>src/scripts/FilterZWOFit/filter.txt
             </p>
@@ -28,4 +27,3 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-08-12T06:26:59.175Z" encoding="Base64">IWRAgqbyWgnhX8r4g2h0OW+RtOj9oMA5DQFcmVJ1F7LnV4pvGs6uPsAIavmJpqdvER1RlyBZIIXi9Lcamb5UAQ==</Signature>
