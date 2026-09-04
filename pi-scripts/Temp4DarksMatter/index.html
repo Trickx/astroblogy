@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Temp4DarksMatter - PixInsight Update Repository</title>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #172230;
+      --text: #e7edf5;
+      --muted: #a8b6c8;
+      --accent: #64c7ff;
+      --ok: #82e0aa;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1f2e42 0%, var(--bg) 60%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #233244;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2 {
+      margin: 0 0 12px 0;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d8e7f7;
+      word-break: break-all;
+    }
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    ul { margin: 8px 0 0 20px; }
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .shot {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .shot figcaption {
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Temp4DarksMatter</h1>
+      <p>PixInsight update repository for the <strong>Temp4DarksMatter</strong> script.</p>
+      <p>Recursively scans a folder of Light and Dark frames (FIT/FITS/FTS/XISF) and writes a
+         <code>CAL-TEMP</code> FITS header, computed by rounding <code>CCD-TEMP</code> to a
+         configurable step, with a configurable default temperature fallback for files
+         without a usable <code>CCD-TEMP</code> header.</p>
+      <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
+    </section>
+
+    <section class="card">
+      <h2>Repository URL for PixInsight</h2>
+      <p><code>https://tricx.de/pi-scripts/Temp4DarksMatter/</code></p>
+    </section>
+
+    <section class="card">
+      <h2>Installation in PixInsight</h2>
+      <ol>
+        <li>Resources > Updates > Manage Repositories</li>
+        <li>Add repository: <code>https://tricx.de/pi-scripts/Temp4DarksMatter/</code></li>
+        <li>Accept missing signature</li>
+        <li>Run Check for Updates</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Screenshots</h2>
+      <div class="shots">
+        <figure class="shot">
+          <img src="Temp4DarksMatter.png" alt="Temp4DarksMatter Screenshot" />
+          <figcaption>Temp4DarksMatter Screenshot</figcaption>
+        </figure>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
