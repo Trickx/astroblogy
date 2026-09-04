@@ -6,7 +6,7 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="Temp4DarksMatter20260904v0009.tar.gz" sha1="bcd584a93909d97276ea86d5cfd08b2947d003a8" type="script" releaseDate="20260904">
+      <package fileName="Temp4DarksMatter20260904v0009.tar.gz" sha1="c0335c9dda2776e6f591913a6917d3f039c5be32" type="script" releaseDate="20260904">
          <title>
          Temp4DarksMatter 0.0.9
          </title>
@@ -27,4 +27,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-04T14:16:03.832Z" encoding="Base64">05nPgoF+WGvMAGbAKOaxV4tW7TGuQxHz00W5yMlY/a2GzM/JtPaLAfKt/F2rHTpa7++pcB/nZa0L5tiVz9nTCA==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-04T15:00:05.851Z" encoding="Base64">B+x+eMPhoy3sc0lDxi9JY+YN4CapDJAA5S7TkNv8FhnMYPXeiy8xBygTg/Q70cVMQoYhVjOGnuMu4lTkUCQzBQ==</Signature>
