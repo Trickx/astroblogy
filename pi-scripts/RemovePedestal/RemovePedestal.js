@@ -19,6 +19,7 @@
 // ============================================================================
 
 #script-id     RemovePedestal
+#feature-id    Trickx > RemovePedestal
 #feature-info  Subtracts a pedestal (image minimum, low percentile or first \
                non-zero value) per channel or globally. Port of Remove \
                Pedestal from Seti Astro Suite Pro.

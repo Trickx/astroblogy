@@ -17,6 +17,7 @@
 #engine v8
 
 #script-id     Temp4DarksMatter
+#feature-id    Trickx > Temp4DarksMatter
 #feature-info  Adds a CAL-TEMP FITS header (CCD-TEMP rounded to a chosen \
                step) to Light and Dark frames in a folder, with a \
                configurable default temperature fallback.
