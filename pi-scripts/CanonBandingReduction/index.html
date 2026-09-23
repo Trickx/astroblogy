@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CanonBandingReduction - PixInsight Update Repository</title>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #172230;
+      --text: #e7edf5;
+      --muted: #a8b6c8;
+      --accent: #64c7ff;
+      --ok: #82e0aa;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1f2e42 0%, var(--bg) 60%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #233244;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2 {
+      margin: 0 0 12px 0;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d8e7f7;
+      word-break: break-all;
+    }
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #2a3b4f;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    ul { margin: 8px 0 0 20px; }
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .shot {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .shot figcaption {
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>CanonBandingReduction</h1>
+      <p>PixInsight update repository for the <strong>CanonBandingReduction</strong> script.</p>
+      <p>Reduces the horizontal banding of some Canon DSLRs by equalizing the background
+         brightness of each image row. An optional highlight protection excludes bright pixels
+         from the row background, so stars and nebulae do not cause overcorrection. The result
+         can be checked in a live preview, optionally with the current STF.</p>
+      <p>Based on the original script by Georg Viehoever (2009-2013), ported to the V8 engine
+         by Peter Proulx.</p>
+      <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
+    </section>
+
+    <section class="card">
+      <h2>Repository URL for PixInsight</h2>
+      <p><code>https://tricx.de/pi-scripts/CanonBandingReduction/</code></p>
+    </section>
+
+    <section class="card">
+      <h2>Installation in PixInsight</h2>
+      <ol>
+        <li>Resources &gt; Updates &gt; Manage Repositories</li>
+        <li>Add repository: <code>https://tricx.de/pi-scripts/CanonBandingReduction/</code></li>
+        <li>Run Check for Updates</li>
+        <li>Run via Script &gt; Trickx &gt; CanonBandingReduction</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Screenshot</h2>
+      <img src="CanonBandingReduction.png" alt="CanonBandingReduction script screenshot" />
+    </section>
+  </main>
+</body>
+</html>

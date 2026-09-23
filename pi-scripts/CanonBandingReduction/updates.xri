@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         CanonBandingReduction PixInsight Script Updates
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.4:1.9.99">
+      <package fileName="CanonBandingReduction20260923v0100.tar.gz" sha1="9584271e898628b12d874455d448cdff88bede6d" type="script" releaseDate="20260923">
+         <title>
+         CanonBandingReduction 0.10.0
+         </title>
+         <remove>
+            src/scripts/Trickx/CanonBandingReduction/
+         </remove>
+         <description>
+            <p>
+               Installs the CanonBandingReduction PixInsight feature script, which reduces the horizontal banding of Canon DSLR images with live preview and highlight protection.
+            </p>
+            <p>
+               Installed files:
+               <br/>src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.js
+               <br/>src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.svg
+               <br/>src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.xsgn
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-23T18:37:41.047Z" encoding="Base64">zuVa1Cr5NpwjeGmGXSzyeqLSeVI36qEEnxdb9o11jIT3dc6jLi3gi3nk2OhKqK6mCoXFVBFm/qs3gdpVPwhSDQ==</Signature>
