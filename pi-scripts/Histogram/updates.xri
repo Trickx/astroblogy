@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="Histogram20260923v0102.tar.gz" sha1="54a401e142d3b7077fca65282325ca0bb13ef803" type="script" releaseDate="20260923">
+      <package fileName="Histogram20260923v0103.tar.gz" sha1="a81349ed597740a99811f356f9652f309e067c06" type="script" releaseDate="20260923">
          <title>
-         Histogram 1.0.2
+         Histogram 1.0.3
          </title>
          <remove>
             src/scripts/Histogramm/ src/scripts/Histogram/ src/scripts/Trickx/Histogram/
@@ -27,4 +27,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-23T16:24:37.451Z" encoding="Base64">3YgmKwKO0bIfDYEeAXkiG3j3lJFR5oK3O1OOErbKxEk3j/pc/zhrY1S8f0IDzvpF+y9f5BGwWpUYq2jtVCZLDA==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-23T16:27:24.020Z" encoding="Base64">FAP1FfRTqFKitjzFJpP4IwLog9idIxt4bYdw/DRycxrUCuT0feQ5TqcrLNfRZtiiFoKAjxW6vwTn8ByxsvI6Cw==</Signature>

@@ -18,7 +18,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // ============================================================================
 
-#script-id     FilterZWOFit
+#script-id     Histogram
 #feature-id    Trickx > Histogram
 #feature-info  Non-destructive histogram and statistics viewer for the active image.
 #feature-icon  Histogram.svg
