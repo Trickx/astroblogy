@@ -1,52 +1,22 @@
-/*
- * Temp4DarksMatter.js
- * ---------------------------------------------------------------------
- * PixInsight script (PJSR, V8 engine, PixInsight 1.9.4 "Lockhart" or newer)
- *
- * Purpose:
- *   Asks for a folder (typically your Lights folder, which may also
- *   contain Darks, possibly in subfolders), recursively searches it for
- *   FITS/XISF files, identifies Light and Dark frames from the
- *   IMAGETYP/FRAME header, reads CCD-TEMP and writes a new header entry
- *   CAL-TEMP back into the same file. CAL-TEMP is CCD-TEMP rounded to a
- *   selectable degree step (default: 5 °C), e.g.:
- *     CCD-TEMP =  21.7  ->  CAL-TEMP = 20.0   (with a 5°C step)
- *     CCD-TEMP = -8.4   ->  CAL-TEMP = -10.0  (with a 5°C step)
- *
- * Workflow:
- *   - Choose a folder -> a non-destructive preview (reads only, writes
- *     nothing) is generated immediately afterwards in the table.
- *   - Changing the rounding step or the default CCD-TEMP fallback
- *     immediately refreshes the preview as well, with no confirmation
- *     prompt.
- *   - "Start" writes the CAL-TEMP headers into the files right away,
- *     with no confirmation prompt.
- *   - Folder, rounding step and default CCD-TEMP are saved via Settings
- *     and automatically reloaded the next time the script runs
- *     (including an automatic preview, if a folder is available).
- *   - Results are shown as a table (TreeBox) instead of wrapping plain
- *     text, so long file names don't wrap awkwardly.
- *
- * Important:
- *   - Pressing "Start" WRITES the original files in place immediately,
- *     with no confirmation prompt. Please back up your data before the
- *     first productive run.
- *   - Flats/Bias are ignored and trigger an error message.
- *   - Files without a usable CCD-TEMP header fall back to the
- *     configurable default temperature (see the "Default CCD-TEMP"
- *     field); the CCD-TEMP column marks these rows with "(default)".
- *
- * Usage:
- *   PixInsight -> Script -> Execute Script File... -> select this file.
- *   Once installed via an update repository, it is also available under
- *   Script -> Utilities -> Temp4DarksMatter.
- * ---------------------------------------------------------------------
- */
+// ============================================================================
+// Temp4DarksMatter.js  -  PixInsight 1.9.x (PJSR / V8)
+// ----------------------------------------------------------------------------
+// Recursively scans a folder for FITS/XISF Light and Dark frames, reads
+// CCD-TEMP and writes CAL-TEMP rounded to a selectable temperature step.
+//
+// Provides a non-destructive preview, configurable fallback temperature,
+// persisted settings and a table-based result view. Writing starts without
+// a confirmation prompt; back up the source files before the first run.
+//
+// This script is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, version 3.
+// SPDX-License-Identifier: GPL-3.0-only
+// ============================================================================
 
 #engine v8
 
 #script-id     Temp4DarksMatter
-#feature-id    Utilities > Temp4DarksMatter
 #feature-info  Adds a CAL-TEMP FITS header (CCD-TEMP rounded to a chosen \
                step) to Light and Dark frames in a folder, with a \
                configurable default temperature fallback.

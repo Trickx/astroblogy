@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         Histogram PixInsight Script Updates
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.4:1.9.99">
+      <package fileName="Histogram20260923v0101.tar.gz" sha1="d367c125471cccb49734e739408129bfa982e7b9" type="script" releaseDate="20260923">
+         <title>
+         Histogram 1.0.1
+         </title>
+         <remove>
+            src/scripts/Histogramm/ src/scripts/Histogram/ src/scripts/Trickx/Histogram/
+         </remove>
+         <description>
+            <p>
+               Installs the Histogram PixInsight feature script with image statistics and histogram visualization.
+            </p>
+            <p>
+               Installed files:
+               <br/>src/scripts/Trickx/Histogram/Histogram.js
+               <br/>src/scripts/Trickx/Histogram/Histogram.svg
+               <br/>src/scripts/Trickx/Histogram/Histogram.xsgn
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-23T15:53:10.213Z" encoding="Base64">ljDqWh81KNcqHknXLZPU3bLuWN8PlhgQhpKQiO8y3TS90LfZ5CpyZIkVLXafcipT2M6yyUVTuV8yHI4rIzPJCA==</Signature>

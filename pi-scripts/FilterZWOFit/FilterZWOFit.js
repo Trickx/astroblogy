@@ -1,13 +1,21 @@
+// ============================================================================
+// FilterZWOFit.js  -  PixInsight 1.9.x (PJSR / V8)
+// ----------------------------------------------------------------------------
+// Writes the FILTER keyword in the FITS header of the active image or in
+// batch mode for all supported images in a selected folder.
+//
+// Supports process icons and remembers the last-used batch folder and filter
+// value through PixInsight settings.
+//
+// This script is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, version 3.
+// SPDX-License-Identifier: GPL-3.0-only
+// ============================================================================
+
 #engine v8
-/*
-   FilterZWOFit.js
-   PixInsight 1.9.4 (PJSR) Feature Script:
-   GUI tool to write the FILTER keyword in the FITS header,
-   with single-image and batch processing modes.
-*/
-// Engine hint: prefer the PJSR engine on builds without legacy 'sm'.
+
 #script-id     FilterZWOFit
-#feature-id    Utilities > FilterZWOFit
 #feature-info  Sets the FILTER value in the FITS header of the active image or in batch mode for a selected folder.
 #feature-icon  FilterZWOFit.svg
 
@@ -21,6 +29,24 @@ var SETTINGS_PREFIX = "FilterZWOFit";
 var SETTINGS_KEY_LAST_BATCH_DIR = SETTINGS_PREFIX + "/LastBatchDirectory";
 var SETTINGS_KEY_LAST_FILTER = SETTINGS_PREFIX + "/LastFilter";
 var SETTINGS_KEY_FILTER_TEXT = SETTINGS_PREFIX + "/FilterText";
+
+// Parameters carried by a process icon (script instance) dropped on the
+// PixInsight workspace. Each instance icon remembers its own FILTER value,
+// independently of the global "last used" setting above.
+var scriptParameters = {
+   filterText: "",
+
+   save: function()
+   {
+      Parameters.set( "filterText", this.filterText );
+   },
+
+   load: function()
+   {
+      if ( Parameters.has( "filterText" ) )
+         this.filterText = Parameters.getString( "filterText" );
+   }
+};
 
 function logDebug( msg )
 {
@@ -349,6 +375,8 @@ class FilterDialog extends Dialog {
       this.batchSelectionMode = "folder";
       this.lastBatchDirectory = readSettingString( SETTINGS_KEY_LAST_BATCH_DIR, File.currentWorkingDirectory );
       this.lastFilterValue = readSettingString( SETTINGS_KEY_LAST_FILTER, "" );
+      if ( scriptParameters.filterText.length > 0 )
+         this.lastFilterValue = scriptParameters.filterText;
 
       this.helpLabel = new Label( this );
       this.helpLabel.useRichText = true;
@@ -560,8 +588,23 @@ class FilterDialog extends Dialog {
          this.dialog.cancel();
       };
 
+      this.newInstanceButton = new ToolButton( this );
+      this.newInstanceButton.icon = this.scaledResource( ":/process-interface/new-instance.png" );
+      this.newInstanceButton.setScaledFixedSize( 24, 24 );
+      this.newInstanceButton.toolTip =
+         "Drag this icon to the workspace to create a process icon.\n" +
+         "Drop it on an image to write the current FILTER value directly, " +
+         "or double-click it on the workspace to reopen this dialog with that value preset.";
+      this.newInstanceButton.onMousePress = function()
+      {
+         scriptParameters.filterText = trimText( this.dialog.filterEdit.text );
+         scriptParameters.save();
+         this.dialog.newInstance();
+      };
+
       this.buttonSizer = new HorizontalSizer;
       this.buttonSizer.spacing = 8;
+      this.buttonSizer.add( this.newInstanceButton );
       this.buttonSizer.addStretch();
       this.buttonSizer.add( this.okButton );
       this.buttonSizer.add( this.batchSizer );
@@ -670,6 +713,29 @@ function main()
    logDebug( "Saved last batch folder key: " + SETTINGS_KEY_LAST_BATCH_DIR );
    logDebug( "Saved last filter key: " + SETTINGS_KEY_LAST_FILTER );
 
+   scriptParameters.load();
+
+   if ( Parameters.isViewTarget )
+   {
+      // Executed as a process icon dropped on a specific image: apply the
+      // FILTER value stored in this instance directly, without any dialog.
+      if ( scriptParameters.filterText.length == 0 )
+      {
+         logError( "Instance icon has no stored FILTER value." );
+         return;
+      }
+
+      var targetWindow = Parameters.targetView.window;
+      var viewAction = upsertFilterKeyword( targetWindow, scriptParameters.filterText );
+
+      console.show();
+      console.noteln( "FILTER " + viewAction + ": " + scriptParameters.filterText );
+      return;
+   }
+
+   // Executed directly from the Script menu, or as a process icon dropped on
+   // the workspace (global instance): show the dialog, preset with the
+   // instance's stored FILTER value when available.
    var dlg = new FilterDialog;
    if ( !dlg.execute() )
    {

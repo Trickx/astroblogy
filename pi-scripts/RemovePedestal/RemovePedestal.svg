@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#171329"/>
+      <stop offset="100%" stop-color="#382b66"/>
+    </linearGradient>
+    <linearGradient id="hist" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#8f84d6"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="18" fill="url(#bg)"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="#7566bd" stroke-width="2"/>
+  <!-- pedestal: offset between zero and the histogram foot -->
+  <rect x="27" y="84" width="22" height="12" rx="2" fill="#ff5365" fill-opacity="0.35" stroke="#ff5365" stroke-width="2" stroke-dasharray="4 3"/>
+  <!-- histogram, starting at the pedestal -->
+  <path d="M49 96 C54 96 56 30 63 30 C70 30 72 76 84 86 C92 92 100 95 104 96 Z" fill="url(#hist)"/>
+  <!-- axes -->
+  <path d="M26 26V96H106" fill="none" stroke="#c8c4e8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- shift towards zero -->
+  <path d="M46 66H32M38 59l-7 7 7 7" fill="none" stroke="#ff5365" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="92" cy="34" r="2" fill="#d8d2ff"/>
+  <circle cx="99" cy="99" r="2" fill="#d8d2ff"/>
+</svg>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FilterZWOFit - PixInsight Update Repository</title>
+  <title>Histogram - PixInsight Update Repository</title>
   <style>
     :root {
       --bg: #0f1720;
@@ -32,14 +32,10 @@
       padding: 20px;
       margin-bottom: 16px;
     }
-    h1, h2 {
-      margin: 0 0 12px 0;
-    }
+    h1, h2 { margin: 0 0 12px 0; }
     h1 { font-size: 1.8rem; }
     h2 { font-size: 1.2rem; color: var(--accent); }
     p, li { color: var(--muted); }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
     code {
       background: #0c141d;
       border: 1px solid #2a3b4f;
@@ -48,69 +44,40 @@
       color: #d8e7f7;
       word-break: break-all;
     }
-    .ok {
-      color: var(--ok);
-      font-weight: 600;
-    }
-    img {
-      display: block;
-      max-width: 100%;
-      height: auto;
-      border: 1px solid #2a3b4f;
-      border-radius: 10px;
-      box-sizing: border-box;
-    }
-    ul { margin: 8px 0 0 20px; }
-    .shots {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 8px;
-    }
-    .shot {
-      background: #0c141d;
-      border: 1px solid #2a3b4f;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .shot img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-    .shot figcaption {
-      padding: 8px 10px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
+    .ok { color: var(--ok); font-weight: 600; }
+    img { display: block; max-width: 100%; height: auto; border: 1px solid #2a3b4f; border-radius: 10px; }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
-      <h1>FilterZWOFit</h1>
-      <p>PixInsight update repository for the <strong>FilterZWOFit</strong> script.</p>
+      <h1>Histogram</h1>
+      <p>PixInsight update repository for the <strong>Histogram</strong> script.</p>
+      <p>Displays a non-destructive histogram and statistics view for the active image,
+         with separate RGB curves, grayscale support, logarithmic axes, zoom and range
+         controls, percentiles, and clipping statistics.</p>
       <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
     </section>
 
     <section class="card">
       <h2>Repository URL for PixInsight</h2>
-      <p><code>https://tricx.de/pi-scripts/FilterZWOFit/</code></p>
+      <p><code>https://tricx.de/pi-scripts/Histogramm/</code></p>
     </section>
 
     <section class="card">
       <h2>Installation in PixInsight</h2>
       <ol>
-        <li>Resources > Updates > Manage Repositories</li>
-        <li>Add repository: <code>https://tricx.de/pi-scripts/FilterZWOFit/</code></li>
+        <li>Resources &gt; Updates &gt; Manage Repositories</li>
+        <li>Add repository: <code>https://tricx.de/pi-scripts/Histogramm/</code></li>
         <li>Run Check for Updates</li>
-        <li>Run via Script &gt; Trickx &gt; FilterZWOFit</li>
+        <li>Run via Script &gt; Trickx &gt; Histogram</li>
       </ol>
     </section>
 
     <section class="card">
       <h2>Screenshot</h2>
-      <img src="FilterZWOFit.png" alt="FilterZWOFit script screenshot" />
+      <p>Logarithmic histogram view:</p>
+      <img src="Histogram.png" alt="Histogram script logarithmic view" />
     </section>
   </main>
 </body>

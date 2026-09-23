@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         RemovePedestal PixInsight Script Updates
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.4:1.9.99">
+      <package fileName="RemovePedestal20260923v0101.tar.gz" sha1="73fb31d2ff301701688df1bc45a19f7add1fbc95" type="script" releaseDate="20260923">
+         <title>
+         RemovePedestal 1.0.1
+         </title>
+         <remove>
+            src/scripts/RemovePedestal/ src/scripts/Trickx/RemovePedestal/
+         </remove>
+         <description>
+            <p>
+               Installs the RemovePedestal PixInsight feature script for subtracting image pedestal values.
+            </p>
+            <p>
+               Installed files:
+               <br/>src/scripts/Trickx/RemovePedestal/RemovePedestal.js
+               <br/>src/scripts/Trickx/RemovePedestal/RemovePedestal.svg
+               <br/>src/scripts/Trickx/RemovePedestal/RemovePedestal.xsgn
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-23T15:53:10.211Z" encoding="Base64">+p2Y18mdyze72zHe2atjOtw1gtZfgbPi+/FtMUaKOawQUA8/MRqFTABknqF0oBGrTX2cqTZZjiXqnS+pE6gUBA==</Signature>

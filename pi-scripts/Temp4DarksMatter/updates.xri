@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="Temp4DarksMatter20260904v0010.tar.gz" sha1="7e590943a7e1ad0c402f606e827513d71c09bc7f" type="script" releaseDate="20260904">
+      <package fileName="Temp4DarksMatter20260923v0011.tar.gz" sha1="80bca3b41b8d7fe91bd535c50a65e2f002ef7a16" type="script" releaseDate="20260923">
          <title>
-         Temp4DarksMatter 0.1.0
+         Temp4DarksMatter 0.1.1
          </title>
          <remove>
             src/scripts/Temp4DarksMatter/ src/scripts/Trickx/Temp4DarksMatter/
@@ -27,4 +27,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-04T15:23:07.800Z" encoding="Base64">6x2Q9W7gMrs/swONbk5KwtUUzvyCMDhkNkOxZve/t3Iy6n7O7JubS1RZDRWX8iGY03Qfm4QFiIs7gAegK03bDg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-23T15:53:10.214Z" encoding="Base64">0sknVVA8Q0Z6UELxa9yTPigk4hFBy9yi6poxlPkok/3wAbIkwQvoAT2tnkENEAmzZpAFm2EA0N8g+slWx9EWAA==</Signature>
