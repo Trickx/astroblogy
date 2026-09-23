@@ -4,6 +4,7 @@ _site/
 .sass-cache/
 
 # Bundler / Ruby
+.ruby-version
 vendor/
 .bundle/
 Gemfile.lock
