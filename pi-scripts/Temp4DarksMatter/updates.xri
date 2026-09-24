@@ -6,12 +6,19 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="Temp4DarksMatter20260923v0012.tar.gz" sha1="d90b6ceb6f1f617078f5868360709d4472e32272" type="script" releaseDate="20260923">
+      <package fileName="Temp4DarksMatter20260924v0013.tar.gz" sha1="665e134c6a4f00d9920e86ebf65b91cfc8bd239d" type="script" releaseDate="20260924">
          <title>
-         Temp4DarksMatter 0.1.2
+         Temp4DarksMatter 0.1.3
          </title>
          <remove>
-            src/scripts/Temp4DarksMatter/ src/scripts/Trickx/Temp4DarksMatter/
+            src/scripts/Temp4DarksMatter/Temp4DarksMatter.js
+            src/scripts/Temp4DarksMatter/Temp4DarksMatter.svg
+            src/scripts/Temp4DarksMatter/Temp4DarksMatter.xsgn
+            src/scripts/Trickx/Temp4DarksMatter/Temp4DarksMatter.js
+            src/scripts/Trickx/Temp4DarksMatter/Temp4DarksMatter.svg
+            src/scripts/Trickx/Temp4DarksMatter/Temp4DarksMatter.xsgn
+            src/scripts/Temp4DarksMatter/
+            src/scripts/Trickx/Temp4DarksMatter/
          </remove>
          <description>
             <p>
@@ -19,12 +26,12 @@
             </p>
             <p>
                Installed files:
-               <br/>src/scripts/Trickx/Temp4DarksMatter/Temp4DarksMatter.js
-               <br/>src/scripts/Trickx/Temp4DarksMatter/Temp4DarksMatter.svg
-               <br/>src/scripts/Trickx/Temp4DarksMatter/Temp4DarksMatter.xsgn
+               <br/>src/scripts/Tricx/Temp4DarksMatter/Temp4DarksMatter.js
+               <br/>src/scripts/Tricx/Temp4DarksMatter/Temp4DarksMatter.svg
+               <br/>src/scripts/Tricx/Temp4DarksMatter/Temp4DarksMatter.xsgn
             </p>
          </description>
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-23T16:24:37.449Z" encoding="Base64">Vbthhb7k5xvzt8wo2Q5/HIu/YTrfHV2HLZXjFLrQXwaiXZ2YA/eH8BXNYybnFQCvmiHK/uz13t2OlT7zfuRICA==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:57:20.786Z" encoding="Base64">ZgbqmzMn/1W2XWQ+f6CL3q5RRM0a/17/iBDaIeBhcyU2ksw/7Kt1ORpRXLQBsB5iYcTfJPXQaZmDIcufPb0nCQ==</Signature>

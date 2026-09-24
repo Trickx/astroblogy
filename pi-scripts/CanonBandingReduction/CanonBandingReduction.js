@@ -41,7 +41,7 @@ CoreApplication.ensureMinimumVersion( 1, 9, 4 );
          - all parameters (amount, highlight protection, sigma, STF, zoom) persist between runs
          - default amount changed from 1.0 to 0.5
          - removed info box and version number from dialog
-         - added SVG feature icon, script listed under Trickx
+         - added SVG feature icon, script listed under Tricx
    0.9.1: Bugfix release:
          - Preview would not show in 1.8RC1 (ImageWindow() constructor now needs correct number of channels)
 	 - STFs would accumulate. Related to Image.Assign() bug in 1.8RC3. Fixed with 1.8RC4
@@ -114,7 +114,7 @@ CoreApplication.ensureMinimumVersion( 1, 9, 4 );
 // ======== #features ==============================================================
 
 #script-id     CanonBandingReduction
-#feature-id    Trickx > CanonBandingReduction
+#feature-id    Tricx > CanonBandingReduction
 
 #feature-info \
 Attempts to reduce the horizontal banding plaguing some Canon DSLRs.<br/>\

@@ -6,12 +6,22 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="FilterZWOFit20260923v0116.tar.gz" sha1="effac73b9c2f9bde036ebf69e2594b0460c65e84" type="script" releaseDate="20260923">
+      <package fileName="FilterZWOFit20260924v0117.tar.gz" sha1="996e5560cd07c7deb5dd2d3788dcad5e6fffafa8" type="script" releaseDate="20260924">
          <title>
-         FilterZWOFit 1.0.16
+         FilterZWOFit 1.0.17
          </title>
          <remove>
-            src/scripts/FilterZWOFit/ src/scripts/Trickx/FilterZWOFit/ src/scripts/FilterHeaderTool/
+            src/scripts/FilterZWOFit/FilterZWOFit.js
+            src/scripts/FilterZWOFit/FilterZWOFit.svg
+            src/scripts/FilterZWOFit/FilterZWOFit.xsgn
+            src/scripts/FilterZWOFit/filter.txt
+            src/scripts/Trickx/FilterZWOFit/FilterZWOFit.js
+            src/scripts/Trickx/FilterZWOFit/FilterZWOFit.svg
+            src/scripts/Trickx/FilterZWOFit/FilterZWOFit.xsgn
+            src/scripts/Trickx/FilterZWOFit/filter.txt
+            src/scripts/FilterHeaderTool/
+            src/scripts/FilterZWOFit/
+            src/scripts/Trickx/FilterZWOFit/
          </remove>
          <description>
             <p>
@@ -19,12 +29,12 @@
             </p>
             <p>
                Installed files:
-               <br/>src/scripts/Trickx/FilterZWOFit/FilterZWOFit.js
-               <br/>src/scripts/Trickx/FilterZWOFit/FilterZWOFit.svg
-               <br/>src/scripts/Trickx/FilterZWOFit/FilterZWOFit.xsgn
+               <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.js
+               <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.svg
+               <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.xsgn
             </p>
          </description>
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-23T17:04:29.980Z" encoding="Base64">oSlLTivL1fHdOXoAO4+PXiK+ssuwopHss3Uwkuc7fvjO5Bm4/8Gj9cy9/N189jdm23d+StuktaktK9Hamb+KDg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:57:20.784Z" encoding="Base64">RhcpV90gaFkMFReybV0edVay2wda0gomMYj93x0V8+XAL8O4/OUs86Nxrziw8G10fyB35NWi+Wgp10JqHfh8Bw==</Signature>
