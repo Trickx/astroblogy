@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="RemovePedestal20260924v0103.tar.gz" sha1="adf210a1fd4f096c343527ec82131ba981e33098" type="script" releaseDate="20260924">
+      <package fileName="RemovePedestal20260924v0104.tar.gz" sha1="d51b3279ac99a66d253effa282c94c6dd114dde6" type="script" releaseDate="20260924">
          <title>
-         RemovePedestal 1.0.3
+         RemovePedestal 1.0.4
          </title>
          <remove>
             src/scripts/RemovePedestal/RemovePedestal.js
@@ -34,4 +34,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:38:03.087Z" encoding="Base64">QPQ+9cF9iO3gUV9oGw9xFdOf5UY2YpJ5BzwuUMToLcvu91tAN2wRUFuQUqtFLuF4OeSfFk4oW337XP0RH+DSBg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:44:46.205Z" encoding="Base64">ZRFX8IXJ5dHS1myecwCen22ms22PQE9eAgiBxzsW0sV6U8Uc/jvBxNUzmPk7mPaVRTSxOJaFlys/J46qAH7bCA==</Signature>
