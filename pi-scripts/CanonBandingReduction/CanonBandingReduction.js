@@ -454,8 +454,8 @@ function BandingEngine() {
          Console.writeln("BandingEngine.getResult()");
       }
       this.doResult();
-      if(!this.statusFunction("Processing done",true)){
-         this.statusFunction("Processing aborted",true);
+      if(!this.statusFunction("Preview updated",true)){
+         this.statusFunction("Preview update aborted",true);
       }
       if ( DEBUGGING_MODE_ON ){
          Console.writeln("BandingEngine.getResult() done");
@@ -728,6 +728,26 @@ constructor(bandingEngine,targetView)
 
    var labelWidth1 = this.font.width( 'T' + "" );
 
+   // target view selection, defaults to the active view
+   this.targetViewLabel=new Label(this);
+   this.targetViewLabel.text="Target view:";
+
+   this.targetViewList=new ViewList(this);
+   this.targetViewList.getAll();
+   this.targetViewList.currentView=this.targetView;
+   this.targetViewList.toolTip="<p>Select the image to be corrected.</p>";
+   this.targetViewList.onViewSelected=function(view){
+      if (view.isNull){
+         // keep the previous target, there always has to be one
+         this.currentView=this.dialog.targetView;
+         return;
+      }
+      if (view.fullId==this.dialog.targetView.fullId) return;
+      this.dialog.targetView=view;
+      this.dialog.bandingEngine.setTargetImage(view.image);
+      this.dialog.generatePreview();
+   }; //onViewSelected()
+
    // amount slider
    this.amountControl=new NumericControl(this);
    this.amountControl.label.text = "Amount:";
@@ -828,7 +848,11 @@ constructor(bandingEngine,targetView)
    this.newInstance_Button = new ToolButton( this );
    this.newInstance_Button.icon = this.scaledResource( ":/process-interface/new-instance.png" );
    this.newInstance_Button.setScaledFixedSize( 20, 20 );
-   this.newInstance_Button.toolTip = "New Instance";
+   this.newInstance_Button.toolTip = "<p>New Instance</p>"
+      + "<p>Drag this icon to the workspace to create a process icon. Then close this dialog "
+      + "and drag the process icon onto an image.</p>"
+      + "<p>Dropping it directly onto an image while this dialog is open does not work, "
+      + "because PixInsight cannot run a script while another script is running.</p>";
    this.newInstance_Button.onMousePress = function(){
       this.hasFocus = true;
       this.pushed = false;
@@ -838,7 +862,7 @@ constructor(bandingEngine,targetView)
 
    // ok and cancel buttons
    this.ok_Button = new PushButton (this);
-   this.ok_Button.text = "OK";
+   this.ok_Button.text = "Apply";
    this.ok_Button.icon = this.scaledResource( ":/icons/ok.png" );
    this.ok_Button.toolTip="<p>Apply current settings to target image and close.</p>"
    this.ok_Button.onClick = function() {
@@ -940,6 +964,9 @@ constructor(bandingEngine,targetView)
    this.buttons_Sizer.add (this.stf_Button);
    this.buttons_Sizer.add (this.fitToWindow_Button);
    this.buttons_Sizer.addStretch();
+   this.buttons_Sizer.add (this.targetViewLabel);
+   this.buttons_Sizer.add (this.targetViewList);
+   this.buttons_Sizer.addSpacing (8);
    this.buttons_Sizer.add (this.ok_Button);
    this.buttons_Sizer.add (this.cancel_Button);
 

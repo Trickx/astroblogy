@@ -19,11 +19,12 @@
 // ============================================================================
 
 #script-id     Histogram
-#feature-id    Trickx > Histogram
+#feature-id    Tricx > Histogram
 #feature-info  Non-destructive histogram and statistics viewer for the active image.
 #feature-icon  Histogram.svg
 
 #include <pjsr/Sizer.jsh>
+#include <pjsr/StdIcon.jsh>
 
 var HISTOGRAM_BINS = 512;
 var MAX_STAT_SAMPLES = 300000;
@@ -52,6 +53,30 @@ function zeroArray( length )
    for ( var i = 0; i < length; ++i )
       result.push( 0 );
    return result;
+}
+
+function HistogramParameters()
+{
+   this.logX = false;
+   this.logY = false;
+   this.zoom = 1;
+   this.pan = 0;
+   this.stats = false;
+   this.showRed = true;
+   this.showGreen = true;
+   this.showBlue = true;
+
+   this.load = function()
+   {
+      if ( Parameters.has( "logX" ) ) this.logX = Parameters.getBoolean( "logX" );
+      if ( Parameters.has( "logY" ) ) this.logY = Parameters.getBoolean( "logY" );
+      if ( Parameters.has( "zoom" ) ) this.zoom = Math.max( 1, Math.min( 3, Parameters.getReal( "zoom" ) ) );
+      if ( Parameters.has( "pan" ) ) this.pan = Math.max( 0, Math.min( 1000, Parameters.getInteger( "pan" ) ) );
+      if ( Parameters.has( "stats" ) ) this.stats = Parameters.getBoolean( "stats" );
+      if ( Parameters.has( "showRed" ) ) this.showRed = Parameters.getBoolean( "showRed" );
+      if ( Parameters.has( "showGreen" ) ) this.showGreen = Parameters.getBoolean( "showGreen" );
+      if ( Parameters.has( "showBlue" ) ) this.showBlue = Parameters.getBoolean( "showBlue" );
+   };
 }
 
 function channelStatistics( values )
@@ -182,6 +207,10 @@ function HistogramDialog()
    this.logX = false;
    this.logY = false;
    this.zoom = 1;
+   this.pan = 0;
+   this.statsVisible = false;
+   this.channelVisible = [ true, true, true ];
+   this.targetView = null;
    var owner = this;
 
    this.canvas = new Control( this );
@@ -214,7 +243,6 @@ function HistogramDialog()
    this.logYButton.autoExclusive = false;
    this.logYButton.onClick = function() { owner.logY = !owner.logY; owner.updateToggleLabels(); owner.canvas.repaint(); };
 
-   this.statsVisible = false;
    this.statsButton = new PushButton( this );
    this.statsButton.checkable = true;
    this.statsButton.autoExclusive = false;
@@ -239,7 +267,52 @@ function HistogramDialog()
    this.panSlider.maxValue = 1000;
    this.panSlider.value = 0;
    this.panSlider.enabled = false;
-   this.panSlider.onValueUpdated = function() { owner.canvas.repaint(); };
+   this.panSlider.onValueUpdated = function( value ) { owner.pan = value; owner.canvas.repaint(); };
+
+   this.viewList = new ViewList( this );
+   this.viewList.getAll();
+   this.viewList.onViewSelected = function( view )
+   {
+      if ( view && !view.isNull )
+      {
+         owner.targetView = view;
+         owner.refreshModel();
+      }
+   };
+   var activeWindow = ImageWindow.activeWindow;
+   if ( !activeWindow.isNull )
+   {
+      this.targetView = activeWindow.currentView;
+      this.viewList.currentView = this.targetView;
+   }
+
+   this.channelChecks = [];
+   var channelNames = [ "R", "G", "B" ];
+   for ( var channelIndex = 0; channelIndex < 3; ++channelIndex )
+   {
+      var channelCheck = new CheckBox( this );
+      channelCheck.text = channelNames[channelIndex];
+      channelCheck.checked = true;
+      channelCheck.channelIndex = channelIndex;
+      channelCheck.onCheck = function( checked )
+      {
+         owner.channelVisible[this.channelIndex] = checked === undefined ? this.checked : checked;
+         owner.canvas.repaint();
+      };
+      this.channelChecks.push( channelCheck );
+   }
+
+   this.newInstanceButton = new ToolButton( this );
+   this.newInstanceButton.icon = this.scaledResource( ":/process-interface/new-instance.png" );
+   this.newInstanceButton.setScaledFixedSize( 16, 16 );
+   this.newInstanceButton.toolTip = "New Instance: drag to the workspace to create a process icon with the current histogram settings.";
+   this.newInstanceButton.onMousePress = function()
+   {
+      this.hasFocus = true;
+      this.pushed = false;
+      owner.exportParameters();
+      owner.newInstance();
+   };
 
    this.close = new PushButton( this );
    this.close.text = "Close";
@@ -250,6 +323,14 @@ function HistogramDialog()
    var histogramColumn = new VerticalSizer;
    histogramColumn.spacing = 6;
    histogramColumn.add( this.canvas, 1 );
+
+   var targetRow = new HorizontalSizer;
+   targetRow.spacing = 6;
+   var targetLabel = new Label( this );
+   targetLabel.text = "Image";
+   targetRow.add( targetLabel );
+   targetRow.add( this.viewList, 1 );
+   histogramColumn.add( targetRow );
 
    var zoomRow = new HorizontalSizer;
    zoomRow.spacing = 8;
@@ -266,7 +347,6 @@ function HistogramDialog()
    panRow.add( this.panSlider, 1 );
    histogramColumn.add( zoomRow );
    histogramColumn.add( panRow );
-   chartRow.add( histogramColumn, 1 );
 
    var statsColumn = new VerticalSizer;
    statsColumn.spacing = 6;
@@ -275,20 +355,25 @@ function HistogramDialog()
    this.statsControl = new Control( this );
    this.statsControl.sizer = statsColumn;
    this.statsControl.visible = this.statsVisible;
-   chartRow.add( this.statsControl, 0 );
 
    var controls = new HorizontalSizer;
    controls.spacing = 8;
+   controls.add( this.newInstanceButton );
+   controls.addStretch();
    controls.add( this.logXButton );
    controls.add( this.logYButton );
    controls.add( this.statsButton );
+   for ( var checkIndex = 0; checkIndex < this.channelChecks.length; ++checkIndex )
+      controls.add( this.channelChecks[checkIndex] );
+   controls.add( this.close );
+   histogramColumn.add( controls );
+   chartRow.add( histogramColumn, 1 );
+   chartRow.add( this.statsControl, 0 );
 
    this.sizer = new VerticalSizer;
    this.sizer.margin = 8;
    this.sizer.spacing = 6;
    this.sizer.add( chartRow, 1 );
-   this.sizer.add( controls );
-   this.sizer.add( this.close );
    this.adjustToContents();
    this.setMinSize( this.statsVisible ? 1100 : 760, 650 );
 }
@@ -327,6 +412,18 @@ HistogramDialog.prototype.updateToggleLabels = function()
    this.statsButton.styleSheet = this.statsVisible ? "background: #555a60; color: #f0f0f0;" : "";
 };
 
+HistogramDialog.prototype.exportParameters = function()
+{
+   Parameters.set( "logX", this.logX );
+   Parameters.set( "logY", this.logY );
+   Parameters.set( "zoom", this.zoom );
+   Parameters.set( "pan", this.panSlider.value );
+   Parameters.set( "stats", this.statsVisible );
+   Parameters.set( "showRed", this.channelVisible[0] );
+   Parameters.set( "showGreen", this.channelVisible[1] );
+   Parameters.set( "showBlue", this.channelVisible[2] );
+};
+
 HistogramDialog.prototype.toggleStatistics = function()
 {
    this.statsVisible = !this.statsVisible;
@@ -339,14 +436,16 @@ HistogramDialog.prototype.toggleStatistics = function()
 
 HistogramDialog.prototype.refreshModel = function()
 {
-   var window = ImageWindow.activeWindow;
-   if ( window.isNull || window.currentView.isNull )
+   var view = this.targetView;
+   if ( view == null || view.isNull )
    {
       this.model = null;
    }
    else
    {
-      this.model = new HistogramModel( window.currentView.image );
+      this.model = new HistogramModel( view.image );
+      for ( var channelControlIndex = 0; channelControlIndex < this.channelChecks.length; ++channelControlIndex )
+         this.channelChecks[channelControlIndex].enabled = this.model.color;
       var channels = this.model.color ? [ "R", "G", "B" ] : [ "Gray", "", "" ];
       for ( var headerIndex = 0; headerIndex < channels.length; ++headerIndex )
          this.statHeader[headerIndex + 1].text = channels[headerIndex];
@@ -397,6 +496,8 @@ HistogramDialog.prototype.paintHistogram = function()
    var colors = [ 0x99ff5555, 0x9955ff77, 0x996699ff ];
    for ( var channel = 0; channel < counts.length; ++channel )
    {
+      if ( this.model.color && !this.channelVisible[channel] )
+         continue;
       var channelColor = this.model.color ? colors[channel] : 0xffd0d0d0;
       g.pen = new Pen( channelColor );
       g.brush = new Brush( channelColor );
@@ -457,11 +558,30 @@ HistogramDialog.prototype.paintHistogram = function()
 
 function main()
 {
+   var parameters = new HistogramParameters;
+   if ( Parameters.isViewTarget || Parameters.isGlobalTarget )
+      parameters.load();
    histogramDialog = new HistogramDialog;
+   histogramDialog.logX = parameters.logX;
+   histogramDialog.logY = parameters.logY;
+   histogramDialog.zoom = parameters.zoom;
+   histogramDialog.panSlider.value = parameters.pan;
+   histogramDialog.pan = parameters.pan;
+   histogramDialog.statsVisible = parameters.stats;
+   histogramDialog.statsControl.visible = histogramDialog.statsVisible;
+   if ( histogramDialog.statsVisible )
+      histogramDialog.setMinSize( 1100, 650 );
+   histogramDialog.channelVisible = [ parameters.showRed, parameters.showGreen, parameters.showBlue ];
+   for ( var channelIndex = 0; channelIndex < histogramDialog.channelChecks.length; ++channelIndex )
+      histogramDialog.channelChecks[channelIndex].checked = histogramDialog.channelVisible[channelIndex];
+   if ( Parameters.isViewTarget )
+   {
+      histogramDialog.targetView = Parameters.targetView;
+      histogramDialog.viewList.currentView = Parameters.targetView;
+   }
+   histogramDialog.updateToggleLabels();
    histogramDialog.refreshModel();
-   histogramDialog.show();
-   while ( histogramDialog.visible )
-      processEvents();
+   histogramDialog.execute();
 }
 
 var histogramDialog;

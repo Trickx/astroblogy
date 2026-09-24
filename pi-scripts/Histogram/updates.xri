@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="Histogram20260923v0103.tar.gz" sha1="a81349ed597740a99811f356f9652f309e067c06" type="script" releaseDate="20260923">
+      <package fileName="Histogram20260924v0104.tar.gz" sha1="c3bea8a0bab41bd8f5d458e4661aa7558284b2c7" type="script" releaseDate="20260924">
          <title>
-         Histogram 1.0.3
+         Histogram 1.0.4
          </title>
          <remove>
             src/scripts/Histogramm/ src/scripts/Histogram/ src/scripts/Trickx/Histogram/
@@ -19,12 +19,12 @@
             </p>
             <p>
                Installed files:
-               <br/>src/scripts/Trickx/Histogram/Histogram.js
-               <br/>src/scripts/Trickx/Histogram/Histogram.svg
-               <br/>src/scripts/Trickx/Histogram/Histogram.xsgn
+               <br/>src/scripts/Tricx/Histogram/Histogram.js
+               <br/>src/scripts/Tricx/Histogram/Histogram.svg
+               <br/>src/scripts/Tricx/Histogram/Histogram.xsgn
             </p>
          </description>
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-23T16:27:24.020Z" encoding="Base64">FAP1FfRTqFKitjzFJpP4IwLog9idIxt4bYdw/DRycxrUCuT0feQ5TqcrLNfRZtiiFoKAjxW6vwTn8ByxsvI6Cw==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:20:50.782Z" encoding="Base64">LyAdXQ5Lv4X4v+WilQhdtxZmSAshrvo7l0z55RVihSyaJG2y3DPEDNjJoU1zjpIyGCQctc3RMzzqIxm9yqrMBQ==</Signature>
