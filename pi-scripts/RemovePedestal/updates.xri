@@ -11,7 +11,14 @@
          RemovePedestal 1.0.3
          </title>
          <remove>
-            src/scripts/RemovePedestal/ src/scripts/Trickx/RemovePedestal/
+            src/scripts/RemovePedestal/RemovePedestal.js
+            src/scripts/RemovePedestal/RemovePedestal.svg
+            src/scripts/RemovePedestal/RemovePedestal.xsgn
+            src/scripts/Trickx/RemovePedestal/RemovePedestal.js
+            src/scripts/Trickx/RemovePedestal/RemovePedestal.svg
+            src/scripts/Trickx/RemovePedestal/RemovePedestal.xsgn
+            src/scripts/RemovePedestal/
+            src/scripts/Trickx/RemovePedestal/
          </remove>
          <description>
             <p>
@@ -27,4 +34,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:28:11.052Z" encoding="Base64">vnbn1Ej10VlS/ttBhTRsiwi8bIJ2sKNa50ddf07RbcezLLNcLhNwmXFlchq+isNc0LfTDD/QMcRpb4jN3qWeCg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:38:03.087Z" encoding="Base64">QPQ+9cF9iO3gUV9oGw9xFdOf5UY2YpJ5BzwuUMToLcvu91tAN2wRUFuQUqtFLuF4OeSfFk4oW337XP0RH+DSBg==</Signature>
