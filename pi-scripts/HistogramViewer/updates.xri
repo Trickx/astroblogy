@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         HistogramViewer PixInsight Module Updates
+      </p>
+   </description>
+   <platform os="macosx" arch="arm64" version="1.9.5:1.9.99">
+      <package fileName="HistogramViewer20260925v0100-macosx-arm64.tar.gz" sha1="f1682e0cdd73d1f837ffe42cfcc74dd858314f82" type="module" releaseDate="20260925">
+         <title>
+         HistogramViewer 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the HistogramViewer PixInsight module: a non-destructive histogram and
+               statistics viewer with separate RGB curves, logarithmic axes, zoom and range
+               controls, percentiles and clipping statistics.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/HistogramViewer-pxm.dylib
+               <br/>bin/HistogramViewer-pxm.xsgn
+            </p>
+            <p>
+               Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+   <platform os="macosx" arch="x64" version="1.9.5:1.9.99">
+      <package fileName="HistogramViewer20260925v0100-macosx-x64.tar.gz" sha1="9e51c310c3b61bd4a2861f9a3d1d98db7729e145" type="module" releaseDate="20260925">
+         <title>
+         HistogramViewer 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the HistogramViewer PixInsight module: a non-destructive histogram and
+               statistics viewer with separate RGB curves, logarithmic axes, zoom and range
+               controls, percentiles and clipping statistics.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/HistogramViewer-pxm.dylib
+               <br/>bin/HistogramViewer-pxm.xsgn
+            </p>
+            <p>
+               Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+   <platform os="linux" arch="x64" version="1.9.5:1.9.99">
+      <package fileName="HistogramViewer20260925v0100-linux-x64.tar.gz" sha1="08d95fc0501a4875b2c06e3fb32d52e97c4b9eb6" type="module" releaseDate="20260925">
+         <title>
+         HistogramViewer 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the HistogramViewer PixInsight module: a non-destructive histogram and
+               statistics viewer with separate RGB curves, logarithmic axes, zoom and range
+               controls, percentiles and clipping statistics.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/HistogramViewer-pxm.so
+               <br/>bin/HistogramViewer-pxm.xsgn
+            </p>
+            <p>
+               Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+   <platform os="windows" arch="x64" version="1.9.5:1.9.99">
+      <package fileName="HistogramViewer20260925v0100-windows-x64.tar.gz" sha1="a52b540164060efb92c3be50ad35bd173fe21288" type="module" releaseDate="20260925">
+         <title>
+         HistogramViewer 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the HistogramViewer PixInsight module: a non-destructive histogram and
+               statistics viewer with separate RGB curves, logarithmic axes, zoom and range
+               controls, percentiles and clipping statistics.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/HistogramViewer-pxm.dll
+               <br/>bin/HistogramViewer-pxm.xsgn
+            </p>
+            <p>
+               Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-25T09:30:21.556Z" encoding="Base64">sdQ/UZCJc8VDNQPqgWSAU40juhLUln/T/12GLoZB2riNzKChSrPPfQcJEM8iaIIrw5UcgERHtyZ83m4ppaKvCg==</Signature>

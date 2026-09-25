@@ -1,0 +1,8 @@
+# Unsigned modules downloaded by fetch-artifacts.sh
+_staging/
+
+# Local release tooling
+fetch-artifacts.sh
+make-release.sh
+release.sh
+README.md

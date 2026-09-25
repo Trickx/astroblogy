@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HistogramViewer - PixInsight Update Repository</title>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #172230;
+      --text: #e7edf5;
+      --muted: #a8b6c8;
+      --accent: #64c7ff;
+      --ok: #82e0aa;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1f2e42 0%, var(--bg) 60%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #233244;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2 { margin: 0 0 12px 0; }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    code {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d8e7f7;
+      word-break: break-all;
+    }
+    .ok { color: var(--ok); font-weight: 600; }
+    a { color: var(--accent); }
+    img { display: block; max-width: 100%; height: auto; border: 1px solid #2a3b4f; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>HistogramViewer</h1>
+      <p>PixInsight update repository for the <strong>HistogramViewer</strong> module.</p>
+      <p>Displays a non-destructive histogram and statistics view for the active image,
+         with separate RGB curves, grayscale support, logarithmic axes, zoom and range
+         controls, percentiles, and clipping statistics.</p>
+      <p>HistogramViewer is the native (C++/PCL) successor of the
+         <a href="../Histogram/">Histogram</a> script. It follows the active image,
+         updates automatically when the image changes, and its process icons open the
+         viewer with the stored display settings.</p>
+      <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
+    </section>
+
+    <section class="card">
+      <h2>Repository URL for PixInsight</h2>
+      <p><code>https://tricx.de/pi-scripts/HistogramViewer/</code></p>
+    </section>
+
+    <section class="card">
+      <h2>Installation in PixInsight</h2>
+      <ol>
+        <li>Resources &gt; Updates &gt; Manage Repositories</li>
+        <li>Add repository: <code>https://tricx.de/pi-scripts/HistogramViewer/</code></li>
+        <li>Run Check for Updates and restart PixInsight</li>
+        <li>Run via Process &gt; Tricx &gt; HistogramViewer</li>
+      </ol>
+      <p>Requires PixInsight 1.9.5 or later on macOS (Apple Silicon and Intel), Linux x64
+         or Windows x64.</p>
+    </section>
+
+    <section class="card">
+      <h2>Screenshot</h2>
+      <img src="Histogram.png" alt="HistogramViewer module window" />
+    </section>
+
+    <section class="card">
+      <h2>License</h2>
+      <p>Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
+         Released under the GNU General Public License v3; source code on
+         <a href="https://github.com/Trickx/PI-Histogram">GitHub</a>.</p>
+      <p>This product is based on software from the PixInsight project, developed by
+         Pleiades Astrophoto and its contributors (<a href="https://pixinsight.com/">https://pixinsight.com/</a>).</p>
+    </section>
+  </main>
+</body>
+</html>
