@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="macosx" arch="arm64" version="1.9.5:1.9.99">
-      <package fileName="HistogramViewer20260925v0100-macosx-arm64.tar.gz" sha1="f1682e0cdd73d1f837ffe42cfcc74dd858314f82" type="module" releaseDate="20260925">
+      <package fileName="HistogramViewer20260927v0110-macosx-arm64.tar.gz" sha1="628f4d0bd6d3a51c8d5cb75bc798cad19cedad3d" type="module" releaseDate="20260927">
          <title>
-         HistogramViewer 1.0.0
+         HistogramViewer 1.1.0
          </title>
          <description>
             <p>
@@ -24,7 +24,7 @@
             <p>
                Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+               https://github.com/Trickx/PI-Histogram (commit b40c9d6).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -34,9 +34,9 @@
       </package>
    </platform>
    <platform os="macosx" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="HistogramViewer20260925v0100-macosx-x64.tar.gz" sha1="9e51c310c3b61bd4a2861f9a3d1d98db7729e145" type="module" releaseDate="20260925">
+      <package fileName="HistogramViewer20260927v0110-macosx-x64.tar.gz" sha1="f8741b2dee9894a89213b9a6f1e234e602cecec1" type="module" releaseDate="20260927">
          <title>
-         HistogramViewer 1.0.0
+         HistogramViewer 1.1.0
          </title>
          <description>
             <p>
@@ -52,7 +52,7 @@
             <p>
                Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+               https://github.com/Trickx/PI-Histogram (commit b40c9d6).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -62,9 +62,9 @@
       </package>
    </platform>
    <platform os="linux" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="HistogramViewer20260925v0100-linux-x64.tar.gz" sha1="08d95fc0501a4875b2c06e3fb32d52e97c4b9eb6" type="module" releaseDate="20260925">
+      <package fileName="HistogramViewer20260927v0110-linux-x64.tar.gz" sha1="4ca4ad4e36edea205e33866c1bb223fae7723925" type="module" releaseDate="20260927">
          <title>
-         HistogramViewer 1.0.0
+         HistogramViewer 1.1.0
          </title>
          <description>
             <p>
@@ -80,7 +80,7 @@
             <p>
                Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+               https://github.com/Trickx/PI-Histogram (commit b40c9d6).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -90,9 +90,9 @@
       </package>
    </platform>
    <platform os="windows" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="HistogramViewer20260925v0100-windows-x64.tar.gz" sha1="a52b540164060efb92c3be50ad35bd173fe21288" type="module" releaseDate="20260925">
+      <package fileName="HistogramViewer20260927v0110-windows-x64.tar.gz" sha1="6e6ec2b202f629c1c32be5f17a173cab8409affc" type="module" releaseDate="20260927">
          <title>
-         HistogramViewer 1.0.0
+         HistogramViewer 1.1.0
          </title>
          <description>
             <p>
@@ -108,7 +108,7 @@
             <p>
                Port of the histogram view from Seti Astro Suite Pro (SASpro) by Franklin Marek.
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Histogram (commit db83ebd).
+               https://github.com/Trickx/PI-Histogram (commit b40c9d6).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -118,4 +118,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-25T09:30:21.556Z" encoding="Base64">sdQ/UZCJc8VDNQPqgWSAU40juhLUln/T/12GLoZB2riNzKChSrPPfQcJEM8iaIIrw5UcgERHtyZ83m4ppaKvCg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-27T18:16:23.043Z" encoding="Base64">5gxSP1DnW2kKHxYF3966GrHddbZnQH4Oqsnep0ZftHvHqUVs1WniWRJ6I2UCgzEe11asvKrJWnB3UlF+J3+BBg==</Signature>
