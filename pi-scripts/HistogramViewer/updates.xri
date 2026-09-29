@@ -90,9 +90,9 @@
       </package>
    </platform>
    <platform os="windows" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="HistogramViewer20260927v0110-windows-x64.tar.gz" sha1="6e6ec2b202f629c1c32be5f17a173cab8409affc" type="module" releaseDate="20260927">
+      <package fileName="HistogramViewer20260929v0111-windows-x64.tar.gz" sha1="a92d07780788278c06915c17ecab7d354e89645f" type="module" releaseDate="20260929">
          <title>
-         HistogramViewer 1.1.0
+         HistogramViewer 1.1.1
          </title>
          <description>
             <p>
@@ -118,4 +118,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-27T18:16:23.043Z" encoding="Base64">5gxSP1DnW2kKHxYF3966GrHddbZnQH4Oqsnep0ZftHvHqUVs1WniWRJ6I2UCgzEe11asvKrJWnB3UlF+J3+BBg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-29T10:23:17.981Z" encoding="Base64">kh2kFVK/k1dKHl2tyUIfPwg/c5IVMVJUobfuos+34VE3jikTfFNQPMowrr8nURFRv1M54tfQlIrYr9TsXBUpAQ==</Signature>
