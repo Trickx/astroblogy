@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         StarAberrationDiagnostics PixInsight Script Updates
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.4:1.9.99">
+      <package fileName="StarAberrationDiagnostics20260929v0090.tar.gz" sha1="914ac14ff27a2a44ea70b8d56ef33abb8abb7168" type="script" releaseDate="20260929">
+         <title>
+         StarAberrationDiagnostics 0.9.0
+         </title>
+         <description>
+            <p>
+               Installs the StarAberrationDiagnostics PixInsight feature script: diagnostics of the optical
+               system from the shapes of the stars - sensor tilt, corrector spacing, field
+               curvature, coma, collimation and tracking errors - with a vector map preview
+               and an assessment with suggested corrections.
+            </p>
+            <p>
+               Installed files:
+               <br/>src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.js
+               <br/>src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.svg
+               <br/>src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.xsgn
+            </p>
+            <p>
+               Released under the GNU General Public License v3 or later.
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-09-29T17:42:47.271Z" encoding="Base64">AXx5Zcd71iFlpnJipAtSV0r/UgvG/49UItp3DYvoJYD6utYV8/OaJ5NxVcQYCRykIIaVe/NdfDqTC5eT6ykiAw==</Signature>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StarAberrationDiagnostics - PixInsight Update Repository</title>
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #172230;
+      --text: #e7edf5;
+      --muted: #a8b6c8;
+      --accent: #64c7ff;
+      --ok: #82e0aa;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1f2e42 0%, var(--bg) 60%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #233244;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2 {
+      margin: 0 0 12px 0;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d8e7f7;
+      word-break: break-all;
+    }
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #2a3b4f;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    ul { margin: 8px 0 0 20px; }
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .title img {
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 0;
+      flex: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <div class="title">
+        <img src="StarAberrationDiagnostics.svg" alt="" />
+        <div>
+          <h1>StarAberrationDiagnostics</h1>
+          <p>PixInsight update repository for the <strong>StarAberrationDiagnostics</strong> script.</p>
+        </div>
+      </div>
+      <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
+    </section>
+
+    <section class="card">
+      <h2>Repository URL for PixInsight</h2>
+      <p><code>https://tricx.de/pi-scripts/StarAberrationDiagnostics/</code></p>
+    </section>
+
+    <section class="card">
+      <h2>Installation in PixInsight</h2>
+      <ol>
+        <li>Resources &gt; Updates &gt; Manage Repositories</li>
+        <li>Add repository: <code>https://tricx.de/pi-scripts/StarAberrationDiagnostics/</code></li>
+        <li>Run Check for Updates</li>
+        <li>Run via Script &gt; Tricx &gt; StarAberrationDiagnostics</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>What it does</h2>
+      <p>Diagnoses the optical system from the shapes of the stars across the field:</p>
+      <ul>
+        <li>Vector map of every star's elongation, with streamlines and an orientation heatmap</li>
+        <li>Sensor tilt from the FWHM across the field (Siril-style quadrants, 11&times;11 grid, tilt axis, &Delta;z and tilt angle)</li>
+        <li>Corrector spacing and field curvature from the radial/tangential pattern at the field edge</li>
+        <li>Coma field and coma-free point from the asymmetry of each star, for collimation</li>
+        <li>The tracking error shared by all stars, measured and optionally subtracted</li>
+        <li>An assessment of the results with suggested corrections, in the order in which to work through them</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
