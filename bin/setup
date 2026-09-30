@@ -9,6 +9,6 @@ if [ -d "vendor/bundle" ]; then
 fi
 
 bundle config set --local path 'vendor/bundle'
-BUNDLE_FORCE_RUBY_PLATFORM=1 bundle install
+RUBYOPT="${RUBYOPT:+$RUBYOPT }-ruri" BUNDLE_FORCE_RUBY_PLATFORM=1 bundle install
 
 echo "Setup complete. Run 'bundle exec jekyll serve' to start the site."

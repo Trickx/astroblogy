@@ -79,7 +79,7 @@ Gallery index lives at `/galerie/`, individual detail pages at `/galerie/:slug/`
 
 ## Setup
 
-Requires Ruby ≥ 2.6 and Bundler.
+Requires Ruby ≥ 2.7 and Bundler.
 
 ```bash
 ./bin/setup
