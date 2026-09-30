@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>StarAberrationDiagnostics - PixInsight Update Repository</title>
   <meta name="description" content="StarAberrationDiagnostics for PixInsight: installation and a handbook that explains how the script diagnoses tilt, spacing, coma, collimation and tracking from the shapes of the stars." />
+  <link rel="alternate" hreflang="en" href="https://tricx.de/pi-scripts/StarAberrationDiagnostics/" />
+  <link rel="alternate" hreflang="de" href="https://tricx.de/pi-scripts/StarAberrationDiagnostics/de/" />
   <style>
     :root {
       --bg: #0f1720;
@@ -114,6 +116,20 @@
     @media (max-width: 640px) { .toc ol { columns: 1; } }
     .steps li { margin-bottom: 4px; }
     i.v { font-family: "Cambria Math", Georgia, serif; }
+    /* Language switch */
+    .lang {
+      margin-left: auto;
+      align-self: flex-start;
+      display: flex;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .lang a, .lang span { padding: 3px 9px; }
+    .lang span { background: #233244; color: var(--text); }
+    .lang a:hover { background: rgba(100, 199, 255, 0.12); text-decoration: none; }
   </style>
 </head>
 <body>
@@ -125,6 +141,10 @@
           <h1>StarAberrationDiagnostics</h1>
           <p>PixInsight update repository for the <strong>StarAberrationDiagnostics</strong> script.</p>
         </div>
+        <nav class="lang" aria-label="Language">
+          <span aria-current="page">EN</span>
+          <a href="de/" hreflang="de" lang="de" title="Deutsche Version">DE</a>
+        </nav>
       </div>
       <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
     </section>
@@ -168,9 +188,21 @@
       <h2>Handbook: how the diagnostics work</h2>
       <p>The chapters below explain every computation of the script: what each error does to the stars, and how
       the script captures it mathematically. They build on each other, but each can be read on its own.</p>
-      <ol><li><a href="#stars">Stars as a probe of the optics</a></li><li><a href="#measuring">Finding and measuring the stars</a></li><li><a href="#shape">Describing the shape of a star</a></li><li><a href="#tracking">Tracking and guiding errors</a></li><li><a href="#map">The vector map, streamlines and heatmap</a></li><li><a href="#tilt">Focus, sensor tilt and field curvature</a></li><li><a href="#spacing">Radial and tangential patterns: corrector spacing</a></li><li><a href="#coma">Coma and collimation</a></li><li><a href="#assessment">The assessment and the order of corrections</a></li><li><a href="#series">Series: before and after the meridian flip</a></li><li><a href="#sip">Plate-solve distortion (SIP)</a></li><li><a href="#ai">The AI review</a></li><li><a href="#limits">Limits and good practice</a></li></ol>
+      <ol start="0"><li><a href="#status">Project status and disclaimer</a></li><li><a href="#stars">Stars as a probe of the optics</a></li><li><a href="#measuring">Finding and measuring the stars</a></li><li><a href="#shape">Describing the shape of a star</a></li><li><a href="#tracking">Tracking and guiding errors</a></li><li><a href="#map">The vector map, streamlines and heatmap</a></li><li><a href="#tilt">Focus, sensor tilt and field curvature</a></li><li><a href="#spacing">Radial and tangential patterns: corrector spacing</a></li><li><a href="#coma">Coma and collimation</a></li><li><a href="#assessment">The assessment and the order of corrections</a></li><li><a href="#series">Series: before and after the meridian flip</a></li><li><a href="#sip">Plate-solve distortion (SIP)</a></li><li><a href="#ai">The AI review</a></li><li><a href="#limits">Limits and good practice</a></li></ol>
     </section>
-<section class="card" id="stars"><h2><span class="chapter-no">1.</span>Stars as a probe of the optics</h2>
+<section class="card" id="status"><h2><span class="chapter-no">0.</span>Project status and disclaimer</h2>
+<ul>
+  <li><b>Early stage.</b> The script is at an early stage of development. Its functions, thresholds and outputs may
+      still change.</li>
+  <li><b>Designed with AI.</b> The script and this handbook were designed with the help of AI.</li>
+  <li><b>May contain errors.</b> Computations, verdicts and explanations can be wrong. Check the results against
+      your own experience before you adjust your equipment.</li>
+  <li><b>Feedback is welcome.</b> Found a mistake, have a question or a suggestion? Please get in touch via the
+      <a href="/contact/">contact page</a>.</li>
+  <li><b>No warranty.</b> The script and this page are provided as is, without any warranty or guarantee of any kind.
+      You use them at your own risk; no liability is accepted for the results or for any consequences of their use.</li>
+</ul>
+</section><section class="card" id="stars"><h2><span class="chapter-no">1.</span>Stars as a probe of the optics</h2>
 <p>A star is so far away that it is, for all practical purposes, a <b>point</b>. Everything that turns this
 point into a small disk, an oval or a little comet on the sensor is done on the way: by the atmosphere, the
 mount, the telescope, a corrector, the camera. The picture a point source makes is called the
