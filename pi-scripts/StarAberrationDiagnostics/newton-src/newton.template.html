@@ -140,11 +140,23 @@ beim Transport, beim Auf- und Abbauen, durch Temperaturwechsel, bei manchen soga
 <ul>
   <li><b>Was im Bild passiert:</b> Die optische Achse - der komafreie Punkt - wandert aus der Bildmitte. Eine Seite des
       Bildes zeigt deutlich mehr Koma als die andere; bei stärkerer Dejustage hat auch die Bildmitte Koma.</li>
+  <li><b>Nicht nur Koma:</b> Die Bildebene steht senkrecht zur tatsächlichen optischen Achse. Ist diese verkippt,
+      liegt die Bildebene schräg zum Sensor - eine Seite wird weicher, genau wie bei einer <b>Sensorverkippung</b>.
+      Beim Fangspiegel, der als ebener Spiegel selbst keine Fehler erzeugt, ist das sogar der Haupteffekt. Dazu
+      kommen ein einseitig verschobener <b>Astigmatismus</b> (erst bei grober Dejustage oder sehr schnellen Spiegeln
+      deutlich), eine <b>ungleichmäßige Korrektur</b> durch den schräg durchlaufenen Korrektor, manchmal mit
+      einseitigen Farbsäumen am Rand, und eine <b>einseitige Vignettierung</b> - Flats müssen deshalb immer zur
+      aktuellen Kollimation passen.</li>
   <li><b>Wie empfindlich:</b> Die erlaubte Abweichung wächst mit der dritten Potenz der Öffnungszahl, weil die Koma
       mit 1/N² wächst und das Beugungsscheibchen mit N. Ein f/4-Newton ist damit etwa achtmal so empfindlich wie ein
       f/8.</li>
   <li><b>Was das Script sieht:</b> Den komafreien Punkt P<sub>0</sub> und seinen Abstand zur Bildmitte
-      (<a href="./#coma">Handbuch, Kapitel 8</a>). Ab 15 % der halben Diagonale schlägt es eine Kollimation vor.</li>
+      (<a href="./#coma">Handbuch, Kapitel 8</a>). Ab 15 % der halben Diagonale schlägt es eine Kollimation vor. Die
+      Bildfeldverkippung erscheint als ganz normale Verkippung (<a href="./#tilt">Kapitel 6</a>); das Script kann sie
+      nicht von einem schief sitzenden Sensor unterscheiden.</li>
+  <li><b>Reihenfolge:</b> Liegt P<sub>0</sub> deutlich neben der Mitte und meldet das Script zugleich eine
+      Verkippung, <b>zuerst kollimieren</b> und neu messen. Sonst gleicht man am Tilt-Adapter einen verkippten Spiegel
+      aus - und nach der nächsten Kollimation stimmt der Adapter nicht mehr.</li>
   <li><b>Abhilfe:</b> Kollimieren mit Cheshire, Laser (der Laser selbst muss justiert sein) oder einer Justierkamera,
       in der Beobachtungsposition und bei Nachttemperatur. Eine Mittenmarkierung auf dem Hauptspiegel ist
       unverzichtbar.</li>
@@ -157,7 +169,8 @@ Off-Axis-Guider - oft über ein Kilogramm an einem Hebel quer zum Tubus. Gibt de
 gegen die Bildebene: Eine Bildseite ist scharf, die gegenüberliegende weich.</p>
 <ul>
   <li><b>Ursachen:</b> Spiel im Auszug, eine zu schwach angezogene Klemmung, ein dünnes Tubusblech, das sich unter der
-      Last verformt, verkippte Adapter oder ein schief eingebauter Sensor.</li>
+      Last verformt, verkippte Adapter oder ein schief eingebauter Sensor - oder eine Dejustage, die die Bildebene
+      kippt (<a href="#collimation">Kapitel 4</a>).</li>
   <li><b>Typisch für den Newton:</b> Weil der Auszug quer zum Tubus sitzt, wirkt die Schwerkraft je nach
       Himmelsrichtung anders - die Verkippung kann sich beim Schwenken und beim Meridian-Flip ändern.</li>
   <li><b>Was das Script sieht:</b> Den FWHM-Verlauf über das Bildfeld, Kippachse und Kippwinkel
@@ -273,7 +286,7 @@ Asymmetriemessung aus, und Spikes, Halos und Vignettierung verändern den PSF-Fi
 <div class="tbl"><table>
 <tr><th>Fehler</th><th>So sieht er aus</th><th>Im Script</th><th>Erste Maßnahme</th></tr>
 <tr><td><a href="koma.html">Koma</a></td><td>Fächer zum Rand hin, wächst linear</td><td>k, P<sub>0</sub> (Kap. 8)</td><td>Komakorrektor</td></tr>
-<tr><td>Dejustage</td><td>Koma einseitig stärker, auch in der Mitte</td><td>P<sub>0</sub> außerhalb der Mitte</td><td>kollimieren</td></tr>
+<tr><td>Dejustage</td><td>Koma einseitig stärker, auch in der Mitte; oft eine Seite weicher</td><td>P<sub>0</sub> außerhalb der Mitte, evtl. Verkippung</td><td>kollimieren, vor der Verkippung</td></tr>
 <tr><td>Verkippung</td><td>eine Seite scharf, die andere weich</td><td>Kippachse, -winkel (Kap. 6)</td><td>Mechanik, dann Tilt-Adapter</td></tr>
 <tr><td>Korrektorabstand</td><td>Restkoma, radiale oder tangentiale Sterne am Rand</td><td>eps_rad (Kap. 7), k</td><td>Abstand in 0,5-mm-Schritten</td></tr>
 <tr><td>Bildfeldwölbung</td><td>Rand rundum weich</td><td>FWHM²-Fläche (Kap. 6)</td><td>Flattener, kleinerer Sensor</td></tr>
@@ -286,7 +299,9 @@ Asymmetriemessung aus, und Spikes, Halos und Vignettierung verändern den PSF-Fi
 <tr><td>Auszug ragt hinein</td><td>zusätzlicher Spike</td><td>-</td><td>Auszug weiter ausfahren</td></tr>
 </table></div>
 <p>Die Reihenfolge, in der man die Fehler angeht, folgt dem <a href="./#assessment">Handbuch, Kapitel 9</a>: erst
-Fokus, dann Nachführung, Verkippung, Kollimation, Abstand - weil sich die Fehler gegenseitig überdecken.</p>
+Fokus, dann Nachführung, Verkippung, Kollimation, Abstand - weil sich die Fehler gegenseitig überdecken. Ausnahme:
+Bei deutlich verschobenem komafreiem Punkt zuerst kollimieren, weil die Dejustage selbst eine Verkippung erzeugt
+(<a href="#collimation">Kapitel 4</a>).</p>
 </section>
   </main>
 <script>
