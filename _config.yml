@@ -37,3 +37,4 @@ exclude:
   - README.md
   - Gemfile.lock
   - pi-scripts/StarAberrationDiagnostics/koma-src
+  - pi-scripts/StarAberrationDiagnostics/newton-src
