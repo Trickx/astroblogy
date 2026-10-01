@@ -189,6 +189,7 @@
       <p>Die folgenden Kapitel erklären jede Berechnung des Scripts: was jeder Fehler mit den Sternen macht und wie
       das Script ihn mathematisch erfasst. Sie bauen aufeinander auf, lassen sich aber auch einzeln lesen.</p>
       <ol start="0"><li><a href="#status">Projektstatus und Haftungsausschluss</a></li><li><a href="#stars">Sterne als Sonde der Optik</a></li><li><a href="#measuring">Sterne finden und vermessen</a></li><li><a href="#shape">Die Form eines Sterns beschreiben</a></li><li><a href="#tracking">Nachführ- und Guidingfehler</a></li><li><a href="#map">Vektorkarte, Stromlinien und Heatmap</a></li><li><a href="#tilt">Fokus, Sensorverkippung und Bildfeldwölbung</a></li><li><a href="#spacing">Radiale und tangentiale Muster: der Korrektorabstand</a></li><li><a href="#coma">Koma und Kollimation</a></li><li><a href="#assessment">Die Bewertung und die Reihenfolge der Korrekturen</a></li><li><a href="#series">Serien: vor und nach dem Meridian-Flip</a></li><li><a href="#sip">Plate-Solve-Verzeichnung (SIP)</a></li><li><a href="#ai">Die KI-Auswertung</a></li><li><a href="#limits">Grenzen und gute Praxis</a></li></ol>
+      <p>Vertiefung: <a href="koma.html">Koma - wie sie entsteht</a>, mit berechneten Strahlengängen und einem Simulator.</p>
     </section>
 <section class="card" id="status"><h2><span class="chapter-no">0.</span>Projektstatus und Haftungsausschluss</h2>
 <ul>
@@ -605,7 +606,9 @@ mindestens 10 Sternen:</p>
 <tr><td>&lt; −0,04 (Maßnahme unter −0,08)</td><td>tangential</td><td>den Abstand verkleinern - Defokus zusammen mit Bildfeldwölbung sieht aber genauso aus, daher zuerst den Fokus prüfen</td></tr>
 </table></div>
 <div class="note"><p>Die Richtung der Korrektur ist eine Faustregel, die für viele Korrektoren gilt; das letzte
-Wort hat die Anleitung Ihres Korrektors. Ändern Sie den Abstand in kleinen Schritten und messen Sie erneut.</p></div>
+Wort hat die Anleitung Ihres Korrektors. Ändern Sie den Abstand in kleinen Schritten und messen Sie erneut.</p>
+<p>Wie unter- und überkorrigierte Koma im Bildfeld aussieht, zeigt der Simulator auf der Seite
+<a href="koma.html#corrector">Koma - wie sie entsteht</a>.</p></div>
 </section><section class="card" id="coma"><h2><span class="chapter-no">8.</span>Koma und Kollimation</h2>
 <h3>Der Fehler</h3>
 <p><b>Koma</b> macht Sterne zu kleinen Kometen: ein heller Kern mit einem Lichtfächer auf einer Seite. Bei einem
@@ -613,6 +616,9 @@ Newton wächst sie linear mit dem Abstand von der optischen Achse und zeigt von 
 sie - oder überkorrigiert sie, wenn er im falschen Abstand sitzt. Der Punkt, an dem die Koma verschwindet, markiert
 die <b>optische Achse</b>. Sind die Spiegel dejustiert (oder ist ein Korrektor dezentriert oder verkippt), wandert
 dieser <b>komafreie Punkt</b> von der Bildmitte weg.</p>
+<div class="note"><p>Warum Koma entsteht, wie stark sie bei welchem Öffnungsverhältnis ist und wie Korrektor und
+Dejustage das Bild verändern, erklärt die Seite <a href="koma.html">Koma - wie sie entsteht</a>, mit berechneten
+Strahlengängen und einem interaktiven Simulator.</p></div>
 <h3>Warum der Fit sie nicht sieht</h3>
 <p>Gauß und Moffat sind punktsymmetrische Modelle: Sie legen eine Ellipse um den Kern und können nicht erkennen, auf
 welcher Seite der Fächer liegt. Das Script misst die Asymmetrie stattdessen direkt an den Pixeln, relativ zum

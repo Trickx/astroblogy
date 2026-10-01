@@ -189,6 +189,7 @@
       <p>The chapters below explain every computation of the script: what each error does to the stars, and how
       the script captures it mathematically. They build on each other, but each can be read on its own.</p>
       <ol start="0"><li><a href="#status">Project status and disclaimer</a></li><li><a href="#stars">Stars as a probe of the optics</a></li><li><a href="#measuring">Finding and measuring the stars</a></li><li><a href="#shape">Describing the shape of a star</a></li><li><a href="#tracking">Tracking and guiding errors</a></li><li><a href="#map">The vector map, streamlines and heatmap</a></li><li><a href="#tilt">Focus, sensor tilt and field curvature</a></li><li><a href="#spacing">Radial and tangential patterns: corrector spacing</a></li><li><a href="#coma">Coma and collimation</a></li><li><a href="#assessment">The assessment and the order of corrections</a></li><li><a href="#series">Series: before and after the meridian flip</a></li><li><a href="#sip">Plate-solve distortion (SIP)</a></li><li><a href="#ai">The AI review</a></li><li><a href="#limits">Limits and good practice</a></li></ol>
+      <p>In depth (in German): <a href="de/koma.html" hreflang="de">Koma - wie sie entsteht</a>, how coma arises, with computed ray traces and a simulator.</p>
     </section>
 <section class="card" id="status"><h2><span class="chapter-no">0.</span>Project status and disclaimer</h2>
 <ul>
@@ -605,6 +606,9 @@ grows linearly with the distance from the optical axis and points away from it; 
 or over-corrects it, when it sits at the wrong distance. The point where the coma vanishes marks the
 <b>optical axis</b>. If the mirrors are decollimated (or a corrector is decentered or tilted), this
 <b>coma-free point</b> moves away from the image center.</p>
+<div class="note"><p>Why coma arises, how strong it is at a given focal ratio and how a corrector and decollimation
+change it is explained on a separate page (in German): <a href="de/koma.html" hreflang="de">Koma - wie sie
+entsteht</a>, with computed ray traces and an interactive simulator.</p></div>
 <h3>Why the fit cannot see it</h3>
 <p>Gaussian and Moffat are point-symmetric models: they fit an ellipse around the core and cannot tell on
 which side the fan sits. The script measures the asymmetry directly on the pixels instead, relative to the
