@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         Finder PixInsight Module Updates
+      </p>
+   </description>
+   <platform os="macosx" arch="arm64" version="1.9.5:1.9.99">
+      <package fileName="Finder20261002v0100-macosx-arm64.tar.gz" sha1="bf2b67c141109db1b36e4f7d94a68948e35d45d5" type="module" releaseDate="20261002">
+         <title>
+         Finder 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the Finder PixInsight module: a compact search window that finds
+               installed processes and PJSR scripts by name while typing and launches the
+               selected one with Return or a double click.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/Finder-pxm.dylib
+               <br/>bin/Finder-pxm.xsgn
+            </p>
+            <p>
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Finder (commit 0b7d30d).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+   <platform os="macosx" arch="x64" version="1.9.5:1.9.99">
+      <package fileName="Finder20261002v0100-macosx-x64.tar.gz" sha1="d33f713be1aebc51a1e5b70ae4ecf099bb09acbc" type="module" releaseDate="20261002">
+         <title>
+         Finder 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the Finder PixInsight module: a compact search window that finds
+               installed processes and PJSR scripts by name while typing and launches the
+               selected one with Return or a double click.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/Finder-pxm.dylib
+               <br/>bin/Finder-pxm.xsgn
+            </p>
+            <p>
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Finder (commit 0b7d30d).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+   <platform os="linux" arch="x64" version="1.9.5:1.9.99">
+      <package fileName="Finder20261002v0100-linux-x64.tar.gz" sha1="852399ffa0692b2b1945d8e058c6d5fe90f9a903" type="module" releaseDate="20261002">
+         <title>
+         Finder 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the Finder PixInsight module: a compact search window that finds
+               installed processes and PJSR scripts by name while typing and launches the
+               selected one with Return or a double click.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/Finder-pxm.so
+               <br/>bin/Finder-pxm.xsgn
+            </p>
+            <p>
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Finder (commit 0b7d30d).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+   <platform os="windows" arch="x64" version="1.9.5:1.9.99">
+      <package fileName="Finder20261002v0100-windows-x64.tar.gz" sha1="aa7ab4097b2eebc831ca8adbf77e28cbea8e499a" type="module" releaseDate="20261002">
+         <title>
+         Finder 1.0.0
+         </title>
+         <description>
+            <p>
+               Installs the Finder PixInsight module: a compact search window that finds
+               installed processes and PJSR scripts by name while typing and launches the
+               selected one with Return or a double click.
+            </p>
+            <p>
+               Installed files:
+               <br/>bin/Finder-pxm.dll
+               <br/>bin/Finder-pxm.xsgn
+            </p>
+            <p>
+               Released under the GNU General Public License v3. Source code:
+               https://github.com/Trickx/PI-Finder (commit 0b7d30d).
+            </p>
+            <p>
+               This product is based on software from the PixInsight project, developed by
+               Pleiades Astrophoto and its contributors (https://pixinsight.com/).
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-10-02T08:59:36.716Z" encoding="Base64">YRQ+EAcuh1u1A3VxOZfZhZDpamRAPYJf2WeuoVePnwJtJm65pug9uxTK1GpEN2n0sCHSsbnJGue0odlsUbY9AA==</Signature>
