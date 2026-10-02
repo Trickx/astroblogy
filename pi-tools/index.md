@@ -126,6 +126,15 @@ permalink: /pi-tools/
 
   <article class="pi-tool-entry">
     <div>
+      <h2><a href="{{ '/pi-scripts/Finder/' | relative_url }}">Finder</a></h2>
+      <p>A native PixInsight search window for all installed processes and PJSR scripts. Matches are filtered by name while typing and launched with Return or a double click. Finder can open when PixInsight starts and shrinks to a narrow search line while it does not have the focus.</p>
+      <a class="pi-tool-link" href="{{ '/pi-scripts/Finder/' | relative_url }}">Repository and installation</a>
+    </div>
+    <img src="{{ '/pi-scripts/Finder/Finder.png' | relative_url }}" alt="Finder window listing processes that match the search text" loading="lazy">
+  </article>
+
+  <article class="pi-tool-entry">
+    <div>
       <h2><a href="{{ '/pi-scripts/HistogramViewer/' | relative_url }}">HistogramViewer</a></h2>
       <p>A native PixInsight histogram and statistics viewer that follows the active image. It offers RGB and grayscale views, logarithmic axes, zoom and range controls, percentiles and clipping statistics. A native PCL port of Seti Astro's original histogram tool.</p>
       <a class="pi-tool-link" href="{{ '/pi-scripts/HistogramViewer/' | relative_url }}">Repository and installation</a>
