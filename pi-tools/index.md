@@ -71,7 +71,29 @@ permalink: /pi-tools/
     background: rgba(5, 11, 20, 0.65);
   }
 
+  .pi-tools-discontinued {
+    padding: 0 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .pi-tools-discontinued h2 {
+    margin: 0 0 0.6rem;
+    font-size: 1.1rem;
+    color: var(--muted);
+  }
+
+  .pi-tools-discontinued p {
+    max-width: 72ch;
+    margin: 0 0 0.8rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
   @media (max-width: 640px) {
+    .pi-tools-discontinued {
+      padding: 0 1rem;
+    }
+
     .pi-tool-list {
       padding: 0 1rem;
     }
@@ -168,4 +190,9 @@ permalink: /pi-tools/
     </div>
     <img src="{{ '/pi-scripts/Temp4DarksMatter/Temp4DarksMatter.png' | relative_url }}" alt="Temp4DarksMatter script window" loading="lazy">
   </article>
+</section>
+
+<section class="pi-tools-discontinued" aria-label="Discontinued tools">
+  <h2>Discontinued</h2>
+  <p><strong>Histogram</strong> (PJSR script): discontinued in October 2026 and replaced by the native module <a class="pi-tool-link" href="{{ '/pi-scripts/HistogramViewer/' | relative_url }}">HistogramViewer</a>. Its update repository is offline; if you added it in PixInsight, remove the entry under Resources &gt; Updates &gt; Manage Repositories. <a class="pi-tool-link" href="{{ '/pi-scripts/Histogram/' | relative_url }}">Details</a></p>
 </section>
