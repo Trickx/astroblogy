@@ -4,7 +4,7 @@
 # ----------------------------------------------------------------------------
 # Expects the script, its icon and its code signature in this directory:
 #
-#   StarAberrationDiagnostics.js     (copied from the Koma repository)
+#   StarAberrationDiagnostics.js     (developed in this directory)
 #   StarAberrationDiagnostics.svg
 #   StarAberrationDiagnostics.xsgn   (signed in PixInsight after copying)
 #

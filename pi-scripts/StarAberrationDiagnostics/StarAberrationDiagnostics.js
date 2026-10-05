@@ -7,8 +7,8 @@
    Measures every star across the field - elongation, FWHM and the asymmetry \
    of its profile - and maps sensor tilt, corrector spacing, field \
    curvature, coma and collimation as well as the tracking error shared by \
-   all stars. A preview shows the vector map with switchable layers \
-   (ellipses, streamlines, orientation heatmap, tilt overlay, coma field), \
+   all stars. Three maps - star shape (ellipses, streamlines), star size \
+   (FWHM grid, tilt axis) and coma (asymmetry field) - each on its own tab, \
    and an assessment judges the results and suggests corrections in the \
    order in which to work through them.<br/> \
    <br/> \
@@ -99,7 +99,7 @@
 
 CoreApplication.ensureMinimumVersion(1, 9, 4);
 
-const VERSION = "0.9";
+const VERSION = "0.10";
 const TITLE = "Star Aberration Diagnostics";
 
 // ---- Spaltenindizes in DynamicPSF.psf --------------------------------
@@ -116,8 +116,6 @@ const IDX_SY        = 9;
 const IDX_THETA     = 10;
 const IDX_BETA      = 11;
 const IDX_MAD       = 12;
-
-let DEBUG_DUMP_RAW = false;
 
 // Gauss-Sigma -> FWHM Umrechnungsfaktor
 const SIGMA_TO_FWHM = 2 * Math.sqrt(2 * Math.log(2)); // ~2.35482
@@ -145,14 +143,24 @@ var ScriptParameters = class extends PersistentObject {
          ["useMoffat",                   DataType.Boolean],
          ["vectorScale",                 DataType.Double],
          ["doExport",                    DataType.Boolean],
-         ["debug",                       DataType.Boolean],
          ["debayer",                     DataType.Boolean],
          ["bayerPattern",                DataType.UTF16String],
          ["closeIntermediateWindows",    DataType.Boolean],
          ["madOutlierFactor",            DataType.Double],
          ["maxCandidates",               DataType.Int32],
-         ["showSirilTilt",               DataType.Boolean],
+         ["sdCustom",                    DataType.Boolean],
+         ["sdStructureLayers",           DataType.Int32],
+         ["sdSensitivity",               DataType.Double],
+         ["sdPeakResponse",              DataType.Double],
+         ["sdMaxDistortion",             DataType.Double],
+         ["sdAllowClustered",            DataType.Boolean],
          ["showStreamlines",             DataType.Boolean],
+         ["shapeSignificantOnly",        DataType.Boolean],
+         ["shapeShowCells",              DataType.Boolean],
+         ["shapeShowModel",              DataType.Boolean],
+         ["shapeModelSignificantOnly",   DataType.Boolean],
+         ["shapeShowMatch",              DataType.Boolean],
+         ["shapeShowDefects",            DataType.Boolean],
          ["streamlineRadiusPercent",     DataType.Double],
          ["pixelPitchUm",                DataType.Double],
          ["focalLengthMm",               DataType.Double],
@@ -160,8 +168,8 @@ var ScriptParameters = class extends PersistentObject {
          ["show3DTiltPlot",              DataType.Boolean],
          ["showOrientationHeatmap",      DataType.Boolean],
          ["orientationHeatmapDegree",    DataType.Int32],
-         ["showFwhmGrid",                DataType.Boolean],
-         ["fwhmGridArcsec",              DataType.Boolean],
+         ["fwhmGridDetails",             DataType.Boolean],
+         ["fwhmCellValue",               DataType.Int32],
          ["opticsFromHeader",            DataType.Boolean],
          ["showStarAsymArrows",          DataType.Boolean],
          ["starAsymMinSigma",            DataType.Double],
@@ -174,7 +182,16 @@ var ScriptParameters = class extends PersistentObject {
          ["comaStreamlineRadiusPercent", DataType.Double],
          ["comaStreamlineMinPercent",    DataType.Double],
          ["showComaArrows",              DataType.Boolean],
-         ["opticsType",                  DataType.Int32]
+         ["opticsType",                  DataType.Int32],
+         ["mountType",                   DataType.Int32],
+         ["guidingType",                 DataType.Int32],
+         ["aiSendMap",                   DataType.Boolean],
+         ["aiLanguage",                  DataType.UTF16String],
+         ["seriesShowMaps",              DataType.Boolean],
+         ["aiDetail",                    DataType.Int32],
+         ["seriesSaveMaps",              DataType.Boolean],
+         ["seriesSaveMosaic",            DataType.Boolean],
+         ["aiSaveLog",                   DataType.Boolean]
       ]);
 
       this.threshold = 3.0;
@@ -182,14 +199,27 @@ var ScriptParameters = class extends PersistentObject {
       this.useMoffat = false;
       this.vectorScale = 1.0;
       this.doExport = true;
-      this.debug = false;
       this.debayer = false;
       this.bayerPattern = "Auto"; // "Auto", "RGGB", "BGGR", "GBRG", "GRBG"
       this.closeIntermediateWindows = true; // close SuperPixel/side windows after processing
       this.madOutlierFactor = 3.0; // reject fits with MAD > factor x median(MAD); 0 = off
       this.maxCandidates = 1500; // max. candidates for the PSF fit (brightest first); 0 = no limit
-      this.showSirilTilt = true; // show the Siril-style quadrant tilt polygon as an overlay
+      // StarDetector parameters (PJSR StarDetector, defaults as documented
+      // there). Only applied when sdCustom is set; otherwise StarDetector
+      // runs with its own defaults.
+      this.sdCustom = false;
+      this.sdStructureLayers = 5; // largest detectable structure ~2^n px; more = larger (defocused/aberrated) stars
+      this.sdSensitivity = 0.5; // 0..1, higher = fainter stars
+      this.sdPeakResponse = 0.5; // 0..1, higher = more tolerant of flat profiles
+      this.sdMaxDistortion = 0.6; // 0..1, higher = more elongated/irregular stars accepted
+      this.sdAllowClustered = false; // detect non-separable multiple sources as one object
       this.showStreamlines = true; // show the smoothed trend as a streamlines overlay
+      this.shapeSignificantOnly = false; // streamlines only where the smoothed direction is significant (else gray there)
+      this.shapeShowCells = true; // Star shape map: mean axis per cell with its uncertainty fan
+      this.shapeShowModel = false; // Star shape map: streamlines of the optics model
+      this.shapeModelSignificantOnly = false; // model streamlines only where the model is significant (else muted there)
+      this.shapeShowMatch = false; // Star shape map: per cell, magenta frame = not explained by the model, green = matches
+      this.shapeShowDefects = true; // Star shape map: singular points of the smoothed field
       this.streamlineRadiusPercent = 12; // smoothing radius, % of the image diagonal
       this.pixelPitchUm = 0; // pixel pitch (µm); 0 = not specified, tilt angle computation off
       this.focalLengthMm = 0; // telescope focal length (mm); 0 = not specified
@@ -197,8 +227,8 @@ var ScriptParameters = class extends PersistentObject {
       this.show3DTiltPlot = true; // pseudo-3D comparison plot (only if the above 3 values are set)
       this.showOrientationHeatmap = false; // PSF orientation as a color-field heatmap instead of the star field in the background
       this.orientationHeatmapDegree = 2; // 2D polynomial degree for the orientation heatmap fit; 1 = plane (pure tilt only), >=2 can also show curvature (e.g. coma)
-      this.showFwhmGrid = false; // show an 11x11 per-cell FWHM grid instead of the 4-quadrant Siril tilt polygon
-      this.fwhmGridArcsec = false; // FWHM grid values in arcseconds instead of pixels (needs pixel pitch + focal length)
+      this.fwhmGridDetails = false; // FWHM grid: a second line per cell with FWHM ± standard error and star count
+      this.fwhmCellValue = 0; // FWHM grid: each cell shows its FWHM in pixels (0), in arcseconds (1, needs pixel pitch + focal length) or its ratio to the center (2)
       this.opticsFromHeader = true; // take pixel pitch/focal length/aperture from the FITS header where available
       this.showStarAsymArrows = false; // one asymmetry (coma flare) arrow per star
       this.starAsymMinSigma = 2.0; // per-star arrows only above this many sigma of the per-star asymmetry noise
@@ -212,6 +242,15 @@ var ScriptParameters = class extends PersistentObject {
       this.comaStreamlineMinPercent = 20; // coma streamlines stop below this % of the field's (90th percentile) strength
       this.showComaArrows = true; // median asymmetry arrows on a coarse grid
       this.opticsType = 0; // optical system for the assessment's wording: index into OPTICS_TYPES (0 = unknown)
+      this.mountType = 0; // the mount, when not read from the FITS header: index into MOUNT_TYPES (0 = unknown)
+      this.guidingType = 0; // guiding: index into GUIDING_TYPES (0 = unknown; then a guide camera in the header counts)
+      this.aiSendMap = true; // AI review: attach the Star size, Star shape and Coma maps as images to the measured values
+      this.aiLanguage = "English"; // AI review: language of the answer
+      this.seriesShowMaps = true; // series: draw each frame's map (of the selected tab) in the preview while measuring
+      this.aiDetail = 1; // AI review: index into AI_DETAIL_LEVELS (1 = step by step, for beginners)
+      this.seriesSaveMaps = true; // series: save each frame's four maps (and 3D plot) as PNG next to the frame
+      this.seriesSaveMosaic = true; // series: save a 3x3 corner/edge/center mosaic (as AberrationInspector) as PNG next to the frame
+      this.aiSaveLog = true; // AI review: save each request and answer as a text file (see saveAiLog())
    }
 
    // Takes the values of all settings from an object with the same
@@ -252,7 +291,9 @@ class StarRecord {
 // wrongly guessed/missing API doesn't crash (see the note at the top of
 // the file on the constants/API question).
 function withProgress(label, total) {
-   let useNative = typeof Console.progressStart === "function" &&
+   // The console shows only the process steps (Progress), not this loop's
+   // percentage: no native console progress either.
+   let useNative = false && typeof Console.progressStart === "function" &&
       typeof Console.progressUpdate === "function" &&
       typeof Console.progressEnd === "function";
    if (useNative) {
@@ -265,6 +306,7 @@ function withProgress(label, total) {
 
    let lastBucket = -1;
    let lastPercent = -1;
+   let lastTick = Date.now();
    const PERCENT_STEP = 10; // one line every 10% -> max. 11 lines in total
 
    return {
@@ -272,23 +314,28 @@ function withProgress(label, total) {
          if (useNative) {
             try { Console.progressUpdate(value); } catch (e) { useNative = false; }
          }
+         // The bar moves - and the dialog processes its events - with every
+         // percent, and at least every 0.1 s in a slow loop, so that the
+         // window keeps reacting (repaint, being sent to the background).
          let percent = total > 0 ? Math.floor((value / total) * 100) : 100;
-         if (percent !== lastPercent) {
+         let now = Date.now();
+         if (percent !== lastPercent || now - lastTick >= 100) {
             lastPercent = percent;
+            lastTick = now;
             Progress.advance(percent / 100);
          }
          let bucket = Math.floor(percent / PERCENT_STEP) * PERCENT_STEP;
          if (bucket === lastBucket)
             return;
          lastBucket = bucket;
-         Console.writeln(format("%s: %d%% (%d/%d)", label, percent, value, total));
+         Quiet.writeln(format("%s: %d%% (%d/%d)", label, percent, value, total));
       },
       end: function() {
          if (useNative) {
             try { Console.progressEnd(); } catch (e) {}
          }
          if (lastBucket < 100)
-            Console.writeln(format("%s: 100%% (done)", label));
+            Quiet.writeln(format("%s: 100%% (done)", label));
       }
    };
 }
@@ -298,12 +345,21 @@ function withProgress(label, total) {
 // into steps, each covering a part [from, to] of the bar; withProgress()
 // loops move the bar within the current step. Without a listener (no
 // dialog, e.g. a drag&drop apply) this does nothing.
+// Every step is also the console's record of the run: when the next step
+// starts (or endStep()/finish() is called), the step is written with its
+// duration - the console shows only these process steps, the results are
+// in the dialog (see Quiet).
 const Progress = {
    listener: null, // function(text, fraction), fraction in [0,1]; text null = finished
    text: "",
    from: 0,
    to: 0,
+   stepText: null,
+   stepT0: 0,
    step: function(text, from, to) {
+      this.endStep();
+      this.stepText = text;
+      this.stepT0 = Date.now();
       this.text = text;
       this.from = from;
       this.to = to;
@@ -313,10 +369,30 @@ const Progress = {
       if (this.listener)
          this.listener(this.text, this.from + (this.to - this.from) * Math.range(fraction, 0, 1));
    },
+   // Writes the running step with its duration.
+   endStep: function() {
+      if (this.stepText !== null)
+         Console.writeln(format("  %s: %.1f s", this.stepText, (Date.now() - this.stepT0) / 1000));
+      this.stepText = null;
+   },
    finish: function() {
+      this.endStep();
       if (this.listener)
          this.listener(null, 0);
    }
+};
+
+// The console shows only the process steps and their timing (Progress),
+// the files written, warnings and errors; the results - tables, values,
+// the assessment - are in the dialog. Everything that used to be written
+// as a result goes here and is dropped. QUIET_CONSOLE is the same as a
+// console object (con) for the report functions: results dropped,
+// warnings and errors passed on.
+const Quiet = { write: function() {}, writeln: function() {}, noteln: function() {} };
+const QUIET_CONSOLE = {
+   write: function() {}, writeln: function() {}, noteln: function() {},
+   warningln: function(text) { Console.warningln(text); },
+   criticalln: function(text) { Console.criticalln(text); }
 };
 
 // -----------------------------------------------------------------------
@@ -326,10 +402,10 @@ const Progress = {
 // the return object of StarDetector.stars()) without being able to
 // inspect PixInsight live.
 function dumpObject(label, obj) {
-   Console.writeln("--- " + label + " ---");
+   Quiet.writeln("--- " + label + " ---");
    if (obj === null || obj === undefined) {
-      Console.writeln("  (null/undefined)");
-      Console.writeln("--- end ---");
+      Quiet.writeln("  (null/undefined)");
+      Quiet.writeln("--- end ---");
       return;
    }
    let names = Object.getOwnPropertyNames(obj);
@@ -355,9 +431,9 @@ function dumpObject(label, obj) {
          desc = "<object: " + Object.getOwnPropertyNames(value).join(", ") + ">";
       else
          desc = String(value);
-      Console.writeln("  " + name + " = " + desc);
+      Quiet.writeln("  " + name + " = " + desc);
    }
-   Console.writeln("--- end ---");
+   Quiet.writeln("--- end ---");
 }
 
 // -----------------------------------------------------------------------
@@ -371,19 +447,34 @@ function dumpObject(label, obj) {
 // channel=0, x0, y0, x1, y1]), or null on error. If candidateInfo is an
 // array, it receives one {x, y, flux, size, bkg} entry per returned row
 // (same index), used by reportRejections() to explain dropped candidates.
-function detectStarCandidates(image, searchRadius, maxCandidates, candidateInfo) {
+function detectStarCandidates(image, searchRadius, maxCandidates, candidateInfo, sd) {
    if (typeof StarDetector === "undefined") {
       Console.criticalln("StarDetector is not available in this PixInsight version.");
       return null;
    }
 
    let D = new StarDetector;
+   // Optional StarDetector parameters (sdCustom): the defaults reject
+   // strongly elongated and large stars, which are exactly the aberrated
+   // stars at the field edge - raising maxDistortion/structureLayers
+   // keeps more of them.
+   if (sd && sd.sdCustom) {
+      D.structureLayers = sd.sdStructureLayers;
+      D.sensitivity = sd.sdSensitivity;
+      D.peakResponse = sd.sdPeakResponse;
+      D.maxDistortion = sd.sdMaxDistortion;
+      D.allowClusteredSources = sd.sdAllowClustered;
+      Quiet.writeln(format("StarDetector parameters: structureLayers=%d  sensitivity=%.2f  " +
+         "peakResponse=%.2f  maxDistortion=%.2f  allowClusteredSources=%s",
+         D.structureLayers, D.sensitivity, D.peakResponse, D.maxDistortion,
+         D.allowClusteredSources ? "true" : "false"));
+   }
 
    // StarDetector.stars() is a single, opaque native call with no
    // intermediate progress - on large images this can take a while with
    // no console output at all. At least show start/end/duration so it's
    // clear the script is still working.
-   Console.writeln("StarDetector running (can take a moment on large images) ...");
+   Quiet.writeln("StarDetector running (can take a moment on large images) ...");
    let t0 = Date.now();
    let rawStars;
    try {
@@ -392,9 +483,9 @@ function detectStarCandidates(image, searchRadius, maxCandidates, candidateInfo)
       Console.criticalln("StarDetector.stars() failed: " + e.message);
       return null;
    }
-   Console.writeln(format("StarDetector finished after %.1f s.", (Date.now() - t0) / 1000));
+   Quiet.writeln(format("StarDetector finished after %.1f s.", (Date.now() - t0) / 1000));
 
-   Console.noteln(rawStars.length + " candidate(s) found by StarDetector.");
+   Quiet.noteln(rawStars.length + " candidate(s) found by StarDetector.");
    if (rawStars.length > 0)
       dumpObject("StarDetector candidate[0] (diagnostics)", rawStars[0]);
 
@@ -408,7 +499,7 @@ function detectStarCandidates(image, searchRadius, maxCandidates, candidateInfo)
       rawStars = rawStars.slice().sort(function(a, b) {
          return (b.flux || 0) - (a.flux || 0);
       }).slice(0, maxCandidates);
-      Console.noteln(format("Limited to the %d brightest candidates (of %d found) - " +
+      Quiet.noteln(format("Limited to the %d brightest candidates (of %d found) - " +
          "reduces the runtime of the subsequent DynamicPSF fit.", maxCandidates, totalFound));
    }
 
@@ -514,11 +605,11 @@ function medianOf(values) {
 }
 
 function reportRejections(P, image, starBoxes, candidateInfo, searchRadius) {
-   const MAX_LISTED = DEBUG_DUMP_RAW ? 100 : 15;
+   const MAX_LISTED = 15;
    let n = starBoxes.length;
    let w = image.width, h = image.height;
 
-   Console.writeln("--- Rejection analysis ---");
+   Quiet.writeln("--- Rejection analysis ---");
 
    let starNames = dynamicPSFConstantNames("Star_");
    let psfNames = dynamicPSFConstantNames("PSF_");
@@ -528,8 +619,8 @@ function reportRejections(P, image, starBoxes, candidateInfo, searchRadius) {
          parts.push(k + "=" + map[k]);
       return parts.length > 0 ? parts.join(", ") : "(none found)";
    };
-   Console.writeln("DynamicPSF star status codes: " + listNames(starNames));
-   Console.writeln("DynamicPSF PSF status codes:  " + listNames(psfNames));
+   Quiet.writeln("DynamicPSF star status codes: " + listNames(starNames));
+   Quiet.writeln("DynamicPSF PSF status codes:  " + listNames(psfNames));
 
    // 1. What DynamicPSF wrote back into its stars table (status column).
    let starsAfter = P.stars;
@@ -537,10 +628,10 @@ function reportRejections(P, image, starBoxes, candidateInfo, searchRadius) {
       let codes = [];
       for (let i = 0; i < starsAfter.length; ++i)
          codes.push(describeCode(starNames, starsAfter[i][2]));
-      Console.writeln(format("P.stars after fit: %d row(s), status column distribution (code:count): %s",
+      Quiet.writeln(format("P.stars after fit: %d row(s), status column distribution (code:count): %s",
          starsAfter.length, countBy(codes)));
    } else {
-      Console.writeln("P.stars after fit: empty (DynamicPSF did not write back its stars table).");
+      Quiet.writeln("P.stars after fit: empty (DynamicPSF did not write back its stars table).");
    }
 
    // 2. Status of the rows that did produce a PSF.
@@ -552,12 +643,12 @@ function reportRejections(P, image, starBoxes, candidateInfo, searchRadius) {
       let code = row[IDX_STATUS];
       psfCodes.push(describeCode(psfNames, code));
    }
-   Console.writeln(format("P.psf: %d row(s) for %d candidate(s); status distribution: %s",
+   Quiet.writeln(format("P.psf: %d row(s) for %d candidate(s); status distribution: %s",
       P.psf.length, n, P.psf.length > 0 ? countBy(psfCodes) : "-"));
 
    if (!candidateInfo || candidateInfo.length !== n) {
-      Console.writeln("(No StarDetector metadata available - detailed analysis skipped.)");
-      Console.writeln("--- end ---");
+      Quiet.writeln("(No StarDetector metadata available - detailed analysis skipped.)");
+      Quiet.writeln("--- end ---");
       return;
    }
 
@@ -660,35 +751,34 @@ function reportRejections(P, image, starBoxes, candidateInfo, searchRadius) {
          why.unshift("PSF status " + describeCode(psfNames, fitted[i]));
 
       if (listed < MAX_LISTED) {
-         Console.writeln(format("  dropped #%d at (%.1f, %.1f) flux=%.3g size=%d: %s",
+         Quiet.writeln(format("  dropped #%d at (%.1f, %.1f) flux=%.3g size=%d: %s",
             i, c.x, c.y, c.flux, c.size, why.join("; ")));
          ++listed;
       }
    }
    if (dropped.length > listed)
-      Console.writeln(format("  ... %d more dropped candidate(s) not listed%s.",
-         dropped.length - listed, DEBUG_DUMP_RAW ? "" : " (enable debug output for up to 100)"));
+      Quiet.writeln(format("  ... %d more dropped candidate(s) not listed.", dropped.length - listed));
 
-   Console.noteln(format("Dropped %d of %d candidate(s). Suspected causes (not exclusive): " +
+   Quiet.noteln(format("Dropped %d of %d candidate(s). Suspected causes (not exclusive): " +
       "border=%d, larger than search box=%d, overlapping neighbor=%d, saturated=%d, no obvious cause=%d",
       dropped.length, n, reasons.edge, reasons.tooLarge, reasons.neighbor, reasons.saturated, reasons.none));
 
    for (let st in reasonsByStatus) {
       let b = reasonsByStatus[st];
-      Console.writeln(format("  star status %s: n=%d  border=%d, larger than box=%d, neighbor=%d, saturated=%d, no obvious cause=%d",
+      Quiet.writeln(format("  star status %s: n=%d  border=%d, larger than box=%d, neighbor=%d, saturated=%d, no obvious cause=%d",
          st, b.n, b.edge, b.tooLarge, b.neighbor, b.saturated, b.none));
    }
 
    function stats(list, label) {
-      Console.writeln(format("  %-8s n=%4d  median flux=%.3g  median size=%.0f px",
+      Quiet.writeln(format("  %-8s n=%4d  median flux=%.3g  median size=%.0f px",
          label, list.length,
          medianOf(list.map(function(c) { return c.flux; })),
          medianOf(list.map(function(c) { return c.size; }))));
    }
    stats(kept, "fitted");
    stats(dropped, "dropped");
-   Console.writeln(format("  search box = %d x %d px (radius %d)", boxDiameter, boxDiameter, searchRadius));
-   Console.writeln("--- end ---");
+   Quiet.writeln(format("  search box = %d x %d px (radius %d)", boxDiameter, boxDiameter, searchRadius));
+   Quiet.writeln("--- end ---");
 }
 
 // -----------------------------------------------------------------------
@@ -708,7 +798,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
    } catch (e) {
       Console.criticalln("P.stars assignment failed: " + e.message);
       if (starBoxes.length > 0)
-         Console.writeln("First row (length " + starBoxes[0].length + "): [" + starBoxes[0].join(", ") + "]");
+         Quiet.writeln("First row (length " + starBoxes[0].length + "): [" + starBoxes[0].join(", ") + "]");
       return [];
    }
 
@@ -726,7 +816,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
    // P.executeGlobal() is a single, blocking native call - while it runs,
    // no JS code (including any progress display) can run in between. At
    // least show start/end/duration.
-   Console.writeln(format("DynamicPSF fit running (%d candidates) ...", starBoxes.length));
+   Quiet.writeln(format("DynamicPSF fit running (%d candidates) ...", starBoxes.length));
    let fitT0 = Date.now();
    try {
       P.executeGlobal();
@@ -734,7 +824,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
       Console.criticalln("DynamicPSF.executeGlobal() failed: " + e.message);
       return [];
    }
-   Console.writeln(format("DynamicPSF fit finished after %.1f s.", (Date.now() - fitT0) / 1000));
+   Quiet.writeln(format("DynamicPSF fit finished after %.1f s.", (Date.now() - fitT0) / 1000));
 
    try {
       reportRejections(P, view.image, starBoxes, candidateInfo, searchRadius);
@@ -746,7 +836,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
    if (P.psf.length === 0) {
       Console.warningln("DynamicPSF: 0 of " + starBoxes.length + " candidate(s) successfully fitted.");
       if (starBoxes.length > 0)
-         Console.writeln("Sample row P.stars[0] = [" + starBoxes[0].join(", ") + "]");
+         Quiet.writeln("Sample row P.stars[0] = [" + starBoxes[0].join(", ") + "]");
       return stars;
    }
 
@@ -785,7 +875,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
 
       if (row[IDX_MAD] > madCutoff) {
          ++rejectedByMad;
-         Console.writeln(format("  MAD reject: star #%d at (%.1f, %.1f)  MAD=%.4g > cutoff %.4g (median %.4g)",
+         Quiet.writeln(format("  MAD reject: star #%d at (%.1f, %.1f)  MAD=%.4g > cutoff %.4g (median %.4g)",
             row[IDX_STARINDEX], row[IDX_CX], row[IDX_CY], row[IDX_MAD], madCutoff, madMedian));
          continue;
       }
@@ -821,13 +911,13 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
 
    if (badBeta > 0)
       Console.warningln(format("%d Moffat fit(s) without a valid beta (column IDX_BETA=%d) - Gaussian FWHM " +
-         "factor used for those; check the column layout with the debug option.", badBeta, IDX_BETA));
+         "factor used for those; check the column layout (IDX_* constants).", badBeta, IDX_BETA));
 
    if (rejectedByMad > 0)
-      Console.noteln(rejectedByMad + " fit(s) rejected as MAD outliers (factor " +
+      Quiet.noteln(rejectedByMad + " fit(s) rejected as MAD outliers (factor " +
          madOutlierFactor + " x median).");
 
-   Console.noteln(format("%d / %d stars successfully fitted.", stars.length, P.psf.length));
+   Quiet.noteln(format("%d / %d stars successfully fitted.", stars.length, P.psf.length));
 
    // Diagnostics - unconditional: if, despite P.psf.length > 0, not a
    // single star remains, distinguish between "status filter not working"
@@ -836,7 +926,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
    if (stars.length === 0 && accepted.length === 0) {
       Console.criticalln("All " + P.psf.length + " PSF rows were rejected by the status filter " +
          "(row[" + IDX_STATUS + "] !== 1) - column layout presumably wrong. Diagnostics:");
-      Console.writeln("Raw psf[0] (length " + P.psf[0].length + ") = [" + P.psf[0].join(", ") + "]");
+      Quiet.writeln("Raw psf[0] (length " + P.psf[0].length + ") = [" + P.psf[0].join(", ") + "]");
 
       let statusCounts = {};
       for (let i = 0; i < P.psf.length; ++i) {
@@ -846,7 +936,7 @@ function fitStars(view, starBoxes, threshold, searchRadius, useMoffat, madOutlie
       let parts = [];
       for (let k in statusCounts)
          parts.push(k + ":" + statusCounts[k]);
-      Console.writeln("Distribution row[IDX_STATUS=" + IDX_STATUS + "] -> count: " + parts.join(", "));
+      Quiet.writeln("Distribution row[IDX_STATUS=" + IDX_STATUS + "] -> count: " + parts.join(", "));
    } else if (stars.length === 0 && accepted.length > 0) {
       Console.criticalln(accepted.length + " successful fits present, but all rejected by the " +
          "MAD outlier filter - madOutlierFactor (" + madOutlierFactor + ") is too strict.");
@@ -875,6 +965,207 @@ function exportCSV(stars, filePath) {
    }
    f.close();
    Console.noteln("CSV exported to: " + filePath);
+}
+
+// -----------------------------------------------------------------------
+// The results of a Calculate as a file that can be loaded again (Setup >
+// General: Save results / Load results), JSON:
+//   format, version, script     identification
+//   image                       viewId, filePath, width, height (of the
+//                               measured image - half size after SuperPixel
+//                               debayering), debayer, hasAsymmetry
+//   measurement                 the detection settings of the run (analysisKey())
+//   keywords                    the FITS keywords of the target image
+//                               [[name, value], ...] - optics, mount and
+//                               observation values are read from them
+//   comaFit, comaFitCentroid    as measured (their bootstrap is random)
+//   columns, stars              the stars as measured (without the tracking
+//                               correction): one row of RESULTS_COLUMNS each
+// Everything else (tracking, layers, evaluations) is computed from these.
+// About 100 bytes per star. Non-ASCII characters are written as \u escapes,
+// so the file is plain ASCII.
+const RESULTS_FORMAT = "StarAberrationDiagnostics results";
+const RESULTS_VERSION = 1;
+const RESULTS_COLUMNS = ["x", "y", "fwhmX", "fwhmY", "eccentricity", "rotation", "asymX", "asymY", "m3X", "m3Y"];
+const RESULTS_MEASUREMENT = ["threshold", "radius", "useMoffat", "madOutlierFactor", "maxCandidates", "debayer",
+   "bayerPattern", "sdCustom", "sdStructureLayers", "sdSensitivity", "sdPeakResponse", "sdMaxDistortion",
+   "sdAllowClustered"];
+const RESULTS_EXTENSION = "_aberration.json";
+
+// The FITS keywords of a view as [[name, value], ...] (values as text).
+function viewKeywordList(view) {
+   let out = [];
+   try {
+      let keywords = view.window.keywords;
+      for (let i = 0; i < keywords.length; ++i)
+         out.push([String(keywords[i].name).trim(), String(keywords[i].value)]);
+   } catch (e) {
+      // no keywords
+   }
+   return out;
+}
+
+// The default path of the results file: next to the original file, named
+// after it, or in the temporary directory for an image never saved.
+function resultsDefaultPath(header) {
+   let filePath = header.filePath || "";
+   return filePath.length > 0 ?
+      File.extractDrive(filePath) + File.extractDirectory(filePath) + "/" + File.extractName(filePath) +
+         RESULTS_EXTENSION :
+      File.systemTempDirectory + "/" + header.viewId + RESULTS_EXTENSION;
+}
+
+function saveResults(analysis, p, filePath) {
+   // 7 significant digits: sub-millipixel positions, far below the fit noise.
+   let num = function(v) {
+      return (v === null || v === undefined || !isFinite(v)) ? null : Number(v.toPrecision(7));
+   };
+   // The detection settings the stars were measured with: those of the
+   // loaded file, or of the dialog (a Calculate result is current).
+   let measurement = {};
+   RESULTS_MEASUREMENT.forEach(function(k) { measurement[k] = (analysis.measurement || p)[k]; });
+   let data = {
+      format: RESULTS_FORMAT,
+      version: RESULTS_VERSION,
+      script: VERSION,
+      created: (new Date()).toISOString(),
+      image: { viewId: analysis.header.viewId, filePath: analysis.header.filePath, width: analysis.w,
+               height: analysis.h, debayer: analysis.debayer, hasAsymmetry: analysis.hasAsymmetry },
+      measurement: measurement,
+      keywords: analysis.header.keywords,
+      comaFit: analysis.comaFit,
+      comaFitCentroid: analysis.comaFitCentroid,
+      columns: RESULTS_COLUMNS,
+      stars: analysis.stars.map(function(s) {
+         // The analysis keeps the stars as measured: eccentricity = raw.
+         return RESULTS_COLUMNS.map(function(c) { return num(s[c]); });
+      })
+   };
+   // One star per line, so that the file stays readable and diffable.
+   let stars = data.stars;
+   data.stars = "@STARS@";
+   let text = JSON.stringify(data, function(_key, value) {
+      return (typeof value === "number" && !isFinite(value)) ? null : value;
+   }, 1).replace('"@STARS@"', "[\n" + stars.map(function(r) { return "  " + JSON.stringify(r); }).join(",\n") + "\n ]");
+   text = text.replace(/[\u007f-￿]/g, function(ch) {
+      return "\\u" + ("000" + ch.charCodeAt(0).toString(16)).slice(-4);
+   });
+   let f = new File;
+   f.createForWriting(filePath);
+   f.outText(text + "\n");
+   f.close();
+   Console.noteln(format("Results saved (%d stars): %s", analysis.stars.length, filePath));
+}
+
+// A stand-in for the target image of loaded results: what resolveOptics(),
+// processView() and the header readers ask of a view (its id, the file path
+// and the FITS keywords of its window).
+function resultsSourceView(header) {
+   return {
+      id: header.viewId,
+      window: {
+         filePath: header.filePath || "",
+         keywords: header.keywords.map(function(k) { return { name: k[0], value: k[1] }; })
+      }
+   };
+}
+
+// The background of loaded results: the target image stretched, when it is
+// open (same view id and file, and the size that was measured - twice it
+// after SuperPixel debayering), else a dark field like that of a series.
+function resultsBackground(header, w, h, debayer) {
+   let windows = ImageWindow.windows;
+   for (let i = 0; i < windows.length; ++i) {
+      let win = windows[i];
+      if (win.isNull || win.mainView.id !== header.viewId)
+         continue;
+      if ((header.filePath || "") !== "" && win.filePath !== header.filePath)
+         continue;
+      let iw = win.mainView.image.width, ih = win.mainView.image.height;
+      let k = debayer ? 2 : 1;
+      if (Math.floor(iw / k) !== w || Math.floor(ih / k) !== h)
+         continue;
+      let bmp = renderStretchedBitmap(win.mainView);
+      return k === 1 ? bmp : bmp.scaledTo(w, h);
+   }
+   let background = new Bitmap(w, h);
+   background.fill(0xFF101010);
+   return background;
+}
+
+// Loads a results file into an analysis as analyzeView() returns it, plus
+// source (the stand-in view) and file (the path). Throws an Error with a
+// message for the user when the file cannot be used.
+function loadResults(filePath) {
+   let data;
+   try {
+      data = JSON.parse(File.readFile(filePath).utf8ToString());
+   } catch (e) {
+      throw new Error("The file is not a readable results file: " + e.message);
+   }
+   if (!data || data.format !== RESULTS_FORMAT)
+      throw new Error("The file is not a " + TITLE + " results file.");
+   if (data.version > RESULTS_VERSION)
+      throw new Error(format("The file has format version %d; this script reads up to version %d - " +
+         "update the script.", data.version, RESULTS_VERSION));
+   let img = data.image || {};
+   let w = img.width, h = img.height;
+   if (!(w > 0 && h > 0) || !Array.isArray(data.stars) || !Array.isArray(data.columns))
+      throw new Error("The results file is incomplete (image size or stars missing).");
+   let col = {};
+   data.columns.forEach(function(c, i) { col[c] = i; });
+   ["x", "y", "fwhmX", "fwhmY", "eccentricity", "rotation"].forEach(function(c) {
+      if (col[c] === undefined)
+         throw new Error("The results file lacks the column " + c + ".");
+   });
+   let get = function(row, c) {
+      return (col[c] === undefined || row[col[c]] === null || row[col[c]] === undefined) ? null : row[col[c]];
+   };
+   let stars = data.stars.map(function(row) {
+      let s = new StarRecord(row[col.x], row[col.y], row[col.fwhmX], row[col.fwhmY],
+         row[col.eccentricity], row[col.rotation]);
+      s.eccentricityRaw = s.eccentricity;
+      s.rotationRaw = s.rotation;
+      if (img.hasAsymmetry) {
+         s.asymX = get(row, "asymX");
+         s.asymY = get(row, "asymY");
+         s.m3X = get(row, "m3X");
+         s.m3Y = get(row, "m3Y");
+      }
+      return s;
+   });
+   if (stars.length === 0)
+      throw new Error("The results file contains no stars.");
+   // The bootstrap spreads were NaN when too few runs succeeded (JSON: null).
+   let coma = function(fit) {
+      if (!fit)
+         return null;
+      ["kSd", "x0Sd", "y0Sd"].forEach(function(k) { if (fit[k] === null) fit[k] = NaN; });
+      return fit;
+   };
+   let header = { viewId: img.viewId || File.extractName(filePath), filePath: img.filePath || "",
+                  keywords: Array.isArray(data.keywords) ? data.keywords : [] };
+   let hasAsymmetry = img.hasAsymmetry === true;
+   return {
+      key: "file:" + filePath,
+      targetViewId: header.viewId,
+      debayer: img.debayer === true,
+      w: w,
+      h: h,
+      stars: stars,
+      tracking: computeTrackingComponent(stars, w, h),
+      hasAsymmetry: hasAsymmetry,
+      comaFit: hasAsymmetry ? (data.comaFit !== undefined ? coma(data.comaFit) : fitComaField(stars, w, h, false)) : null,
+      comaFitCentroid: hasAsymmetry ? (data.comaFitCentroid !== undefined ? coma(data.comaFitCentroid) :
+         fitComaField(stars, w, h, true)) : null,
+      background: resultsBackground(header, w, h, img.debayer === true),
+      layers: {},
+      header: header,
+      source: resultsSourceView(header),
+      file: filePath,
+      measurement: data.measurement || {},
+      created: data.created || ""
+   };
 }
 
 // -----------------------------------------------------------------------
@@ -966,9 +1257,10 @@ function computeSirilTilt(stars, w, h) {
 // many on average), so individual cell values are noisier than the 4
 // quadrant means - this trades statistical robustness for spatial
 // resolution.
-// Returns a gridSize x gridSize array of arrays (row-major, row 0 = top,
-// column 0 = left), each entry either a number or null.
-function computeFwhmGrid(stars, w, h, gridSize) {
+
+// The FWHM values ((fwhmX+fwhmY)/2, px) of the stars per cell: a
+// gridSize x gridSize array of arrays (row 0 = top, column 0 = left).
+function fwhmGridBuckets(stars, w, h, gridSize) {
    let cellW = w / gridSize, cellH = h / gridSize;
    let buckets = [];
    for (let r = 0; r < gridSize; ++r) {
@@ -977,70 +1269,334 @@ function computeFwhmGrid(stars, w, h, gridSize) {
          row.push([]);
       buckets.push(row);
    }
-
    for (let i = 0; i < stars.length; ++i) {
       let s = stars[i];
       let col = Math.min(gridSize - 1, Math.max(0, Math.floor(s.x / cellW)));
       let row = Math.min(gridSize - 1, Math.max(0, Math.floor(s.y / cellH)));
       buckets[row][col].push((s.fwhmX + s.fwhmY) * 0.5);
    }
-
-   let grid = [];
-   for (let r = 0; r < gridSize; ++r) {
-      let row = [];
-      for (let c = 0; c < gridSize; ++c)
-         row.push(buckets[r][c].length > 0 ? trimmedMean25(buckets[r][c]) : null);
-      grid.push(row);
-   }
-   return grid;
+   return buckets;
 }
 
-// Draws the grid computed by computeFwhmGrid(): thin grid lines dividing
-// the image into cells, plus a small halo-backed text label per non-empty
-// cell showing its trimmed mean FWHM. Alternative to
-// drawSirilTiltPolygon() for a finer-grained (but per-cell noisier) view
-// of the FWHM distribution across the field - same salmon-orange color
-// family, so it reads as belonging to the same overlay.
-// `scale` converts the per-cell FWHM from image pixels into the displayed
-// unit (1 for pixels, arcsec/px for arcseconds); `unitLabel` is shown as a
-// legend in the top-left corner.
-function drawFwhmGrid(g, w, h, grid, scale, unitLabel) {
-   let gridSize = grid.length;
-   let cellW = w / gridSize, cellH = h / gridSize;
-   let gridColor = 0xFFFFCCB2; // same salmon-orange as the Siril quadrant overlay
+// The value of a set of FWHM values - the 25%-trimmed mean - with the
+// number of values and its standard error (px; null below 2 values). The
+// scatter is estimated robustly as 1.4826 x MAD (robustSpread()) - like
+// the trimmed mean, it ignores the odd bad fit - so se = 1.4826 x MAD / √n.
+function fwhmCellStats(values) {
+   let n = values.length;
+   if (n === 0)
+      return { value: null, n: 0, se: null };
+   return { value: trimmedMean25(values), n: n, se: n < 2 ? null : robustSpread(values) / Math.sqrt(n) };
+}
 
+// The trimmed mean FWHM per cell: a gridSize x gridSize array of arrays
+// (row-major, row 0 = top, column 0 = left), each entry a number or null.
+function computeFwhmGrid(stars, w, h, gridSize) {
+   return fwhmGridBuckets(stars, w, h, gridSize).map(function(row) {
+      return row.map(function(b) { return fwhmCellStats(b).value; });
+   });
+}
+
+// -----------------------------------------------------------------------
+// Assessment of the FWHM grid. Each cell is judged by its ratio to the
+// image center, R = FWHM_cell / FWHM_center - a ratio, so that seeing,
+// focal length and pixel size drop out:
+//    R <= 1.10 good, <= 1.25 slight, <= 1.50 clear, > 1.50 strong
+// but only where the difference is significant,
+//    z = (FWHM_cell - FWHM_center) / √(se_cell² + se_center²) >= 2;
+// a cell that cannot be told from the center (and is not sharp anyway) is
+// "not significant", an uncertain cell (fewer than FWHM_GRID_MIN_STARS
+// stars or a standard error above FWHM_GRID_MAX_REL_SE of its value) is
+// not judged at all. The thresholds are rules of thumb, not a standard.
+// The center is the inner 3 x 3 cells pooled. For the whole image:
+//  - corners: ratio of each corner (its 2 x 2 cell block pooled) to the
+//    center, and their median - the rotationally symmetric part, i.e.
+//    field curvature / spacing;
+//  - tilt: the diagonal (TL-BR or TR-BL) whose corners differ most,
+//    |a - b| / ((a + b) / 2), with its significance |a - b| / √(se_a² + se_b²)
+//    - the one-sided part, i.e. sensor tilt (< 5% unremarkable, 5-10%
+//    slight, > 10% worth correcting);
+//  - edge spread: (max - min) / median of the judged cells of the outer
+//    ring - an uneven edge points to tilt or collimation.
+const FWHM_GRID_SIZE = 11;
+const FWHM_GRID_MIN_STARS = 5;
+const FWHM_GRID_MAX_REL_SE = 0.10;
+const FWHM_GRID_MIN_Z = 2;
+const FWHM_RATIO_LIMITS = [1.10, 1.25, 1.50];
+const FWHM_RATIO_NAMES = ["good", "slight", "clear", "strong"];
+const FWHM_TILT_LIMITS = [0.05, 0.10];
+const FWHM_TILT_NAMES = ["unremarkable", "slight", "worth correcting"];
+const FWHM_CORNER_NAMES = ["top left", "top right", "bottom left", "bottom right"];
+
+// 0 good ... 3 strong.
+function fwhmRatioClass(ratio) {
+   let k = 0;
+   while (k < FWHM_RATIO_LIMITS.length && ratio > FWHM_RATIO_LIMITS[k])
+      ++k;
+   return k;
+}
+
+// Returns { gridSize, center, cells, corners, tilt, edgeSpread, classCounts }:
+// center { value, n, se } (null without stars in the center); cells a
+// gridSize x gridSize array of { value, n, se, uncertain, ratio, z, cls }
+// with cls -1 = not judged (empty, uncertain or not significant) or 0..3
+// (ratio is null for empty cells and without a center, z for uncertain ones);
+// corners null or { stats[4], ratios[4] (TL, TR, BL, BR), ratio (median),
+// cls }; tilt null or { rel, z, significant, cls, soft, sharp (corner
+// indices) }; edgeSpread null or a fraction; classCounts { good, slight,
+// clear, strong, notSignificant, uncertain }.
+function evaluateFwhmGrid(stars, w, h, gridSize) {
+   gridSize = gridSize || FWHM_GRID_SIZE;
+   let buckets = fwhmGridBuckets(stars, w, h, gridSize);
+   let pool = function(r0, r1, c0, c1) {
+      let out = [];
+      for (let r = r0; r <= r1; ++r)
+         for (let c = c0; c <= c1; ++c)
+            out = out.concat(buckets[r][c]);
+      return fwhmCellStats(out);
+   };
+   let mid = gridSize >> 1;
+   let center = pool(mid - 1, mid + 1, mid - 1, mid + 1);
+   if (center.value === null || center.se === null)
+      center = null;
+
+   let counts = { good: 0, slight: 0, clear: 0, strong: 0, notSignificant: 0, uncertain: 0 };
+   let cells = buckets.map(function(row) {
+      return row.map(function(b) {
+         let e = fwhmCellStats(b);
+         e.uncertain = e.n < FWHM_GRID_MIN_STARS || e.se === null || e.se > FWHM_GRID_MAX_REL_SE * e.value;
+         e.ratio = null;
+         e.z = null;
+         e.cls = -1;
+         if (e.value === null)
+            return e;
+         if (center !== null)
+            e.ratio = e.value / center.value; // shown for uncertain cells too, in brackets
+         if (e.uncertain) {
+            ++counts.uncertain;
+            return e;
+         }
+         if (center === null)
+            return e;
+         e.z = (e.value - center.value) / Math.sqrt(e.se * e.se + center.se * center.se);
+         let cls = fwhmRatioClass(e.ratio);
+         if (cls === 0 || e.z >= FWHM_GRID_MIN_Z) {
+            e.cls = cls;
+            ++counts[FWHM_RATIO_NAMES[cls]];
+         } else {
+            ++counts.notSignificant;
+         }
+         return e;
+      });
+   });
+
+   // Corners: 2 x 2 cell blocks at 11 x 11 (about a fifth of each side).
+   let corners = null, tilt = null;
+   let k = Math.max(1, Math.round(gridSize / 5)), last = gridSize - 1;
+   let cs = [pool(0, k - 1, 0, k - 1), pool(0, k - 1, last - k + 1, last),
+             pool(last - k + 1, last, 0, k - 1), pool(last - k + 1, last, last - k + 1, last)];
+   if (cs.every(function(s) { return s.value !== null && s.se !== null; })) {
+      if (center !== null) {
+         let ratios = cs.map(function(s) { return s.value / center.value; });
+         let ratio = medianOf(ratios);
+         corners = { stats: cs, ratios: ratios, ratio: ratio, cls: fwhmRatioClass(ratio) };
+      }
+      // Diagonals: TL (0) - BR (3), TR (1) - BL (2).
+      [[0, 3], [1, 2]].forEach(function(d) {
+         let a = cs[d[0]], b = cs[d[1]];
+         let rel = Math.abs(a.value - b.value) / (0.5 * (a.value + b.value));
+         if (tilt === null || rel > tilt.rel) {
+            let z = Math.abs(a.value - b.value) / Math.sqrt(a.se * a.se + b.se * b.se);
+            let soft = a.value >= b.value ? d[0] : d[1];
+            let cls = rel < FWHM_TILT_LIMITS[0] ? 0 : rel < FWHM_TILT_LIMITS[1] ? 1 : 2;
+            tilt = { rel: rel, z: z, significant: z >= FWHM_GRID_MIN_Z, cls: cls,
+                     soft: soft, sharp: soft === d[0] ? d[1] : d[0] };
+         }
+      });
+   }
+
+   // Edge spread over the judged cells of the outer ring.
+   let edge = [];
+   for (let r = 0; r < gridSize; ++r)
+      for (let c = 0; c < gridSize; ++c)
+         if ((r === 0 || r === last || c === 0 || c === last) && cells[r][c].value !== null &&
+             !cells[r][c].uncertain)
+            edge.push(cells[r][c].value);
+   let edgeSpread = edge.length >= 4 ?
+      (Math.max.apply(null, edge) - Math.min.apply(null, edge)) / medianOf(edge) : null;
+
+   return { gridSize: gridSize, center: center, cells: cells, corners: corners, tilt: tilt,
+            edgeSpread: edgeSpread, classCounts: counts };
+}
+
+// One line each for the console: the center, corners, tilt and edge of
+// evaluateFwhmGrid() (FWHM in px).
+function formatFwhmGridEvaluation(ev, scale, unit) {
+   scale = scale || 1;
+   unit = unit || "px";
+   let fw = function(v) { return format("%.2f", v * scale) + (unit === "px" ? " px" : unit); };
+   let lines = [];
+   if (ev.center === null)
+      return ["Center: no stars - not judged."];
+   lines.push(format("Center (inner 3x3 cells): x1.00 (%s ± %s, n=%d)", fw(ev.center.value), fw(ev.center.se),
+      ev.center.n));
+   if (ev.corners !== null) {
+      lines.push(format("Corners: x%.2f the center (median) -> %s.", ev.corners.ratio,
+         FWHM_RATIO_NAMES[ev.corners.cls]));
+      // One indented line per corner.
+      ev.corners.ratios.forEach(function(r, i) {
+         lines.push(format("   %s: x%.2f (%s ± %s, n=%d)", FWHM_CORNER_NAMES[i].charAt(0).toUpperCase() +
+            FWHM_CORNER_NAMES[i].slice(1), r, fw(ev.corners.stats[i].value), fw(ev.corners.stats[i].se),
+            ev.corners.stats[i].n));
+      });
+   } else {
+      lines.push("Corners: too few stars - not judged.");
+   }
+   if (ev.tilt !== null)
+      lines.push(format("Tilt: %s %.0f%% softer than %s (%.1fσ) -> %s.",
+         FWHM_CORNER_NAMES[ev.tilt.soft], 100 * ev.tilt.rel, FWHM_CORNER_NAMES[ev.tilt.sharp], ev.tilt.z,
+         ev.tilt.significant ? FWHM_TILT_NAMES[ev.tilt.cls] : "not significant"));
+   if (ev.edgeSpread !== null)
+      lines.push(format("Edge spread: %.0f%% between the softest and the sharpest edge cell.",
+         100 * ev.edgeSpread));
+   let n = ev.classCounts;
+   lines.push(format("Cells: %d good, %d slight, %d clear, %d strong, %d not significant, %d uncertain " +
+      "(R = FWHM/center: <= %.2f / %.2f / %.2f / above; significant from %.0fσ).",
+      n.good, n.slight, n.clear, n.strong, n.notSignificant, n.uncertain,
+      FWHM_RATIO_LIMITS[0], FWHM_RATIO_LIMITS[1], FWHM_RATIO_LIMITS[2], FWHM_GRID_MIN_Z));
+   return lines;
+}
+
+// The fill of a cell of the FWHM grid for its ratio to the center, along
+// the four classes: green up to ×1.10 (good, held flat so that it reads as
+// green), yellow around ×1.17 (slight), orange around ×1.25 (clear), red
+// from FWHM_FILL_RATIO_MAX on (strong). The opacity grows with the ratio,
+// so that the stars stay visible in good cells.
+const FWHM_FILL_RATIO_MAX = 1.5;
+const FWHM_FILL_STOPS = [[1.00, 70, 215, 95], [1.10, 70, 215, 95], [1.17, 255, 228, 90], [1.25, 255, 160, 40],
+                         [1.50, 214, 38, 30]]; // ratio, r, g, b
+function fwhmFillColor(ratio) {
+   let r = Math.range(ratio, FWHM_FILL_STOPS[0][0], FWHM_FILL_RATIO_MAX);
+   let i = 0;
+   while (i < FWHM_FILL_STOPS.length - 2 && r > FWHM_FILL_STOPS[i + 1][0])
+      ++i;
+   let a = FWHM_FILL_STOPS[i], b = FWHM_FILL_STOPS[i + 1];
+   let u = (b[0] > a[0]) ? (r - a[0]) / (b[0] - a[0]) : 0;
+   let mix = function(k) { return Math.round(a[k] + (b[k] - a[k]) * u); };
+   let t = (r - 1) / (FWHM_FILL_RATIO_MAX - 1);
+   let alpha = Math.round(150 + 75 * t);
+   return ((alpha << 24) | (mix(1) << 16) | (mix(2) << 8) | mix(3)) >>> 0;
+}
+
+const FWHM_TEXT_COLOR = 0xFFFFFFFF;
+const FWHM_DETAIL_COLOR = 0xFFD8D8D8;
+const FWHM_UNCERTAIN_HATCH = 0x90B0B0B0;
+
+// Draws the grid of evaluateFwhmGrid(). Each cell shows, as selected in
+// `show` (one of them), its FWHM in pixels (3.15 px), in arcseconds
+// (2.07") or its ratio to the center (×1.17), large, and with details the
+// standard error and the star count smaller below.
+// The fill follows the ratio (fwhmFillColor()), but only where the cell
+// differs significantly from the center (or is good anyway); cells that
+// cannot be told from the center stay unfilled. An uncertain cell (too few
+// stars or a large standard error) is hatched gray, its first value in
+// brackets. show: { px, arcsecScale (arcsec/px, 0 = not shown), ratio,
+// details, detailScale, detailUnit }. The legend of the fill and the
+// summary (center, corners, tilt) are on the Star size page of the dialog.
+function drawFwhmGrid(g, w, h, ev, show) {
+   let gridSize = ev.gridSize;
+   let cellW = w / gridSize, cellH = h / gridSize;
+   g.antialiasing = true;
+
+   // Fills first, the grid lines on top.
+   for (let r = 0; r < gridSize; ++r) {
+      for (let c = 0; c < gridSize; ++c) {
+         let e = ev.cells[r][c];
+         let x0 = c * cellW, y0 = r * cellH;
+         if (e.value === null)
+            continue;
+         if (e.uncertain)
+            g.fillRect(x0, y0, x0 + cellW, y0 + cellH, new Brush(FWHM_UNCERTAIN_HATCH, BrushStyle.BackwardDiagonalHatch));
+         else if (e.cls >= 0 && e.ratio !== null)
+            g.fillRect(x0, y0, x0 + cellW, y0 + cellH, new Brush(fwhmFillColor(e.ratio)));
+      }
+   }
+   drawCellGrid(g, w, h, gridSize);
+
+   let fontSize = Math.max(12, Math.round(Math.min(cellW, cellH) * 0.24));
+   let font = new Font("Helvetica", fontSize);
+   try { font.bold = true; } catch (e) { /* not critical */ }
+   let smallSize = Math.max(9, Math.round(fontSize * 0.55));
+   let smallFont = new Font("Helvetica", smallSize);
+
+   for (let r = 0; r < gridSize; ++r) {
+      for (let c = 0; c < gridSize; ++c) {
+         let e = ev.cells[r][c];
+         if (e.value === null)
+            continue;
+         let lines = [];
+         if (show.px)
+            lines.push(format("%.2f px", e.value));
+         if (show.arcsecScale > 0)
+            lines.push(format("%.2f\"", e.value * show.arcsecScale));
+         if (show.ratio)
+            lines.push(e.ratio !== null ? format("\u00D7%.2f", e.ratio) :
+               format("%.2f px", e.value)); // no center: the FWHM instead
+         if (lines.length > 0 && e.uncertain)
+            lines[0] = "(" + lines[0] + ")";
+         if (show.details)
+            lines.push((e.se !== null ? format("\u00B1%.2f%s, ", e.se * show.detailScale,
+               show.detailUnit === "px" ? " px" : show.detailUnit) : "") + "n=" + e.n);
+         if (lines.length === 0)
+            continue;
+         // The first line large, the others smaller below; all centered together.
+         let ccx = (c + 0.5) * cellW, ccy = (r + 0.5) * cellH;
+         let labelY = ccy + fontSize / 3 - (lines.length - 1) * smallSize * 0.7;
+         g.font = font;
+         drawTextWithHalo(g, ccx - g.font.width(lines[0]) / 2, labelY, lines[0], FWHM_TEXT_COLOR, fontSize);
+         g.font = smallFont;
+         for (let k = 1; k < lines.length; ++k)
+            drawTextWithHalo(g, ccx - g.font.width(lines[k]) / 2, labelY + smallSize * 1.4 * k,
+               lines[k], FWHM_DETAIL_COLOR, smallSize);
+      }
+   }
+   g.font = font;
+}
+
+// The lines of the gridSize x gridSize cell grid (the FWHM grid and the
+// shape cells), with a frame around the inner 3x3 cells - the center the
+// FWHM ratios and the shape center refer to.
+function drawCellGrid(g, w, h, gridSize) {
+   let cellW = w / gridSize, cellH = h / gridSize;
+   let lineColor = 0xFFFFCCB2; // same salmon-orange as the Siril quadrant overlay
    g.antialiasing = true;
    g.pen = new Pen(0xB0000000, 3);
    for (let i = 0; i <= gridSize; ++i) {
       g.drawLine(i * cellW, 0, i * cellW, h);
       g.drawLine(0, i * cellH, w, i * cellH);
    }
-   g.pen = new Pen(gridColor, 1);
+   g.pen = new Pen(lineColor, 1);
    for (let i = 0; i <= gridSize; ++i) {
       g.drawLine(i * cellW, 0, i * cellW, h);
       g.drawLine(0, i * cellH, w, i * cellH);
    }
+   let mid = gridSize >> 1;
+   let fx0 = (mid - 1) * cellW, fy0 = (mid - 1) * cellH, fx1 = (mid + 2) * cellW, fy1 = (mid + 2) * cellH;
+   let frameWidth = Math.max(2, Math.round(Math.min(cellW, cellH) * 0.012));
+   g.pen = new Pen(0xC0000000, frameWidth + 2);
+   g.drawRect(fx0, fy0, fx1, fy1);
+   g.pen = new Pen(0xFFFFFFFF, frameWidth);
+   g.drawRect(fx0, fy0, fx1, fy1);
+}
 
-   let fontSize = Math.max(12, Math.round(Math.min(cellW, cellH) * 0.22));
-   let font = new Font("Helvetica", fontSize);
-   try { font.bold = true; } catch (e) { /* not critical */ }
-   g.font = font;
-
-   for (let r = 0; r < gridSize; ++r) {
-      for (let c = 0; c < gridSize; ++c) {
-         let value = grid[r][c];
-         if (value === null)
-            continue;
-         let label = format("%.2f", value * scale);
-         let ccx = (c + 0.5) * cellW, ccy = (r + 0.5) * cellH;
-         let labelX = ccx - g.font.width(label) / 2;
-         let labelY = ccy + fontSize / 3;
-         drawTextWithHalo(g, labelX, labelY, label, gridColor, fontSize);
-      }
-   }
-
-   let legend = "FWHM [" + unitLabel + "]";
-   drawTextWithHalo(g, fontSize * 0.5, fontSize * 1.3, legend, gridColor, fontSize);
+// An ARGB color laid opaquely over the background `bg` (RGB), as it looks
+// on the dark sky of the map - for the legend in the dialog.
+function opaqueOver(argb, bg) {
+   let a = ((argb >>> 24) & 0xFF) / 255;
+   let mix = function(shift) {
+      return Math.round(((argb >>> shift) & 0xFF) * a + ((bg >>> shift) & 0xFF) * (1 - a));
+   };
+   return (0xFF000000 | (mix(16) << 16) | (mix(8) << 8) | mix(0)) >>> 0;
 }
 
 // Draws `text` at (x,y) using the current g.font, with a dark halo behind
@@ -1255,13 +1811,13 @@ function computeAndLogTiltAngles(tilt, w, h, pixelPitchUm, focalLengthMm, apertu
    // quadrants (symmetry around the center).
    let distMm = Math.sqrt((physWidthMm / 4) * (physWidthMm / 4) + (physHeightMm / 4) * (physHeightMm / 4));
 
-   Console.noteln(format("--- Tilt angle estimate (f/%.2f, %.2f µm/px, reference: sensor center, FWHM=%.2f px) ---",
+   Quiet.noteln(format("--- Tilt angle estimate (f/%.2f, %.2f µm/px, reference: sensor center, FWHM=%.2f px) ---",
       fRatio, pixelPitchUm, centerFwhm));
 
    for (let i = 0; i < quadrants.length; ++i) {
       let q = quadrants[i];
       if (q.fwhm <= centerFwhm) {
-         Console.noteln(format("%s: no excess relative to sensor center (FWHM %.2f <= %.2f px).",
+         Quiet.noteln(format("%s: no excess relative to sensor center (FWHM %.2f <= %.2f px).",
             q.name, q.fwhm, centerFwhm));
          continue;
       }
@@ -1272,10 +1828,10 @@ function computeAndLogTiltAngles(tilt, w, h, pixelPitchUm, focalLengthMm, apertu
 
       let angleDeg = (distMm > 0) ? Math.atan((defocusUm / 1000) / distMm) * 180 / Math.PI : 0;
 
-      Console.noteln(format("%s: FWHM=%.2f px, excess=%.2f px (%.1f µm), defocus≈%.1f µm, " +
+      Quiet.noteln(format("%s: FWHM=%.2f px, excess=%.2f px (%.1f µm), defocus≈%.1f µm, " +
          "distance=%.2f mm -> tilt angle≈%.3f°", q.name, q.fwhm, excessPx, excessUm, defocusUm, distMm, angleDeg));
    }
-   Console.noteln("--- end (rough estimate - single frame, no calibration) ---");
+   Quiet.noteln("--- end (rough estimate - single frame, no calibration) ---");
 }
 
 // -----------------------------------------------------------------------
@@ -1327,6 +1883,18 @@ function signedDefocusUm(fwhm, centerFwhm, fRatio, pixelPitchUm) {
 // mirroring (it passes through the same sensor center at z=0 for both
 // variants) and is drawn with its actual slope, including negative values.
 function build3DTiltPlot(tilt, sensorWpx, sensorHpx, pixelPitchUm, focalLengthMm, apertureMm) {
+   let bmp = render3DTiltPlot(tilt, sensorWpx, sensorHpx, pixelPitchUm, focalLengthMm, apertureMm);
+   let window = new ImageWindow(bmp.width, bmp.height, 3, 8, false, true, uniqueViewId("Aberration3D"));
+   window.mainView.beginProcess(UndoFlag.NoSwapFile);
+   window.mainView.image.blend(bmp);
+   window.mainView.endProcess();
+   window.show();
+   return window;
+}
+
+// The 3D plot of build3DTiltPlot() as a bitmap (the series analysis saves
+// it without opening a window).
+function render3DTiltPlot(tilt, sensorWpx, sensorHpx, pixelPitchUm, focalLengthMm, apertureMm) {
    let fRatio = focalLengthMm / apertureMm;
 
    let quadrants = [
@@ -1574,15 +2142,7 @@ function build3DTiltPlot(tilt, sensorWpx, sensorHpx, pixelPitchUm, focalLengthMm
       20);
 
    g.end();
-
-   let newId = uniqueViewId("Aberration3D");
-   let window = new ImageWindow(cw, ch, 3, 8, false, true, newId);
-   window.mainView.beginProcess(UndoFlag.NoSwapFile);
-   window.mainView.image.blend(bmp);
-   window.mainView.endProcess();
-   window.show();
-
-   return window;
+   return bmp;
 }
 
 // -----------------------------------------------------------------------
@@ -1598,6 +2158,37 @@ function build3DTiltPlot(tilt, sensorWpx, sensorHpx, pixelPitchUm, focalLengthMm
 // coordinates, then halve again - correctly maps the 180° ambiguity onto
 // a 360° quantity.
 
+// The stars within `radius` of (x, y) and some more: those in the 3x3
+// buckets (of the size of the radius) around it. The buckets are built
+// once per star list and radius and kept with the list (a WeakMap), so the
+// smoothing of the streamlines no longer runs over every star at every
+// step - which pooled series data (tens of thousands of stars) needs.
+const STAR_INDEX = new WeakMap();
+function nearbyStars(stars, x, y, radius) {
+   let idx = STAR_INDEX.get(stars);
+   if (!idx || idx.radius !== radius) {
+      idx = { radius: radius, buckets: new Map() };
+      for (let i = 0; i < stars.length; ++i) {
+         let key = Math.floor(stars[i].x / radius) + "," + Math.floor(stars[i].y / radius);
+         let list = idx.buckets.get(key);
+         if (!list)
+            idx.buckets.set(key, list = []);
+         list.push(stars[i]);
+      }
+      STAR_INDEX.set(stars, idx);
+   }
+   let bi = Math.floor(x / radius), bj = Math.floor(y / radius);
+   let out = [];
+   for (let dj = -1; dj <= 1; ++dj)
+      for (let di = -1; di <= 1; ++di) {
+         let list = idx.buckets.get((bi + di) + "," + (bj + dj));
+         if (list)
+            for (let k = 0; k < list.length; ++k)
+               out.push(list[k]);
+      }
+   return out;
+}
+
 // Smooths the orientation field at point (x,y): weighted double-angle
 // mean of all stars within the radius (Gaussian kernel, weight
 // additionally scaled by eccentricity^2 - nearly round stars have a
@@ -1608,8 +2199,9 @@ function orientationFieldAt(stars, x, y, radius) {
    let r2 = radius * radius;
    let sigma2 = 2 * (radius * 0.5) * (radius * 0.5);
 
-   for (let i = 0; i < stars.length; ++i) {
-      let s = stars[i];
+   let near = nearbyStars(stars, x, y, radius);
+   for (let i = 0; i < near.length; ++i) {
+      let s = near[i];
       let dx = s.x - x, dy = s.y - y;
       let d2 = dx * dx + dy * dy;
       if (d2 > r2)
@@ -1641,13 +2233,17 @@ function orientationFieldAt(stars, x, y, radius) {
 // directions (theta, theta+180°) is closer to the previous step direction
 // is chosen - otherwise the line could arbitrarily "flip" at every step
 // due to the 180° ambiguity.
-function traceStreamline(stars, x0, y0, initialDx, initialDy, radius, stepLen, maxSteps, w, h) {
+// fieldAt(x, y) returns { angle } or null; with gate(x, y) false the line
+// ends there (the direction is not significant).
+function traceStreamline(fieldAt, x0, y0, initialDx, initialDy, stepLen, maxSteps, w, h, gate) {
    let points = [];
    let x = x0, y = y0;
    let prevDx = initialDx, prevDy = initialDy;
 
    for (let step = 0; step < maxSteps; ++step) {
-      let field = orientationFieldAt(stars, x, y, radius);
+      if (gate && !gate(x, y))
+         break;
+      let field = fieldAt(x, y);
       if (field === null)
          break;
 
@@ -1668,68 +2264,17 @@ function traceStreamline(stars, x0, y0, initialDx, initialDy, radius, stepLen, m
    return points;
 }
 
-// Debug helper: checks that the streamlines (orientationFieldAt()) and the
-// ellipses (drawOrientedEllipse()) interpret the PSF angle theta identically.
-// Step 1 draws a test ellipse (theta=130.8°) on a small bitmap with the very
-// routine used for the star ellipses and measures its major-axis direction
-// from the second moments of the drawn pixels (atan2(dy,dx), y down). Step 2
-// logs, for the most eccentric stars, theta and the streamline field
-// direction, plus an eccentricity-weighted agreement over all stars
-// (cos 2Δ: +1 = parallel, -1 = orthogonal).
-function diagnoseOrientationConvention(stars, radius) {
-   let size = 201, c = 100, testDeg = 130.8;
-   let tb = new Bitmap(size, size);
-   tb.fill(0xFF000000);
-   let tg = new Graphics(tb);
-   tg.antialiasing = false;
-   tg.pen = new Pen(0xFFFFFFFF, 2);
-   drawOrientedEllipse(tg, c, c, 80, 30, testDeg);
-   tg.end();
-
-   let sxx = 0, syy = 0, sxy = 0, sn = 0;
-   for (let y = 0; y < size; ++y)
-      for (let x = 0; x < size; ++x)
-         if ((tb.pixel(x, y) & 0xFF) > 128) {
-            let dx = x - c, dy = y - c;
-            sxx += dx * dx; syy += dy * dy; sxy += dx * dy; ++sn;
-         }
-   if (sn === 0) {
-      Console.warningln("Orientation diagnostic: test ellipse not found in test bitmap.");
-      return;
-   }
-   let measuredDeg = 0.5 * Math.atan2(2 * sxy, sxx - syy) * 180 / Math.PI;
-   let fold = function(a) { return ((a % 180) + 180) % 180; };
-   Console.noteln("--- Orientation diagnostic ---");
-   Console.writeln(format("test ellipse drawn with theta=%.1f°: measured major-axis direction = %.1f° (mod 180; must equal theta)",
-      testDeg, fold(measuredDeg)));
-
-   let sumPar = 0, sumW = 0;
-   let rows = [];
-   for (let i = 0; i < stars.length; ++i) {
-      let st = stars[i];
-      let field = orientationFieldAt(stars, st.x, st.y, radius);
-      if (field === null)
-         continue;
-      let fDeg = field.angle * 180 / Math.PI;
-      let w = st.eccentricity * st.eccentricity;
-      sumPar += w * Math.cos(2 * (fDeg + st.rotation) * Math.PI / 180);
-      sumW += w;
-      rows.push({ st: st, fDeg: fDeg });
-   }
-   rows.sort(function(a, b) { return b.st.eccentricity - a.st.eccentricity; });
-   for (let i = 0; i < Math.min(10, rows.length); ++i) {
-      let r = rows[i];
-      Console.writeln(format("star (%.0f,%.0f) ecc=%.2f image angle (-theta)=%.1f° | streamline field %.1f° | diff (mod 180) = %.1f°",
-         r.st.x, r.st.y, r.st.eccentricity, fold(-r.st.rotation), fold(r.fDeg), fold(r.fDeg + r.st.rotation)));
-   }
-   if (sumW > 0)
-      Console.writeln(format("weighted agreement streamline field vs. star ellipse: %.3f (+1 = parallel, -1 = orthogonal, 0 = unrelated)", sumPar / sumW));
-}
-
 // Seeds streamlines on a regular grid and traces them in both directions
 // from each seed point. Returns an array of point lists (one per line,
-// [[x,y], [x,y], ...]).
-function generateStreamlines(stars, w, h, radius) {
+// [[x,y], [x,y], ...]). With gate (see traceStreamline()), lines run only
+// where the direction is significant.
+function generateStreamlines(stars, w, h, radius, gate) {
+   return traceField(function(x, y) { return orientationFieldAt(stars, x, y, radius); }, w, h, radius, gate);
+}
+
+// The streamlines of any axis field fieldAt(x, y) -> { angle } or null,
+// spaced for the smoothing radius.
+function traceField(fieldAt, w, h, radius, gate) {
    let spacing = radius * 0.6; // half the previous seed spacing (was radius * 1.2), for a denser grid
    let stepLen = radius * 0.25;
    let maxSteps = 200;
@@ -1737,13 +2282,15 @@ function generateStreamlines(stars, w, h, radius) {
    let lines = [];
    for (let sy = spacing / 2; sy < h; sy += spacing) {
       for (let sx = spacing / 2; sx < w; sx += spacing) {
-         let field0 = orientationFieldAt(stars, sx, sy, radius);
+         if (gate && !gate(sx, sy))
+            continue;
+         let field0 = fieldAt(sx, sy);
          if (field0 === null)
             continue;
 
          let dx0 = Math.cos(field0.angle), dy0 = Math.sin(field0.angle);
-         let fwd = traceStreamline(stars, sx, sy, dx0, dy0, radius, stepLen, maxSteps, w, h);
-         let bwd = traceStreamline(stars, sx, sy, -dx0, -dy0, radius, stepLen, maxSteps, w, h);
+         let fwd = traceStreamline(fieldAt, sx, sy, dx0, dy0, stepLen, maxSteps, w, h, gate);
+         let bwd = traceStreamline(fieldAt, sx, sy, -dx0, -dy0, stepLen, maxSteps, w, h, gate);
 
          let full = bwd.slice().reverse().concat([[sx, sy]]).concat(fwd);
          if (full.length > 2)
@@ -1759,46 +2306,500 @@ function generateStreamlines(stars, w, h, radius) {
 // image-coordinate angle (-theta of the PSF). Built from line segments with explicit math instead of
 // Graphics.rotateTransformation(), whose sense of rotation/handling of
 // negative angles turned out not to be reliable for this purpose.
+// One drawPolyline() call per ellipse (not one drawLine() per segment:
+// with thousands of stars the native calls dominated the redraw), with
+// fewer segments for small ellipses.
 function drawOrientedEllipse(g, cx, cy, a, b, thetaDeg) {
-   const N = 48;
+   const N = Math.max(12, Math.min(48, Math.round(a)));
    let t = thetaDeg * Math.PI / 180;
    let ct = Math.cos(t), st = Math.sin(t);
-   let px = 0, py = 0;
+   let pts = [];
    for (let i = 0; i <= N; ++i) {
       let phi = 2 * Math.PI * i / N;
       let u = a * Math.cos(phi), v = b * Math.sin(phi);
-      let x = cx + u * ct - v * st;
-      let y = cy + u * st + v * ct;
-      if (i > 0)
-         g.drawLine(px, py, x, y);
-      px = x; py = y;
+      pts.push(new Point(cx + u * ct - v * st, cy + u * st + v * ct));
    }
+   g.drawPolyline(pts);
+}
+
+// Draws the parts of the lines (point lists [[x, y], ...]) whose segments
+// satisfy keep(pts, j) (the segment from point j-1 to j), each run of
+// consecutive kept segments as one polyline - one native call per run
+// instead of one per segment.
+function drawLineRuns(g, lines, keep) {
+   lines.forEach(function(pts) {
+      let run = [];
+      for (let j = 1; j < pts.length; ++j) {
+         if (keep(pts, j)) {
+            if (run.length === 0)
+               run.push(new Point(pts[j - 1][0], pts[j - 1][1]));
+            run.push(new Point(pts[j][0], pts[j][1]));
+         } else if (run.length > 0) {
+            g.drawPolyline(run);
+            run = [];
+         }
+      }
+      if (run.length > 1)
+         g.drawPolyline(run);
+   });
 }
 
 // Draws the streamlines as continuous, semi-transparent curves -
 // deliberately subtle (thin, bright, partially transparent) so they show
 // the rough trend in the background without obscuring the per-star
 // vectors/the tilt overlay in front of them.
-function drawStreamlines(g, lines) {
+function drawStreamlines(g, lines, grid) {
    g.antialiasing = true;
+   // Each segment colored by the significance of the smoothed field there
+   // (shapeFieldGrid()): white where its direction is significant (as the
+   // cell averages), gray where it is not. Without a grid, all white.
+   let significant = function(x0, y0, x1, y1) {
+      return !grid || shapeSignificantAt(grid, 0.5 * (x0 + x1), 0.5 * (y0 + y1));
+   };
+   let pass = function(pen, wanted) {
+      g.pen = pen;
+      drawLineRuns(g, lines, function(pts, j) {
+         return significant(pts[j - 1][0], pts[j - 1][1], pts[j][0], pts[j][1]) === wanted;
+      });
+   };
+   // Not significant: gray, as wide as the significant parts but darker,
+   // below them.
+   pass(new Pen(0x90000000, 4), false);
+   pass(new Pen(0xFF8C8C8C, 2), false);
+   // Significant: a dark halo, then a bright core on top - plain
+   // semi-transparent white got lost on bright/saturated backgrounds (e.g.
+   // the orientation heatmap); with the halo, the lines stay readable.
+   pass(new Pen(0xA0000000, 4), true);
+   pass(new Pen(0xFFFFFFFF, 2), true);
+}
 
-   // Draw a dark halo first, then a bright core on top - plain
-   // semi-transparent white (earlier version) got lost on bright/
-   // saturated backgrounds (e.g. the orientation heatmap). With the halo,
-   // the lines stay readable regardless of the background.
-   g.pen = new Pen(0xA0000000, 4);
-   for (let i = 0; i < lines.length; ++i) {
-      let pts = lines[i];
-      for (let j = 1; j < pts.length; ++j)
-         g.drawLine(pts[j - 1][0], pts[j - 1][1], pts[j][0], pts[j][1]);
+// -----------------------------------------------------------------------
+// Statistics of the star shapes, with uncertainties. All work in the
+// distortion components (c1, c2) = chi · (cos 2ψ, sin 2ψ) (ψ = image angle
+// of the major axis, see starImageAngle()): they add approximately
+// linearly and turn the 180° ambiguity of an axis into a plain vector, so
+// means, scatter and standard errors behave as for any 2D quantity. For
+// small values chi ≈ ellipticity (1 - b/a).
+
+function shapeComponents(s) {
+   let chi = distortionFromEcc(s.eccentricity);
+   let psi2 = 2 * starImageAngle(s);
+   return [chi * Math.cos(psi2), chi * Math.sin(psi2)];
+}
+
+// Mean, magnitude, axis angle and standard error of a set of components
+// (arrays c1, c2). The standard error is that of each component (pooled):
+// sqrt((var1 + var2) / 2 / n). z = magnitude / se; the axis angle has an
+// uncertainty of about se / (2 · magnitude) radians.
+function shapeMean(c1, c2) {
+   let n = c1.length;
+   if (n === 0)
+      return null;
+   let m1 = 0, m2 = 0;
+   for (let i = 0; i < n; ++i) { m1 += c1[i]; m2 += c2[i]; }
+   m1 /= n; m2 /= n;
+   let v = 0;
+   for (let i = 0; i < n; ++i)
+      v += (c1[i] - m1) * (c1[i] - m1) + (c2[i] - m2) * (c2[i] - m2);
+   let se = n > 1 ? Math.sqrt(v / (2 * (n - 1)) / n) : null;
+   let chi = Math.hypot(m1, m2);
+   return { m1: m1, m2: m2, chi: chi, n: n, se: se, z: se > 0 ? chi / se : null,
+            psi: 0.5 * Math.atan2(m2, m1) };
+}
+
+// The field smoothed as for the streamlines (Gaussian kernel, sigma =
+// radius/2, cut off at the radius), on a grid of spacing `step`, with the
+// standard error of each value: the local scatter of the stars divided by
+// the effective number of stars, (Σw)² / Σw². Returns { step, nx, ny,
+// cells } with cells[j * nx + i] = { m1, m2, chi, se, z } or null.
+function shapeFieldGrid(stars, w, h, radius, step) {
+   let xs = [], ys = [], c1 = [], c2 = [];
+   stars.forEach(function(s) {
+      let c = shapeComponents(s);
+      xs.push(s.x); ys.push(s.y); c1.push(c[0]); c2.push(c[1]);
+   });
+   let r2 = radius * radius, sigma2 = 2 * (radius * 0.5) * (radius * 0.5);
+   // The stars sorted into buckets of the radius: a grid point only looks
+   // at the 3x3 buckets around it.
+   let bw = Math.max(1, Math.ceil(w / radius)), bh = Math.max(1, Math.ceil(h / radius));
+   let buckets = [];
+   for (let k = 0; k < bw * bh; ++k)
+      buckets.push([]);
+   for (let k = 0; k < xs.length; ++k) {
+      let bi = Math.min(bw - 1, Math.max(0, Math.floor(xs[k] / radius)));
+      let bj = Math.min(bh - 1, Math.max(0, Math.floor(ys[k] / radius)));
+      buckets[bj * bw + bi].push(k);
+   }
+   let nx = Math.ceil(w / step) + 1, ny = Math.ceil(h / step) + 1;
+   let cells = new Array(nx * ny);
+   for (let j = 0; j < ny; ++j) {
+      for (let i = 0; i < nx; ++i) {
+         let x = i * step, y = j * step;
+         let sw = 0, sw2 = 0, s1 = 0, s2 = 0, s11 = 0, s22 = 0;
+         let near = [];
+         let bi0 = Math.floor(x / radius), bj0 = Math.floor(y / radius);
+         for (let bj = Math.max(0, bj0 - 1); bj <= Math.min(bh - 1, bj0 + 1); ++bj)
+            for (let bi = Math.max(0, bi0 - 1); bi <= Math.min(bw - 1, bi0 + 1); ++bi)
+               near = near.concat(buckets[bj * bw + bi]);
+         for (let q = 0; q < near.length; ++q) {
+            let k = near[q];
+            let dx = xs[k] - x, dy = ys[k] - y;
+            let d2 = dx * dx + dy * dy;
+            if (d2 > r2)
+               continue;
+            let wk = Math.exp(-d2 / sigma2);
+            sw += wk; sw2 += wk * wk;
+            s1 += wk * c1[k]; s2 += wk * c2[k];
+            s11 += wk * c1[k] * c1[k]; s22 += wk * c2[k] * c2[k];
+         }
+         if (sw < 1e-6) {
+            cells[j * nx + i] = null;
+            continue;
+         }
+         let m1 = s1 / sw, m2 = s2 / sw;
+         let variance = Math.max(0, 0.5 * (s11 / sw - m1 * m1 + s22 / sw - m2 * m2));
+         let nEff = sw * sw / sw2;
+         let se = nEff > 1 ? Math.sqrt(variance / nEff) : null;
+         let chi = Math.hypot(m1, m2);
+         cells[j * nx + i] = { m1: m1, m2: m2, chi: chi, se: se, z: se > 0 ? chi / se : 0 };
+      }
+   }
+   return { step: step, nx: nx, ny: ny, cells: cells };
+}
+
+// The smoothed field at (x, y) (nearest grid point), or null.
+function shapeFieldAt(grid, x, y) {
+   let i = Math.round(x / grid.step), j = Math.round(y / grid.step);
+   if (i < 0 || j < 0 || i >= grid.nx || j >= grid.ny)
+      return null;
+   return grid.cells[j * grid.nx + i];
+}
+
+// Significance thresholds. The magnitude of a noisy 2D mean is never zero
+// (about 1.25 se on average, Rayleigh-distributed): a magnitude counts as
+// significant from 2.45 se, which pure noise exceeds in 5% of the cases
+// (exp(-z²/2)); a single signed value (eps_rad, a model term) from 2 se.
+const SHAPE_MIN_Z = 2.45;
+const SHAPE_MIN_Z_1D = 2;
+// Whether the direction of the smoothed field at (x, y) is significant.
+function shapeSignificantAt(grid, x, y) {
+   let c = shapeFieldAt(grid, x, y);
+   return c !== null && c.z >= SHAPE_MIN_Z;
+}
+
+// Singular points (defects) of the smoothed axis field: around each grid
+// cell, the winding of the doubled angle in units of 2π, halved - ±½ or
+// ±1. Optics produce at most one +1 (radial or tangential pattern around
+// the axis) or two +½ (the same split by a uniform term, or binodal
+// astigmatism); more, and any -½, come from noise. Returns a list of
+// { x, y, index }.
+function shapeDefects(grid) {
+   let wrap = function(a) { while (a > Math.PI) a -= 2 * Math.PI; while (a <= -Math.PI) a += 2 * Math.PI; return a; };
+   let defects = [];
+   for (let j = 0; j + 1 < grid.ny; ++j) {
+      for (let i = 0; i + 1 < grid.nx; ++i) {
+         let loop = [grid.cells[j * grid.nx + i], grid.cells[j * grid.nx + i + 1],
+                     grid.cells[(j + 1) * grid.nx + i + 1], grid.cells[(j + 1) * grid.nx + i]];
+         if (loop.some(function(c) { return c === null; }))
+            continue;
+         let a = loop.map(function(c) { return Math.atan2(c.m2, c.m1); });
+         let turn = 0;
+         for (let k = 0; k < 4; ++k)
+            turn += wrap(a[(k + 1) % 4] - a[k]);
+         let n = Math.round(turn / (2 * Math.PI));
+         if (n !== 0)
+            defects.push({ x: (i + 0.5) * grid.step, y: (j + 0.5) * grid.step, index: n / 2 });
+      }
+   }
+   return defects;
+}
+
+// The physical model of the shape field: what optics can produce, as low-
+// order terms in u = (x - cx) / rMax, v = (y - cy) / rMax:
+//   constant  (a0, b0)                 tracking residue, astigmatism on axis
+//   linear    c1 = a1 u + a2 v, c2 = b1 u + b2 v
+//                                      a decentered radial pattern, binodal
+//                                      astigmatism of a misaligned system
+//   radial    k · (u² - v², 2 u v)     field curvature / corrector spacing:
+//                                      k > 0 radial, k < 0 tangential, k = the
+//                                      value at the corner (r = rMax)
+// fitted to all stars (least squares, 3-sigma clipping). A decentered
+// radial pattern adds linear terms a1 = b2 = -2k u0, a2 = -b1 = 2k v0: the
+// axis (u0, v0) is estimated from them, the rest of the linear part is the
+// binodal (non-radial) astigmatism. The residuals are averaged per cell of
+// the 11x11 grid: χ²/dof near 1 means the optics explain the pattern down
+// to the noise; cells off by more than 3σ hold structure no optics
+// produce (bent optics, dew, nebulosity, bad fits).
+function fitShapeModel(stars, w, h, gridSize) {
+   let cx = w / 2, cy = h / 2, rMax = Math.hypot(cx, cy);
+   let rows = [], zs = [];
+   let comps = stars.map(shapeComponents);
+   let uv = stars.map(function(s) { return [(s.x - cx) / rMax, (s.y - cy) / rMax]; });
+   for (let i = 0; i < stars.length; ++i) {
+      let u = uv[i][0], v = uv[i][1];
+      rows.push([1, 0, u, v, 0, 0, u * u - v * v]); zs.push(comps[i][0]);
+      rows.push([0, 1, 0, 0, u, v, 2 * u * v]);     zs.push(comps[i][1]);
+   }
+   if (stars.length < 30)
+      return null;
+   let fit = solveLeastSquaresClipped(rows, zs, 3);
+   if (fit === null || fit.coeffs === null)
+      return null;
+   let q = fit.coeffs, mask = fit.mask;
+   let model = function(u, v) {
+      return [q[0] + q[2] * u + q[3] * v + q[6] * (u * u - v * v),
+              q[1] + q[4] * u + q[5] * v + q[6] * 2 * u * v];
+   };
+
+   // Parameter covariance: σ² (XᵀX)⁻¹ over the rows kept.
+   let n = 7, M = [], ss = 0, count = 0;
+   for (let r = 0; r < n; ++r) M.push(new Array(n).fill(0));
+   for (let i = 0; i < rows.length; ++i) {
+      if (mask && !mask[i])
+         continue;
+      let b = rows[i], res = zs[i];
+      for (let r = 0; r < n; ++r) {
+         res -= b[r] * q[r];
+         for (let c = 0; c < n; ++c)
+            M[r][c] += b[r] * b[c];
+      }
+      ss += res * res;
+      ++count;
+   }
+   let sigma2 = count > n ? ss / (count - n) : 0;
+   let se = [], cov = [];
+   for (let r = 0; r < n; ++r) {
+      let e = new Array(n).fill(0);
+      e[r] = 1;
+      let col = solveLinearSystem(M, e);
+      se.push(col ? Math.sqrt(Math.max(0, col[r] * sigma2)) : null);
+      cov.push(col ? col.map(function(v) { return v * sigma2; }) : null);
    }
 
-   g.pen = new Pen(0xFFFFFFFF, 2);
-   for (let i = 0; i < lines.length; ++i) {
-      let pts = lines[i];
-      for (let j = 1; j < pts.length; ++j)
-         g.drawLine(pts[j - 1][0], pts[j - 1][1], pts[j][0], pts[j][1]);
+   // Residuals and data per cell.
+   let cellW = w / gridSize, cellH = h / gridSize;
+   let cells = [];
+   for (let k = 0; k < gridSize * gridSize; ++k)
+      cells.push({ r1: [], r2: [], d1: [], d2: [], u: 0, v: 0 });
+   for (let i = 0; i < stars.length; ++i) {
+      let col = Math.min(gridSize - 1, Math.max(0, Math.floor(stars[i].x / cellW)));
+      let row = Math.min(gridSize - 1, Math.max(0, Math.floor(stars[i].y / cellH)));
+      let m = model(uv[i][0], uv[i][1]);
+      let c = cells[row * gridSize + col];
+      c.r1.push(comps[i][0] - m[0]); c.r2.push(comps[i][1] - m[1]);
+      c.d1.push(comps[i][0]); c.d2.push(comps[i][1]);
    }
+   let chi2 = 0, used = 0, ssRes = 0, ssTot = 0, bad = [], judged = [];
+   for (let k = 0; k < cells.length; ++k) {
+      let c = cells[k];
+      if (c.r1.length < FWHM_GRID_MIN_STARS)
+         continue;
+      let res = shapeMean(c.r1, c.r2), dat = shapeMean(c.d1, c.d2);
+      if (!(res.se > 0))
+         continue;
+      chi2 += (res.m1 * res.m1 + res.m2 * res.m2) / (res.se * res.se);
+      ssRes += res.m1 * res.m1 + res.m2 * res.m2;
+      ssTot += dat.m1 * dat.m1 + dat.m2 * dat.m2;
+      ++used;
+      judged.push({ row: Math.floor(k / gridSize), col: k % gridSize, z: res.z });
+      if (res.z >= 3)
+         bad.push({ row: Math.floor(k / gridSize), col: k % gridSize, z: res.z });
+   }
+   let dof = 2 * used - n;
+
+   let k = q[6], kSe = se[6];
+   let axis = null;
+   // The uniform part: the constant term less what an off-center axis
+   // adds to it, k (u0² - v0², 2 u0 v0) - tracking (or astigmatism on the
+   // axis), the same wherever the pattern lies.
+   let uniform1 = q[0], uniform2 = q[1];
+   if (kSe > 0 && Math.abs(k) >= 3 * kSe) {
+      let u0 = -(q[2] + q[5]) / (4 * k), v0 = (q[3] - q[4]) / (4 * k);
+      axis = { x: cx + u0 * rMax, y: cy + v0 * rMax, offset: Math.hypot(u0, v0) };
+      uniform1 -= k * (u0 * u0 - v0 * v0);
+      uniform2 -= k * 2 * u0 * v0;
+   }
+   let binodal = Math.hypot(0.5 * (q[2] - q[5]), 0.5 * (q[3] + q[4]));
+   let binodalSe = (se[2] > 0 && se[3] > 0) ? 0.5 * Math.hypot(se[2], se[3]) : null;
+   return {
+      coeffs: q, se: se, cov: cov.every(function(c) { return c !== null; }) ? cov : null,
+      model: model, cx: cx, cy: cy, rMax: rMax,
+      constant: Math.hypot(uniform1, uniform2), uniform1: uniform1, uniform2: uniform2,
+      constantSe: (se[0] > 0) ? Math.hypot(se[0], se[1]) / Math.SQRT2 : null,
+      k: k, kSe: kSe, axis: axis, binodal: binodal, binodalSe: binodalSe,
+      chi2dof: dof > 0 ? chi2 / dof : null, cellsUsed: used,
+      explained: ssTot > 0 ? Math.max(0, 1 - ssRes / ssTot) : null, unexplained: bad,
+      judgedCells: judged // every cell with enough stars: { row, col, z } of its mean residual
+   };
+}
+
+// Whether the model's field at (x, y) is significant: its magnitude at
+// least SHAPE_MIN_Z times its standard error there, from the parameter
+// covariance: var = bᵀ Cov b for the rows b of both components (pooled).
+function shapeModelSignificantAt(fit, x, y) {
+   if (!fit.cov)
+      return true;
+   let u = (x - fit.cx) / fit.rMax, v = (y - fit.cy) / fit.rMax;
+   let rows = [[1, 0, u, v, 0, 0, u * u - v * v], [0, 1, 0, 0, u, v, 2 * u * v]];
+   let variance = 0;
+   rows.forEach(function(b) {
+      for (let i = 0; i < 7; ++i)
+         for (let j = 0; j < 7; ++j)
+            variance += b[i] * fit.cov[i][j] * b[j];
+   });
+   let se = Math.sqrt(Math.max(0, variance / 2));
+   let m = fit.model(u, v);
+   return se > 0 ? Math.hypot(m[0], m[1]) >= SHAPE_MIN_Z * se : true;
+}
+
+// The model's axis angle at (x, y) for its streamlines, or null where the
+// model is too weak to define one.
+function shapeModelFieldAt(fit, x, y) {
+   let m = fit.model((x - fit.cx) / fit.rMax, (y - fit.cy) / fit.rMax);
+   let floor = Math.max(0.005, 2 * (fit.constantSe || 0));
+   if (Math.hypot(m[0], m[1]) < floor)
+      return null;
+   return { angle: 0.5 * Math.atan2(m[1], m[0]) };
+}
+
+// Everything the Star shape map and its evaluation need, for the stars as
+// drawn (tracking subtracted or not) and the streamline radius:
+//   cells    the 11x11 grid: shapeMean() per cell, plus uncertain (fewer
+//            than FWHM_GRID_MIN_STARS stars)
+//   center   shapeMean() of the inner 3x3 cells
+//   corners  per corner (2x2 cell blocks, TL, TR, BL, BR) the mean of the
+//            radial component eps_rad = chi cos 2(ψ - φ) with its se: > 0
+//            radial, < 0 tangential
+//   edge     the same for the outer field (r > 2/3 rMax)
+//   grid     shapeFieldGrid() at the streamline radius, defects on it
+//   model    fitShapeModel()
+function evaluateShapeField(stars, w, h, radius) {
+   let gridSize = FWHM_GRID_SIZE;
+   let cellW = w / gridSize, cellH = h / gridSize;
+   let cx = w / 2, cy = h / 2, rMax = Math.hypot(cx, cy);
+   let buckets = [];
+   for (let k = 0; k < gridSize * gridSize; ++k)
+      buckets.push({ c1: [], c2: [], rad: [] });
+   let edge = [];
+   stars.forEach(function(s) {
+      let col = Math.min(gridSize - 1, Math.max(0, Math.floor(s.x / cellW)));
+      let row = Math.min(gridSize - 1, Math.max(0, Math.floor(s.y / cellH)));
+      let c = shapeComponents(s);
+      let phi2 = 2 * Math.atan2(s.y - cy, s.x - cx);
+      let rad = c[0] * Math.cos(phi2) + c[1] * Math.sin(phi2);
+      let b = buckets[row * gridSize + col];
+      b.c1.push(c[0]); b.c2.push(c[1]); b.rad.push(rad);
+      if (Math.hypot(s.x - cx, s.y - cy) > rMax * 2 / 3)
+         edge.push(rad);
+   });
+   let cells = buckets.map(function(b) {
+      let m = shapeMean(b.c1, b.c2);
+      if (m)
+         m.uncertain = m.n < FWHM_GRID_MIN_STARS || m.se === null;
+      return m;
+   });
+   let pool = function(r0, r1, c0, c1) {
+      let a1 = [], a2 = [], rad = [];
+      for (let r = r0; r <= r1; ++r)
+         for (let c = c0; c <= c1; ++c) {
+            let b = buckets[r * gridSize + c];
+            a1 = a1.concat(b.c1); a2 = a2.concat(b.c2); rad = rad.concat(b.rad);
+         }
+      return { mean: shapeMean(a1, a2), rad: scalarMean(rad) };
+   };
+   let mid = gridSize >> 1, k = Math.max(1, Math.round(gridSize / 5)), last = gridSize - 1;
+   let center = pool(mid - 1, mid + 1, mid - 1, mid + 1).mean;
+   let corners = [pool(0, k - 1, 0, k - 1), pool(0, k - 1, last - k + 1, last),
+                  pool(last - k + 1, last, 0, k - 1), pool(last - k + 1, last, last - k + 1, last)]
+      .map(function(p) { return p.rad; });
+   let grid = shapeFieldGrid(stars, w, h, radius, Math.max(8, radius * 0.25));
+   let counts = { elongated: 0, round: 0, uncertain: 0 };
+   cells.forEach(function(c) {
+      if (!c) return;
+      if (c.uncertain) ++counts.uncertain;
+      else if (c.z >= SHAPE_MIN_Z) ++counts.elongated;
+      else ++counts.round;
+   });
+   return { gridSize: gridSize, cells: cells, center: center, corners: corners, edge: scalarMean(edge),
+            grid: grid, defects: shapeDefects(grid), model: fitShapeModel(stars, w, h, gridSize),
+            counts: counts };
+}
+
+// Mean of plain values with its standard error: { mean, se, n } or null.
+function scalarMean(values) {
+   let n = values.length;
+   if (n === 0)
+      return null;
+   let m = values.reduce(function(a, v) { return a + v; }, 0) / n;
+   let v = values.reduce(function(a, x) { return a + (x - m) * (x - m); }, 0);
+   return { mean: m, se: n > 1 ? Math.sqrt(v / (n - 1) / n) : null, n: n };
+}
+
+// The evaluation of the Star shape map as text lines ("Topic: text";
+// lines starting with spaces belong to the line above).
+function formatShapeEvaluation(ev, tracking, trackingSubtracted) {
+   // Texts with non-ASCII characters (±, σ, °) are joined with + here, not
+   // passed to format() as %s arguments: PJSR's format() runs out of memory
+   // on such arguments. format() only gets plain numbers.
+   let lines = [];
+   let num = function(v, digits) { return format("%." + digits + "f", v); };
+   let pm = function(v, se) { return num(v, 3) + (se !== null && se !== undefined ? " \u00B1 " + num(se, 3) : ""); };
+   let sig = function(v, se) { return (se > 0) ? " (" + num(Math.abs(v) / se, 1) + "\u03C3)" : ""; };
+   let deg = function(rad) { return (Math.round(((rad * 180 / Math.PI) % 180 + 180) % 180) % 180) + "\u00B0"; };
+   if (tracking) {
+      lines.push("Tracking: ellipticity " + pm(tracking.ellipticity, tracking.se) + " along " +
+         num(tracking.angleDeg, 0) + "\u00B0, " + (trackingSubtracted ? "subtracted from all stars" : "not subtracted") +
+         ".");
+      if (tracking.method === "model")
+         lines.push("   From the optics model; the plain median would be " + num(tracking.median.ellipticity, 3) +
+            " along " + num(tracking.median.angleDeg, 0) + "\u00B0");
+   }
+   if (ev.center)
+      lines.push("Center (inner 3x3 cells): elongation " + pm(ev.center.chi, ev.center.se) + " along " +
+         deg(ev.center.psi) + sig(ev.center.chi, ev.center.se) + ", n=" + ev.center.n + " -> " +
+         (ev.center.z >= SHAPE_MIN_Z ? "elongated" : "round") + ".");
+   let corners = ev.corners;
+   if (corners.every(function(c) { return c !== null; })) {
+      let vals = corners.map(function(c) { return c.mean; });
+      lines.push("Corners: eps_rad (+ radial, - tangential), spread " +
+         num(Math.max.apply(null, vals) - Math.min.apply(null, vals), 3) + ".");
+      corners.forEach(function(c, i) {
+         let name = FWHM_CORNER_NAMES[i].charAt(0).toUpperCase() + FWHM_CORNER_NAMES[i].slice(1);
+         lines.push("   " + name + ": " + pm(c.mean, c.se) + sig(c.mean, c.se) + ", n=" + c.n);
+      });
+   }
+   if (ev.edge) {
+      let z = ev.edge.se > 0 ? ev.edge.mean / ev.edge.se : 0;
+      lines.push("Edge pattern (r > 2/3): eps_rad " + pm(ev.edge.mean, ev.edge.se) + sig(ev.edge.mean, ev.edge.se) +
+         " -> " + (Math.abs(z) < SHAPE_MIN_Z_1D ? "no significant pattern" : ev.edge.mean > 0 ? "radial" : "tangential") +
+         ".");
+   }
+   let m = ev.model;
+   if (m) {
+      lines.push("Optics model: explains " + (m.explained !== null ? num(100 * m.explained, 0) + "%" : "n/a") +
+         " of the pattern; residual chi2/dof " + (m.chi2dof !== null ? num(m.chi2dof, 2) : "n/a") + " -> " +
+         (m.chi2dof === null ? "not judged" : m.chi2dof <= 1.5 ? "physically plausible" :
+            m.chi2dof <= 3 ? "some structure the optics do not explain" : "much structure the optics do not explain") +
+         ".");
+      lines.push("   Curvature/spacing term: " + pm(m.k, m.kSe) + " at the corner" + sig(m.k, m.kSe) + " -> " +
+         (!(m.kSe > 0) || Math.abs(m.k) < SHAPE_MIN_Z_1D * m.kSe ? "none" : m.k > 0 ? "radial" : "tangential"));
+      lines.push("   Uniform term: " + pm(m.constant, m.constantSe) + sig(m.constant, m.constantSe));
+      lines.push("   Linear astigmatism: " + pm(m.binodal, m.binodalSe) + " at the edge" + sig(m.binodal, m.binodalSe));
+      if (m.axis)
+         lines.push("   Axis of the pattern: (" + num(m.axis.x, 0) + ", " + num(m.axis.y, 0) + ") px, " +
+            num(100 * m.axis.offset, 0) + "% of the half diagonal off the center");
+      if (m.unexplained.length > 0)
+         lines.push("   Unexplained cells (> 3\u03C3 off the model): " + m.unexplained.length + " (about " +
+            num(m.cellsUsed * Math.exp(-4.5), 0) + " expected by chance)");
+   }
+   let pos = ev.defects.filter(function(d) { return d.index > 0; }).length;
+   let neg = ev.defects.length - pos;
+   lines.push("Singular points: " + ev.defects.length + " (+: " + pos + ", -: " + neg + ") -> " +
+      ((neg === 0 && pos <= 2) ? "as optics produce (at most two +, no -)" :
+         "more than optics produce: noise in the smoothed field - raise the smoothing radius") + ".");
+   lines.push("Cells: " + ev.counts.elongated + " elongated, " + ev.counts.round + " round within the noise, " +
+      ev.counts.uncertain + " uncertain (significant from " + num(SHAPE_MIN_Z, 2) + "\u03C3).");
+   return lines;
 }
 
 // -----------------------------------------------------------------------
@@ -2093,7 +3094,7 @@ function findPclConstant(cls, patterns) {
 // Diagnostic helper function: lists all numeric constants of a PCL
 // process class to the console (static and via the prototype).
 function dumpPclConstants(cls) {
-   Console.writeln("--- " + cls.name + " numeric constants ---");
+   Quiet.writeln("--- " + cls.name + " numeric constants ---");
    [cls, cls.prototype].forEach(function(src, idx) {
       let names = Object.getOwnPropertyNames(src);
       for (let i = 0; i < names.length; ++i) {
@@ -2103,7 +3104,7 @@ function dumpPclConstants(cls) {
             Console.writeln("  [" + (idx === 0 ? "static" : "prototype") + "] " + names[i] + " = " + value);
       }
    });
-   Console.writeln("--- end ---");
+   Quiet.writeln("--- end ---");
 }
 
 // -----------------------------------------------------------------------
@@ -2147,7 +3148,7 @@ function debayerSuperPixel(view, bayerPattern) {
       dupWindow.forceClose();
       return null;
    }
-   Console.noteln(format("Bayer pattern: %s = %d", pattern.name, pattern.value));
+   Quiet.noteln(format("Bayer pattern: %s = %d", pattern.name, pattern.value));
    P.bayerPattern = pattern.value;
 
    let method = findPclConstant(Debayer, ["superpixel", "super_pixel", "super pixel"]);
@@ -2158,7 +3159,7 @@ function debayerSuperPixel(view, bayerPattern) {
       dupWindow.forceClose();
       return null;
    }
-   Console.noteln(format("Debayer method detected: %s = %d", method.name, method.value));
+   Quiet.noteln(format("Debayer method detected: %s = %d", method.name, method.value));
    P.debayerMethod = method.value;
 
    if (!P.executeOn(dupWindow.mainView)) {
@@ -2176,13 +3177,16 @@ function debayerSuperPixel(view, bayerPattern) {
       if (w === dupWindow)
          continue;
       if (idsBefore.indexOf(w.mainView.id) < 0) {
-         Console.noteln("Closing side window: " + w.mainView.id);
+         Quiet.noteln("Closing side window: " + w.mainView.id);
          w.forceClose();
       }
    }
 
-   dupWindow.show();
-   Console.noteln("Debayer (SuperPixel) applied -> " + dupWindow.mainView.id +
+   // Not shown here: showing a window activates PixInsight and pulls it in
+   // front of other applications (on every frame of a series). The
+   // analysis works on the hidden window; analyzeView() shows it at the
+   // end when it is kept.
+   Quiet.noteln("Debayer (SuperPixel) applied -> " + dupWindow.mainView.id +
       " (" + dupWindow.mainView.image.width + " x " + dupWindow.mainView.image.height + ")");
 
    return dupWindow.mainView;
@@ -2271,13 +3275,20 @@ function solveLeastSquaresClipped(rows, zs, iterations) {
 }
 
 // -----------------------------------------------------------------------
-// (2) Tracking component: the median distortion vector over the whole
-// field. Optical aberrations (coma, astigmatism, field curvature) form
-// patterns that are (approximately) symmetric around the optical axis and
-// therefore average out over the field; a uniform elongation shared by all
-// stars comes from tracking/guiding, wind or flexure. Returns the
-// component; applyTrackingCorrection() subtracts it from every star.
-function computeTrackingComponent(stars) {
+// (2) Tracking component: the elongation shared by all stars (tracking/
+// guiding, wind, flexure). It is estimated as the uniform term of the
+// optics model (fitShapeModel()), fitted together with the radial and
+// linear terms. The plain median over the field is biased by the optics:
+// a radial pattern averages to an elongation along the long side of a
+// non-square sensor (about 0.13 x the corner value at 3:2), and a pattern
+// whose axis lies off center - or off the sensor - shows mostly one side.
+// The model takes both out; the median is kept for comparison and is the
+// fallback when the model cannot be fitted (w, h not given, too few
+// stars). On a single frame, astigmatism on the axis still looks like
+// tracking; a series tells them apart (it stays, tracking changes).
+// Returns the component; applyTrackingCorrection() subtracts it from every
+// star.
+function computeTrackingComponent(stars, w, h) {
    let c1 = [], c2 = [];
    for (let i = 0; i < stars.length; ++i) {
       let s = stars[i];
@@ -2286,17 +3297,25 @@ function computeTrackingComponent(stars) {
       c1.push(chi * Math.cos(2 * psi));
       c2.push(chi * Math.sin(2 * psi));
    }
-   let m1 = medianOf(c1), m2 = medianOf(c2);
-   let chi = Math.hypot(m1, m2);
-   let ecc = eccFromDistortion(chi);
-   return {
-      chi1: m1,
-      chi2: m2,
-      chi: chi,
-      eccentricity: ecc,
-      ellipticity: ellipticityFromEcc(ecc),
-      angleDeg: ((0.5 * Math.atan2(m2, m1) * 180 / Math.PI) % 180 + 180) % 180
+   let component = function(t1, t2) {
+      let chi = Math.hypot(t1, t2);
+      let ecc = eccFromDistortion(chi);
+      return { chi1: t1, chi2: t2, chi: chi, eccentricity: ecc, ellipticity: ellipticityFromEcc(ecc),
+               angleDeg: ((0.5 * Math.atan2(t2, t1) * 180 / Math.PI) % 180 + 180) % 180 };
    };
+   let median = component(medianOf(c1), medianOf(c2));
+   let fit = (w > 0 && h > 0) ? fitShapeModel(stars, w, h, FWHM_GRID_SIZE) : null;
+   if (fit === null) {
+      median.method = "median";
+      median.se = null;
+      median.median = median;
+      return median;
+   }
+   let result = component(fit.uniform1, fit.uniform2);
+   result.method = "model";
+   result.se = fit.constantSe;
+   result.median = median;
+   return result;
 }
 
 function applyTrackingCorrection(stars, tracking) {
@@ -2314,16 +3333,29 @@ function applyTrackingCorrection(stars, tracking) {
 }
 
 function logTrackingComponent(tracking, subtracted) {
-   Console.noteln("--- Tracking / global elongation ---");
-   Console.writeln(format("Median elongation over the whole field: ellipticity %.3f (eccentricity %.2f), " +
-      "major axis at %.0f° (image coordinates: 0° = +x/right, 90° = +y/down).",
-      tracking.ellipticity, tracking.eccentricity, tracking.angleDeg));
+   Quiet.noteln("--- Tracking / global elongation ---");
+   if (tracking.method === "model") {
+      Quiet.writeln(format("Uniform term of the optics model: ellipticity %.3f ± %.3f (eccentricity %.2f), " +
+         "major axis at %.0f° (image coordinates: 0° = +x/right, 90° = +y/down).",
+         tracking.ellipticity, tracking.se, tracking.eccentricity, tracking.angleDeg));
+      let md = tracking.median;
+      Quiet.writeln(format("For comparison, the plain median over the field: ellipticity %.3f at %.0f°.",
+         md.ellipticity, md.angleDeg));
+      let diff = Math.hypot(md.chi1 - tracking.chi1, md.chi2 - tracking.chi2);
+      if (diff > 0.01 && diff > 0.3 * md.chi)
+         Quiet.writeln(format("-> the median differs by %.3f: that part of it comes from the optics (a radial " +
+            "pattern on the non-square sensor, or an off-center axis), not from tracking.", diff));
+   } else {
+      Quiet.writeln(format("Median elongation over the whole field: ellipticity %.3f (eccentricity %.2f), " +
+         "major axis at %.0f° (image coordinates: 0° = +x/right, 90° = +y/down).",
+         tracking.ellipticity, tracking.eccentricity, tracking.angleDeg));
+   }
    if (tracking.ellipticity < 0.03)
-      Console.writeln("-> negligible (< 0.03): tracking/guiding looks clean.");
+      Quiet.writeln("-> negligible (< 0.03): tracking/guiding looks clean.");
    else
-      Console.writeln("-> a uniform elongation shared by all stars comes from tracking/guiding, wind or " +
+      Quiet.writeln("-> a uniform elongation shared by all stars comes from tracking/guiding, wind or " +
          "flexure, not from the optics.");
-   Console.writeln(subtracted
+   Quiet.writeln(subtracted
       ? "This component has been SUBTRACTED from every star before drawing and analysis."
       : "Not subtracted (option disabled) - it is contained in the vector map and all shape statistics.");
 }
@@ -2339,10 +3371,14 @@ function logTrackingComponent(tracking, subtracted) {
 //              outer profile more strongly than the centroid does)
 // Both vectors point toward the flare. Stars that are saturated, too
 // close to the border or without a positive signal get null values.
+// Measured on channel 0, the channel DynamicPSF fits (see
+// detectStarCandidates()): in a color image, lateral color shifts the
+// other channels radially against the fit center, and their average would
+// show a coma that the optics do not have.
 function measureStarAsymmetry(image, stars) {
    let w = image.width, h = image.height;
-   let nc = image.numberOfChannels;
    let measured = 0;
+   let buf = null; // the pixels of one star's box, reused
 
    let progress = withProgress("Measuring PSF asymmetry", stars.length);
    for (let i = 0; i < stars.length; ++i) {
@@ -2360,18 +3396,24 @@ function measureStarAsymmetry(image, stars) {
          continue;
       }
 
-      let px = [], bgVals = [];
+      // The whole box in one call (getSamples(), a half-open rectangle):
+      // reading pixel by pixel with sample() made this the slowest step,
+      // one native call per pixel of every star.
+      let nx = x1 - x0 + 1, ny = y1 - y0 + 1;
+      if (!buf || buf.length < nx * ny)
+         buf = new Float32Array(nx * ny);
+      image.getSamples(buf, new Rect(x0, y0, x1 + 1, y1 + 1), 0);
+
+      // First pass: the peak in the aperture and the background ring.
+      let bgVals = [];
       let peak = 0;
       for (let y = y0; y <= y1; ++y) {
+         let dy = y - s.y, row = (y - y0) * nx;
          for (let x = x0; x <= x1; ++x) {
-            let v = 0;
-            for (let c = 0; c < nc; ++c)
-               v += image.sample(x, y, c);
-            v /= nc;
-            let dx = x - s.x, dy = y - s.y;
+            let dx = x - s.x;
             let r = Math.sqrt(dx * dx + dy * dy);
+            let v = buf[row + x - x0];
             if (r <= rAp) {
-               px.push([dx, dy, v]);
                if (v > peak) peak = v;
             } else if (r >= rIn && r <= rOut) {
                bgVals.push(v);
@@ -2384,19 +3426,26 @@ function measureStarAsymmetry(image, stars) {
          continue;
       }
 
+      // Second pass: the moments of the aperture above the background.
       let bg = medianOf(bgVals);
       let sw = 0, sx = 0, sy = 0, s3x = 0, s3y = 0;
-      for (let k = 0; k < px.length; ++k) {
-         let wgt = px[k][2] - bg;
-         if (wgt <= 0)
-            continue;
-         let rx = px[k][0] / sigma, ry = px[k][1] / sigma;
-         let rho2 = rx * rx + ry * ry;
-         sw += wgt;
-         sx += wgt * px[k][0];
-         sy += wgt * px[k][1];
-         s3x += wgt * rho2 * rx;
-         s3y += wgt * rho2 * ry;
+      for (let y = y0; y <= y1; ++y) {
+         let dy = y - s.y, row = (y - y0) * nx;
+         for (let x = x0; x <= x1; ++x) {
+            let dx = x - s.x;
+            if (dx * dx + dy * dy > rAp * rAp)
+               continue;
+            let wgt = buf[row + x - x0] - bg;
+            if (wgt <= 0)
+               continue;
+            let rx = dx / sigma, ry = dy / sigma;
+            let rho2 = rx * rx + ry * ry;
+            sw += wgt;
+            sx += wgt * dx;
+            sy += wgt * dy;
+            s3x += wgt * rho2 * rx;
+            s3y += wgt * rho2 * ry;
+         }
       }
       if (sw > 0) {
          s.asymX = sx / sw;
@@ -2408,7 +3457,7 @@ function measureStarAsymmetry(image, stars) {
       progress.update(i + 1);
    }
    progress.end();
-   Console.writeln(format("PSF asymmetry measured for %d / %d stars.", measured, stars.length));
+   Quiet.writeln(format("PSF asymmetry measured for %d / %d stars.", measured, stars.length));
    return measured;
 }
 
@@ -2487,21 +3536,21 @@ function fitComaField(stars, w, h, useCentroid) {
 }
 
 function logComaField(fitM3, fitCentroid, w, h, pixelPitchEffUm) {
-   Console.noteln("--- Coma field (PSF asymmetry) ---");
+   Quiet.noteln("--- Coma field (PSF asymmetry) ---");
    if (fitM3 === null) {
       Console.warningln("Too few stars with a valid asymmetry measurement - coma field skipped.");
       return;
    }
    let cx = w / 2, cy = h / 2;
-   Console.writeln(format("Stars used: %d. Coma strength at the field edge k = %.3f ± %.3f " +
+   Quiet.writeln(format("Stars used: %d. Coma strength at the field edge k = %.3f ± %.3f " +
       "(third moment, dimensionless; positive = flare points AWAY from the coma-free point, " +
       "negative = toward it, i.e. over-corrected).", fitM3.n, fitM3.k, fitM3.kSd));
    if (fitCentroid !== null)
-      Console.writeln(format("Cross-check with the centroid offset: k = %.3f ± %.3f px, coma-free point (%.0f, %.0f).",
+      Quiet.writeln(format("Cross-check with the centroid offset: k = %.3f ± %.3f px, coma-free point (%.0f, %.0f).",
          fitCentroid.k, fitCentroid.kSd, fitCentroid.x0, fitCentroid.y0));
 
    if (!fitM3.significant) {
-      Console.writeln("-> No significant field-dependent coma (|k| < 3σ): either well corrected, or the " +
+      Quiet.writeln("-> No significant field-dependent coma (|k| < 3σ): either well corrected, or the " +
          "signal is too weak for a single frame. The coma-free point is NOT determinable.");
       return;
    }
@@ -2513,9 +3562,9 @@ function logComaField(fitM3, fitCentroid, w, h, pixelPitchEffUm) {
       100 * dist / fitM3.rMax);
    if (pixelPitchEffUm > 0)
       line += format(" = %.2f mm on the sensor", dist * pixelPitchEffUm / 1000);
-   Console.writeln(line + ".");
-   Console.writeln("Caveats: an uneven tracking drift during the exposure also adds a constant asymmetry " +
-      "and shifts this point; with a coma corrector k is small, which amplifies every error. " +
+   Quiet.writeln(line + ".");
+   Quiet.writeln("Caveats: an uneven tracking drift during the exposure also adds a constant asymmetry " +
+      "and shifts this point; with a coma corrector or in a refractor k is small, which amplifies every error. " +
       "Compare several short exposures before touching the collimation screws.");
 }
 
@@ -2602,12 +3651,14 @@ function drawComaOverlay(g, w, h, stars, comaFit, vectorScale, showArrows) {
 // Pure under-corrected coma gives lines diverging from the coma-free point
 // (a source); over-corrected coma gives lines converging on it (a sink).
 // Smoothed asymmetry vector at (x, y), or null if too few stars nearby.
+// (nearbyStars(): see orientationFieldAt().)
 function comaFieldAt(stars, x, y, radius) {
    let r2 = radius * radius;
    let sigma2 = 2 * (radius * 0.5) * (radius * 0.5);
    let sx = 0, sy = 0, sw = 0, n = 0;
-   for (let i = 0; i < stars.length; ++i) {
-      let s = stars[i];
+   let near = nearbyStars(stars, x, y, radius);
+   for (let i = 0; i < near.length; ++i) {
+      let s = near[i];
       if (s.m3X === null || s.m3X === undefined)
          continue;
       let dx = s.x - x, dy = s.y - y;
@@ -2795,7 +3846,7 @@ function drawStarAsymmetryArrows(g, w, h, stars, vectorScale, minSigma, byStreng
       ++drawn;
    }
    if (!quiet)
-      Console.writeln(format("Per-star asymmetry arrows: %d of %d drawn (noise %.3f from the inner field, " +
+      Quiet.writeln(format("Per-star asymmetry arrows: %d of %d drawn (noise %.3f from the inner field, " +
          "threshold %.3f = %.1f sigma; color: %s).", drawn, mags.length, noise, minMag, minSigma,
          byStrength ? "strength" : "alignment with the ellipse axis"));
 }
@@ -2890,6 +3941,18 @@ function analyzeRadialTangential(stars, w, h, haveAsymmetry, con) {
       }
    }
 
+   // The rings as values, for the AI review (the console shows the same).
+   let profile = [];
+   for (let k = 0; k < NR; ++k) {
+      let rg = rings[k];
+      if (rg.eps.length < 5)
+         continue;
+      profile.push({ r0: k / NR, r1: (k + 1) / NR, n: rg.eps.length, fwhm: medianOf(rg.fwhm),
+         ellipticity: medianOf(rg.eps), epsRad: medianOf(rg.epsRad),
+         asymRad: rg.m3Rad.length >= 5 ? medianOf(rg.m3Rad) : null,
+         align: rg.alignW > 0 ? rg.alignSum / rg.alignW : null });
+   }
+
    con.noteln("--- Radial / tangential decomposition (rings around the image center) ---");
    con.writeln("r/rMax      n   FWHM[px]  ellipt.  eps_rad   asym_rad   align");
    con.writeln("            (eps_rad: + radial, - tangential/concentric; asym_rad: + flare outward, - inward;");
@@ -2917,7 +3980,7 @@ function analyzeRadialTangential(stars, w, h, haveAsymmetry, con) {
    }
    if (outerEps.length < 10) {
       con.writeln("Too few stars in the outer field for a verdict.");
-      return { eRad: null, outerAsym: null, defocusSuspect: false };
+      return { eRad: null, outerAsym: null, defocusSuspect: false, profile: profile };
    }
    let eRad = medianOf(outerEps);
    // 5% margin: on a flat field the two medians otherwise cross by chance.
@@ -2947,7 +4010,7 @@ function analyzeRadialTangential(stars, w, h, haveAsymmetry, con) {
          "(or focused on the field edge). Radial/tangential patterns are not reliable for judging " +
          "corrector spacing on such a frame; use a well-focused one.");
 
-   return { eRad: eRad, outerAsym: outerAsym, defocusSuspect: defocusSuspect };
+   return { eRad: eRad, outerAsym: outerAsym, defocusSuspect: defocusSuspect, profile: profile };
 }
 
 // -----------------------------------------------------------------------
@@ -3052,7 +4115,9 @@ function fitFwhmSurface(stars, w, h, pixelPitchEffUm, focalLengthMm, apertureMm,
 // kept analysis, the analysis has to be run again.
 function analysisKey(view, p) {
    return JSON.stringify([view.id, p.threshold, p.radius, p.useMoffat, p.madOutlierFactor,
-      p.maxCandidates, p.debayer, p.debayer ? p.bayerPattern : ""]);
+      p.maxCandidates, p.debayer, p.debayer ? p.bayerPattern : "",
+      p.sdCustom ? [p.sdStructureLayers, p.sdSensitivity, p.sdPeakResponse,
+                    p.sdMaxDistortion, p.sdAllowClustered] : null]);
 }
 
 // Returns the value of a layer cached in the analysis under the given
@@ -3087,8 +4152,9 @@ function starsFor(analysis, subtractTracking) {
 // layers can be switched on later. A debayer intermediate window is closed
 // when p.closeIntermediateWindows or closeIntermediate is set. viewBitmap
 // is an optional renderStretchedBitmap() of the view, reused as the
-// background. Returns null when no stars could be measured.
-function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
+// background; with noBackground (the series analysis) none is rendered.
+// Returns null when no stars could be measured.
+function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap, noBackground) {
    // Optional preprocessing step: debayer (SuperPixel) on a copy of the
    // target image. The original is left untouched; from here on, all
    // further steps operate on the debayered image.
@@ -3110,8 +4176,10 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
    let targetViewId = targetView.id;
    let closeTarget = function() {
       if (debayer && (p.closeIntermediateWindows || closeIntermediate)) {
-         Console.noteln("Closing SuperPixel intermediate window: " + targetViewId);
+         Quiet.noteln("Closing SuperPixel intermediate window: " + targetViewId);
          targetView.window.forceClose();
+      } else if (debayer) {
+         targetView.window.show(); // kept: show it now (debayerSuperPixel() leaves it hidden)
       }
    };
 
@@ -3119,7 +4187,7 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
    // does not depend on the PSF fit threshold, hence outside the retry loop.
    let candidateInfo = [];
    Progress.step("Detecting stars", 0.05, 0.12);
-   let starBoxes = detectStarCandidates(targetView.image, p.radius, p.maxCandidates, candidateInfo);
+   let starBoxes = detectStarCandidates(targetView.image, p.radius, p.maxCandidates, candidateInfo, p);
    if (starBoxes === null) {
       closeTarget();
       return null;
@@ -3142,7 +4210,7 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
    let t = p.threshold;
    let stars = [];
    for (let attempt = 1; ; ++attempt) {
-      Console.writeln(format("Fit attempt %d: threshold=%.2f  search radius=%d  Moffat=%s",
+      Quiet.writeln(format("Fit attempt %d: threshold=%.2f  search radius=%d  Moffat=%s",
          attempt, t, p.radius, p.useMoffat ? "true" : "false"));
 
       Progress.step(format("Fitting PSFs of %d stars", starBoxes.length), 0.12, 0.65);
@@ -3164,7 +4232,7 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
    }
 
    if (t !== p.threshold)
-      Console.noteln(format("Note: threshold automatically reduced from %.2f to %.2f. " +
+      Quiet.noteln(format("Note: threshold automatically reduced from %.2f to %.2f. " +
          "Enter this value directly in the dialog for future runs.", p.threshold, t));
 
    // Extended diagnostics (see the block above renderVectorMap()). Keep the
@@ -3188,8 +4256,11 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
 
    // The background: the target image stretched for display. Without
    // debayering, that is the bitmap the dialog already shows (viewBitmap).
-   Progress.step("Rendering the background", 0.78, 0.85);
-   let background = (targetView === view && viewBitmap) ? viewBitmap : renderStretchedBitmap(targetView);
+   let background = null;
+   if (!noBackground) {
+      Progress.step("Rendering the background", 0.78, 0.85);
+      background = (targetView === view && viewBitmap) ? viewBitmap : renderStretchedBitmap(targetView);
+   }
 
    // Close the SuperPixel/debayer intermediate window by default after
    // processing (nothing needs its pixels any more at this point).
@@ -3202,12 +4273,14 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
       w: w,
       h: h,
       stars: stars,
-      tracking: computeTrackingComponent(stars),
+      tracking: computeTrackingComponent(stars, w, h),
       hasAsymmetry: measureAsymmetry,
       comaFit: comaFit,
       comaFitCentroid: comaFitCentroid,
       background: background,
-      layers: {}
+      layers: {},
+      // For Save results: the target image, not the debayered copy.
+      header: { viewId: view.id, filePath: view.window.filePath, keywords: viewKeywordList(view) }
    };
 }
 
@@ -3218,12 +4291,12 @@ function analyzeView(view, p, measureAsymmetry, closeIntermediate, viewBitmap) {
 // coma-free point in mm, FWHM grid in arcseconds) must use this effective
 // pitch - the dialog value is the physical sensor pixel pitch.
 function resolveOptics(view, p, debayer, verbose) {
-   let optics = { pixelPitchUm: p.pixelPitchUm, focalLengthMm: p.focalLengthMm, apertureMm: p.apertureMm };
+   // From the FITS header only, when that option is set - a value it does
+   // not give stays 0 (not set); otherwise the dialog's values.
+   let optics = p.opticsFromHeader ? { pixelPitchUm: 0, focalLengthMm: 0, apertureMm: 0 } :
+      { pixelPitchUm: p.pixelPitchUm, focalLengthMm: p.focalLengthMm, apertureMm: p.apertureMm };
 
-   // Optics from the FITS header take precedence over the dialog values
-   // where present (the dialog's own values are kept as the fallback for
-   // images without these keywords).
-   if (p.opticsFromHeader) {
+   if (p.opticsFromHeader && view) {
       let hdr = readOpticsFromHeader(view);
       let used = [];
       if (hdr.pixelPitchUm > 0) {
@@ -3239,18 +4312,28 @@ function resolveOptics(view, p, debayer, verbose) {
          used.push(format("aperture %.1f mm (%s)", optics.apertureMm, hdr.sources.apertureMm));
       }
       if (verbose)
-         Console.writeln(used.length > 0
-            ? "Optics from FITS header: " + used.join(", ") + ". Missing values: dialog input."
-            : "No optics keywords (XPIXSZ, FOCALLEN, APTDIA/FOCRATIO) in the FITS header - using dialog input.");
+         Quiet.writeln(used.length > 0
+            ? "Optics from FITS header: " + used.join(", ") + (used.length < 3 ?
+               ". The others are not set (uncheck \"Read the values from the FITS header\" to enter them)." : ".")
+            : "No optics keywords (XPIXSZ, FOCALLEN, APTDIA/FOCRATIO) in the FITS header - not set (uncheck " +
+              "\"Read the values from the FITS header\" to enter them).");
    }
 
    if (debayer) {
       if (verbose && optics.pixelPitchUm > 0)
-         Console.writeln(format("SuperPixel debayer: effective pixel pitch %.2f µm (2 x %.2f µm) used for all " +
+         Quiet.writeln(format("SuperPixel debayer: effective pixel pitch %.2f µm (2 x %.2f µm) used for all " +
             "physical conversions.", 2 * optics.pixelPitchUm, optics.pixelPitchUm));
       optics.pixelPitchUm *= 2;
    }
    optics.physical = optics.pixelPitchUm > 0 && optics.focalLengthMm > 0 && optics.apertureMm > 0;
+
+   // The mount: estimated from the header, or the dialog's choice; the
+   // observation values (exposure, altitude ...) always from the header.
+   let values = view ? viewKeywordValues(view) : {};
+   let mount = p.opticsFromHeader ? estimateMount(values) :
+      { type: Math.range(p.mountType || 0, 0, MOUNT_TYPES.length - 1), source: "dialog" };
+   optics.mount = { type: mount.type, source: mount.source, obs: mountObservation(values) };
+   optics.guiding = effectiveGuiding(p.guidingType, values);
    return optics;
 }
 
@@ -3279,7 +4362,7 @@ function reportAnalysis(analysis, stars, p, optics, con) {
    let rings = analyzeRadialTangential(stars, w, h, showComa, con);
    let surface = fitFwhmSurface(stars, w, h, optics.pixelPitchUm, optics.focalLengthMm, optics.apertureMm, con);
 
-   if (p.showSirilTilt && p.showFwhmGrid && p.fwhmGridArcsec) {
+   if (p.fwhmCellValue === FWHM_CELL_ARCSEC) {
       if (optics.pixelPitchUm > 0 && optics.focalLengthMm > 0)
          con.writeln(format("FWHM grid in arcseconds: %.3f″/px (pitch %.2f µm, focal length %.0f mm).",
             206.265 * optics.pixelPitchUm / optics.focalLengthMm, optics.pixelPitchUm, optics.focalLengthMm));
@@ -3291,27 +4374,77 @@ function reportAnalysis(analysis, stars, p, optics, con) {
    // angle computation and the assessment.
    let tilt = computeSirilTilt(stars, w, h);
    if (tilt === null) {
-      if (p.showSirilTilt || optics.physical)
-         con.warningln("Siril tilt evaluation: at least one quadrant/ring has no stars - skipped.");
+      con.warningln("Siril tilt evaluation: at least one quadrant/ring has no stars - skipped.");
    } else {
-      if (p.showSirilTilt) {
-         let best = Math.min(tilt.m1, tilt.m2, tilt.m3, tilt.m4);
-         let worst = Math.max(tilt.m1, tilt.m2, tilt.m3, tilt.m4);
-         let ref = (tilt.m1 + tilt.m2 + tilt.m3 + tilt.m4) / 4;
-         con.noteln(format(
-            "Siril-Style Tilt: Sensor tilt[FWHM]=%.2f (%.0f%%), Off-axis aberration[FWHM]=%.2f",
-            worst - best, ((worst - best) / ref) * 100, tilt.mOuter - tilt.mInner));
-      }
+      let best = Math.min(tilt.m1, tilt.m2, tilt.m3, tilt.m4);
+      let worst = Math.max(tilt.m1, tilt.m2, tilt.m3, tilt.m4);
+      let ref = (tilt.m1 + tilt.m2 + tilt.m3 + tilt.m4) / 4;
+      con.noteln(format(
+         "Siril-Style Tilt: Sensor tilt[FWHM]=%.2f (%.0f%%), Off-axis aberration[FWHM]=%.2f",
+         worst - best, ((worst - best) / ref) * 100, tilt.mOuter - tilt.mInner));
       if (optics.physical && verbose)
          computeAndLogTiltAngles(tilt, w, h, optics.pixelPitchUm, optics.focalLengthMm, optics.apertureMm);
    }
+
+   // Assessment of the 11 x 11 FWHM grid (evaluateFwhmGrid()), whether the
+   // grid is drawn or not.
+   let grid = evaluateFwhmGrid(stars, w, h, FWHM_GRID_SIZE);
+   con.noteln("--- FWHM grid assessment (11x11, ratio to the center) ---");
+   formatFwhmGridEvaluation(grid).forEach(function(line) { con.writeln(line); });
+   let gridSummary = {
+      center: grid.center ? grid.center.value : null,
+      centerSe: grid.center ? grid.center.se : null,
+      cornerRatio: grid.corners ? grid.corners.ratio : null,
+      cornerRatios: grid.corners ? grid.corners.ratios : null, // TL, TR, BL, BR
+      tiltRel: grid.tilt ? grid.tilt.rel : null,
+      tiltSigma: grid.tilt ? grid.tilt.z : null,
+      tiltSoftCorner: grid.tilt ? FWHM_CORNER_NAMES[grid.tilt.soft] : null,
+      edgeSpread: grid.edgeSpread,
+      cells: grid.classCounts
+   };
+
+   // The star shapes with their uncertainties (evaluateShapeField()).
+   let shape = shapeEvaluationFor(analysis, p);
+   con.noteln("--- Star shape assessment (11x11 cells, optics model, singular points) ---");
+   formatShapeEvaluation(shape, analysis.tracking, p.subtractTracking).forEach(function(line) {
+      con.writeln(line);
+   });
+   let sm = shape.model;
+   let shapeSummary = {
+      centerElongation: shape.center ? shape.center.chi : null,
+      centerSe: shape.center ? shape.center.se : null,
+      edgeEpsRad: shape.edge ? shape.edge.mean : null,
+      edgeEpsRadSe: shape.edge ? shape.edge.se : null,
+      cornerEpsRad: shape.corners.map(function(c) { return c ? c.mean : null; }), // TL, TR, BL, BR
+      cornerEpsRadSe: shape.corners.map(function(c) { return c ? c.se : null; }),
+      modelExplained: sm ? sm.explained : null,
+      modelChi2dof: sm ? sm.chi2dof : null,
+      curvatureTerm: sm ? sm.k : null,
+      curvatureTermSe: sm ? sm.kSe : null,
+      uniformTerm: sm ? sm.constant : null,
+      linearAstigmatism: sm ? sm.binodal : null,
+      axisX: sm && sm.axis ? sm.axis.x : null,
+      axisY: sm && sm.axis ? sm.axis.y : null,
+      unexplainedCells: sm ? sm.unexplained.length : null,
+      singularPlus: shape.defects.filter(function(dft) { return dft.index > 0; }).length,
+      singularMinus: shape.defects.filter(function(dft) { return dft.index < 0; }).length,
+      cells: shape.counts
+   };
 
    return {
       tilt: tilt,
       metrics: {
          n: stars.length, w: w, h: h,
          tracking: analysis.tracking, trackingSubtracted: p.subtractTracking,
-         rings: rings, surface: surface, siril: tilt,
+         rings: rings, surface: surface, siril: tilt, grid: gridSummary, shape: shapeSummary,
+         guiding: optics.guiding ? { type: optics.guiding.type, name: GUIDING_TYPES[optics.guiding.type],
+                                     source: optics.guiding.source } : null,
+         mount: optics.mount ? {
+            type: optics.mount.type, name: MOUNT_TYPES[optics.mount.type], source: optics.mount.source,
+            fieldRotationCornerPx: optics.mount.type === MOUNT_ALTAZ ? fieldRotationSmearPx(optics.mount.obs, w, h) : null,
+            exposureS: optics.mount.obs.exposureS
+         } : null,
+         fRatio: (optics.focalLengthMm > 0 && optics.apertureMm > 0) ? optics.focalLengthMm / optics.apertureMm : null,
          coma: showComa ? analysis.comaFit : undefined // undefined: not measured, null: too few stars
       }
    };
@@ -3325,12 +4458,80 @@ function reportAnalysis(analysis, stars, p, optics, con) {
 // (focus before tracking before tilt ...). The thresholds are starting
 // points, not calibrated limits. Where the direction of a correction
 // depends on the optical system, the optics type decides the wording
-// (unknown: both cases are named).
-const OPTICS_TYPES = ["Unknown", "Uncorrected (e.g. bare Newtonian)", "With corrector / flattener / reducer"];
-const OPTICS_UNKNOWN = 0, OPTICS_UNCORRECTED = 1, OPTICS_CORRECTED = 2;
+// (unknown: both cases are named). The indices are stored with the
+// settings: new types are appended.
+// A refractor differs from a Newtonian in what is normal: it has hardly
+// any coma by design, its field curvature is the main off-axis error
+// without a flattener, its lens is collimated at the factory, and lateral
+// color (the colors imaged at slightly different scales) elongates the
+// stars of a color or broadband frame radially at the field edge - which
+// looks like under-corrected coma or spacing.
+// Catadioptric systems focus by moving the primary mirror, so the image
+// can shift or tilt with it (mirror flop); a classic SCT has coma and a
+// curved field by design, an aplanatic SCT (EdgeHD), a RASA and an
+// astrograph with built-in flattener are meant to be flat and coma-free -
+// there both point to the back focus. Slow systems (f/8 and above) have a
+// deep critical focus zone and are seeing-limited: small differences
+// across the field are uncertain.
+// The optical systems. The indices are stored with the settings: new types
+// are appended. Per type:
+//   kind       newtonian | refractor | rasa | sct | cat (classic SCT or
+//              Maksutov without corrector) | astrograph | unknown
+//   corrected  a corrector, flattener or reducer sets the edge of the field
+//   corrector, distance  what is adjusted and how it is named
+//   backFocus  where the spacing starts from (the manufacturer's value)
+//   flatByDesign  the field is meant to be flat and coma-free: curvature or
+//              coma point to the back focus, not to the design
+//   mirrorFocus  focusing moves the primary mirror (mirror flop, image shift)
+//   lateralColor  lenses image the colors at slightly different scales
+const OPTICS_PROFILES = [
+   { name: "Unknown", kind: "unknown" },
+   { name: "Reflector without corrector (e.g. bare Newtonian)", kind: "newtonian" },
+   { name: "Reflector with coma corrector / reducer", kind: "newtonian", corrected: true,
+     corrector: "corrector", distance: "corrector-sensor distance" },
+   { name: "Refractor without flattener", kind: "refractor", lateralColor: true },
+   { name: "Refractor with flattener / reducer", kind: "refractor", corrected: true, lateralColor: true,
+     corrector: "flattener", distance: "flattener-sensor distance" },
+   { name: "RASA / Hyperstar (f/2)", kind: "rasa", corrected: true, flatByDesign: true, mirrorFocus: true,
+     corrector: "corrector lens", distance: "camera distance to the corrector lens",
+     backFocus: "the back focus Celestron or Starizona specify for your model and camera adapter" },
+   { name: "SCT with reducer (e.g. f/6.3)", kind: "sct", corrected: true, mirrorFocus: true,
+     corrector: "reducer", distance: "reducer-sensor distance",
+     backFocus: "the reducer's specified distance (usually 105 mm)" },
+   { name: "Aplanatic SCT (EdgeHD and similar)", kind: "sct", corrected: true, flatByDesign: true, mirrorFocus: true,
+     corrector: "built-in corrector", distance: "back focus",
+     backFocus: "the specified back focus (EdgeHD: 133.35 mm for the 8\", 146.05 mm for 9.25\"-14\", " +
+        "105 mm with the 0.7x reducer)" },
+   { name: "Classic SCT or Maksutov (no corrector)", kind: "cat", mirrorFocus: true },
+   { name: "Astrograph with built-in flattener (Petzval, quadruplet)", kind: "astrograph", corrected: true,
+     flatByDesign: true, lateralColor: true, corrector: "built-in flattener", distance: "camera back focus",
+     backFocus: "the back focus the manufacturer specifies" }
+];
+const OPTICS_TYPES = OPTICS_PROFILES.map(function(o) { return o.name; });
+const OPTICS_UNKNOWN = 0, OPTICS_UNCORRECTED = 1, OPTICS_CORRECTED = 2, OPTICS_REFRACTOR = 3,
+      OPTICS_REFRACTOR_FLAT = 4, OPTICS_RASA = 5, OPTICS_SCT_REDUCER = 6, OPTICS_SCT_APLANATIC = 7,
+      OPTICS_CLASSIC_CAT = 8, OPTICS_ASTROGRAPH = 9;
 const ASSESS_OK = 0, ASSESS_NOTE = 1, ASSESS_ACTION = 2;
 
+// Half the critical focus zone in µm at f-ratio N (CFZ = ±2.44 λ N², λ = 0.55 µm):
+// a defocus within it does not enlarge the stars visibly.
+function criticalFocusHalfUm(fRatio) {
+   return 2.44 * 0.55 * fRatio * fRatio;
+}
+
 function assessImage(m, opticsType) {
+   let P = OPTICS_PROFILES[opticsType] || OPTICS_PROFILES[OPTICS_UNKNOWN];
+   let refractor = P.kind === "refractor";
+   let classicCat = P.kind === "cat";
+   // No corrector, flattener or reducer: coma and curvature are by design.
+   let bare = P.kind !== "unknown" && !P.corrected;
+   let corrected = P.corrected === true;
+   // The part whose distance to the sensor is adjusted.
+   let corrector = P.corrector || "corrector or flattener";
+   let distance = P.distance || "corrector-sensor distance";
+   let fromBackFocus = P.backFocus ? " Start from " + P.backFocus + "." : "";
+   let lateralColor = P.lateralColor ? " With lenses, lateral color produces the same radial pattern in a color " +
+      "or broadband frame: compare with a narrowband frame or a single color channel." : "";
    let findings = [];
    let add = function(level, topic, text, advice) {
       findings.push({ level: level, topic: topic, text: text, advice: advice || "" });
@@ -3341,12 +4542,20 @@ function assessImage(m, opticsType) {
       return NAMES[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
    };
    let pct = function(v) { return format("%.0f%%", 100 * v); };
-   let ifCorrector = (opticsType === OPTICS_UNKNOWN) ? "If a corrector or flattener is used: rule of thumb, " :
-      "Rule of thumb: ";
+   let ifCorrector = corrected ? "Rule of thumb: " : "If a corrector or flattener is used: rule of thumb, ";
+   // Critical focus zone (needs the f-ratio).
+   let cfz = (m.fRatio > 0) ? criticalFocusHalfUm(m.fRatio) : null;
 
    if (m.n < 150)
       add(ASSESS_NOTE, "Data", format("Only %d stars measured - the verdicts below are uncertain.", m.n),
          "Lower the detection threshold, raise the maximum number of stars, or expose longer.");
+   // Slow systems: a large depth of focus hides tilt and curvature, and the
+   // seeing sets the star size.
+   if (cfz !== null && m.fRatio >= 8)
+      add(ASSESS_NOTE, "Data", format("At f/%.1f the critical focus zone is about ±%.0f µm: tilt and field " +
+         "curvature smaller than that hardly enlarge the stars, and the seeing dominates their size - small " +
+         "differences across the field are uncertain.", m.fRatio, cfz),
+         "Judge tilt and curvature only when they are clear, and compare several frames.");
 
    // Focus first: a defocused frame falsifies the tilt and spacing verdicts.
    let s = m.surface;
@@ -3356,12 +4565,36 @@ function assessImage(m, opticsType) {
          "focus, or focused on the edge.", "Refocus on the center. Tilt and spacing verdicts are unreliable until then.");
    let caveat = focusBad ? " Uncertain: the frame seems out of focus." : "";
 
+   // The mount: field rotation of an alt-azimuth mount, no tracking.
+   let mt = m.mount;
+   if (mt && mt.type === MOUNT_ALTAZ) {
+      let smear = mt.fieldRotationCornerPx;
+      let text = "Alt-azimuth mount" + (mt.source && mt.source !== "dialog" ? " (" + mt.source + ")" : "") +
+         ": without a derotator the field turns during the exposure, the stars become arcs around the rotation " +
+         "center - a tangential pattern growing with the distance, like field curvature or too short a spacing.";
+      if (smear !== null)
+         text += format(" Here about %.1f px at the corners in %.0f s", smear, mt.exposureS) +
+            (s !== null && s.fCenter > 0 ? format(" (FWHM in the center %.2f px).", s.fCenter) : ".");
+      add(smear !== null && s !== null && smear > 0.5 * s.fCenter ? ASSESS_ACTION : ASSESS_NOTE, "Mount", text,
+         "Judge a tangential edge pattern only with short exposures or a derotator; shorter exposures, an " +
+         "altitude away from the zenith and an azimuth near east or west reduce the rotation.");
+   } else if (mt && mt.type === MOUNT_NONE) {
+      add(ASSESS_NOTE, "Mount", "Not tracked: all stars trail along the right ascension.",
+         "The shape results show the trail, not the optics; use the FWHM results only across the trail, or " +
+         "short exposures.");
+   } else if (mt && mt.type !== MOUNT_UNKNOWN) {
+      add(ASSESS_OK, "Mount", MOUNT_TYPES[mt.type] + (mt.source && mt.source !== "dialog" ? " (" + mt.source + ")" :
+         "") + ": no field rotation.");
+   }
+
    let t = m.tracking;
    if (t) {
       if (t.ellipticity < 0.03) {
          add(ASSESS_OK, "Tracking", format("No significant common elongation (%.3f).", t.ellipticity));
       } else {
-         let advice = "Check guiding (RMS, calibration), balance, cable drag, wind and flexure. An axis that stays " +
+         let gd = m.guiding;
+         let advice = (gd && gd.type !== GUIDING_UNKNOWN) ? guidingCauses(gd.type) :
+            "Check guiding (RMS, calibration), balance, cable drag, wind and flexure. An axis that stays " +
             "the same over several frames points to the mount, a changing one to wind.";
          if (!m.trackingSubtracted)
             advice += " Enable \"Subtract it from all stars\" so that it does not mask the optical patterns.";
@@ -3378,17 +4611,26 @@ function assessImage(m, opticsType) {
       } else {
          let text = format("The %s side is softer: FWHM %.2f px against %.2f px on the opposite side (%s).",
             side(s.tiltDirDeg), s.fBad, s.fGood, pct(rel));
-         if (s.dzUm !== null)
+         if (s.dzUm !== null) {
             text += format(" Δz ≈ ±%.0f µm at the edge, tilt ≈ %.3f°.", s.dzUm, s.tiltDeg);
+            if (cfz !== null)
+               text += format(" Critical focus zone ±%.0f µm.", cfz);
+         }
          if (m.siril) {
             let q = [m.siril.m1, m.siril.m2, m.siril.m3, m.siril.m4];
             let mean = (q[0] + q[1] + q[2] + q[3]) / 4;
             text += format(" Quadrants differ by %s.", pct((Math.max.apply(null, q) - Math.min.apply(null, q)) / mean));
          }
-         add(rel > 0.10 ? ASSESS_ACTION : ASSESS_NOTE, "Tilt", text + caveat,
-            format("Adjust the tilt of the camera on the axis toward the %s (%.0f° in image coordinates). Whether " +
-               "that side has to move toward or away from the optics cannot be told from one frame: change it " +
-               "slightly and compare.", side(s.tiltDirDeg), s.tiltDirDeg));
+         let advice = format("Adjust the tilt of the camera on the axis toward the %s (%.0f° in image coordinates). " +
+            "Whether that side has to move toward or away from the optics cannot be told from one frame: change it " +
+            "slightly and compare.", side(s.tiltDirDeg), s.tiltDirDeg);
+         if (P.kind === "rasa")
+            advice += " At f/2 even a few micrometers count: use a tilt adapter between the camera and the " +
+               "corrector, and check that the camera sits square on the adapter.";
+         if (P.mirrorFocus)
+            advice += " Focusing moves the primary mirror: a mirror that shifted can tilt the image as well - " +
+               "lock it if possible, and compare frames before adjusting.";
+         add(rel > 0.10 ? ASSESS_ACTION : ASSESS_NOTE, "Tilt", text + caveat, advice);
       }
    }
 
@@ -3405,19 +4647,40 @@ function assessImage(m, opticsType) {
          if (opticsType === OPTICS_UNCORRECTED)
             add(ASSESS_NOTE, "Spacing", text + " This is the normal coma of an uncorrected system.",
                "A coma corrector would remove it; there is no spacing to adjust.");
+         else if (classicCat)
+            add(ASSESS_NOTE, "Spacing", text + " A classic SCT has coma at the field edge by design; a Maksutov " +
+               "has little - there it is rather astigmatism or a tilted camera." + caveat,
+               "There is no spacing to adjust. A reducer-corrector or an aplanatic design would reduce it.");
+         else if (opticsType === OPTICS_REFRACTOR)
+            add(ASSESS_NOTE, "Spacing", text + " A refractor has hardly any coma: without a flattener this is " +
+               "astigmatism of the curved field, or lateral color in a color or broadband frame." + caveat,
+               "There is no spacing to adjust. A flattener matching the refractor would reduce it; compare with a " +
+               "narrowband frame or a single color channel to tell lateral color apart.");
          else
-            add(level, "Spacing", text + " With a corrector or flattener this usually means under-correction." + caveat,
-               ifCorrector + "increase the corrector-sensor distance in small steps (e.g. 0.5 mm) and measure again.");
+            add(level, "Spacing", text + " With a " + corrector + " this usually means under-correction." +
+               lateralColor + caveat,
+               ifCorrector + "increase the " + distance + " in small steps (e.g. 0.5 mm) and measure again." +
+               fromBackFocus);
       } else {
          let text = format("Stars at the field edge are elongated tangentially, concentric around the center " +
             "(eps_rad %.3f).", r.eRad);
-         if (opticsType === OPTICS_UNCORRECTED)
+         if (opticsType === OPTICS_REFRACTOR)
+            add(ASSESS_NOTE, "Spacing", text + " Without a flattener this is the field curvature or astigmatism " +
+               "of the refractor." + caveat,
+               "Expected; there is no spacing to adjust. Check the focus on the center; a flattener matching the " +
+               "refractor would reduce it.");
+         else if (classicCat)
+            add(ASSESS_NOTE, "Spacing", text + " A classic SCT or Maksutov has a curved field: this is its " +
+               "field curvature or astigmatism." + caveat,
+               "Expected; there is no spacing to adjust. Check the focus on the center; a reducer-corrector " +
+               "would flatten the field.");
+         else if (opticsType === OPTICS_UNCORRECTED)
             add(level, "Spacing", text + " In an uncorrected system this is field curvature or astigmatism." + caveat,
                "Check the focus; a field flattener or corrector would reduce it.");
          else
             add(level, "Spacing", text + caveat,
-               ifCorrector + "decrease the corrector-sensor distance in small steps. Defocus combined with field " +
-               "curvature looks the same, so check the focus first.");
+               ifCorrector + "decrease the " + distance + " in small steps. Defocus combined with " +
+               "field curvature looks the same, so check the focus first." + fromBackFocus);
       }
    }
 
@@ -3427,14 +4690,28 @@ function assessImage(m, opticsType) {
       if (rel > 0.15) {
          let text = format("Stars at the field edge are %s larger than in the center (FWHM %.2f against %.2f px).",
             pct(rel), s.fEdge, s.fCenter);
-         if (s.sagUm !== null)
-            text += format(" That is about %.0f µm of focus difference.", s.sagUm);
-         let advice = (opticsType === OPTICS_UNCORRECTED) ?
+         if (s.sagUm !== null) {
+            text += format(" That is about %.0f µm of focus difference", s.sagUm);
+            text += cfz !== null ? format(" (critical focus zone ±%.0f µm).", cfz) : ".";
+         }
+         let advice = (opticsType === OPTICS_REFRACTOR) ?
+               "Expected for a refractor without a flattener; a flattener matching it would remove it." :
+            classicCat ?
+               "Expected for a classic SCT or Maksutov; a reducer-corrector would flatten the field." :
+            bare ?
                "Expected for an uncorrected system; a flattener or corrector would reduce it." :
-            (opticsType === OPTICS_CORRECTED) ?
-               "The corrector does not flatten the field fully: check its spacing (see Spacing)." :
+            P.flatByDesign ?
+               "The field of this system is meant to be flat: the " + distance + " is probably off (see Spacing)." +
+               fromBackFocus :
+            corrected ?
+               "The " + corrector + " does not flatten the field fully: check its spacing (see Spacing)." +
+               (fromBackFocus || " Start from the back focus the manufacturer specifies.") :
                "With a corrector or flattener, check its spacing (see Spacing); without one this is expected.";
-         add(rel > 0.30 ? ASSESS_ACTION : ASSESS_NOTE, "Field curvature", text + caveat, advice);
+         // Without a flattener the curvature of a refractor (or a classic
+         // SCT/Maksutov) is by design.
+         let level = (opticsType === OPTICS_REFRACTOR || classicCat) ? ASSESS_NOTE :
+            rel > 0.30 ? ASSESS_ACTION : ASSESS_NOTE;
+         add(level, "Field curvature", text + caveat, advice);
       } else if (rel >= 0) {
          add(ASSESS_OK, "Field curvature", format("Field edge and center are about equally sharp (%s).", pct(rel)));
       }
@@ -3443,22 +4720,36 @@ function assessImage(m, opticsType) {
    // Coma and collimation (PSF asymmetry).
    let c = m.coma;
    if (c === undefined) {
-      add(ASSESS_NOTE, "Coma", "Not measured.", "Enable \"Measure PSF asymmetry\" on the Coma tab.");
+      add(ASSESS_NOTE, "Coma", "Not measured.", "Enable \"Measure PSF asymmetry\" on Maps > Coma.");
    } else if (c === null) {
       add(ASSESS_NOTE, "Coma", "Too few stars with a valid asymmetry measurement.");
    } else if (!c.significant) {
       add(ASSESS_OK, "Coma", format("No significant field-dependent coma (k = %.3f ± %.3f).", c.k, c.kSd));
    } else {
-      if (c.k > 0) {
+      if (opticsType === OPTICS_REFRACTOR) {
+         // Not a spacing question: a bare refractor has no corrector.
+         add(ASSESS_NOTE, "Coma", format("Field-dependent asymmetry, the flares pointing %s the coma-free point " +
+            "(k = %.3f ± %.3f). A refractor has hardly any coma by design.", c.k > 0 ? "away from" : "toward",
+            c.k, c.kSd),
+            "Likely causes: lateral color in a color or broadband frame, astigmatism of the curved field, or a " +
+            "tilted or decentered lens. Compare with a narrowband frame or a single color channel; if it stays, " +
+            "check the focuser and the lens cell.");
+      } else if (c.k > 0) {
          let text = format("Under-corrected coma: the flares point away from the coma-free point (k = %.3f ± %.3f).",
             c.k, c.kSd);
          if (opticsType === OPTICS_UNCORRECTED)
             add(ASSESS_NOTE, "Coma", text + " Normal for an uncorrected Newtonian.", "A coma corrector would remove it.");
+         else if (classicCat)
+            add(ASSESS_NOTE, "Coma", text + " Normal for a classic SCT; a Maksutov has little coma, there it points " +
+               "to collimation.", "A reducer-corrector or an aplanatic design would remove it.");
          else
-            add(ASSESS_ACTION, "Coma", text, ifCorrector + "increase the corrector-sensor distance in small steps.");
+            add(ASSESS_ACTION, "Coma", text + (P.flatByDesign ? " This system is meant to be coma-free." : "") +
+               lateralColor,
+               ifCorrector + "increase the " + distance + " in small steps." + fromBackFocus);
       } else {
          add(ASSESS_ACTION, "Coma", format("Over-corrected coma: the flares point toward the coma-free point " +
-            "(k = %.3f ± %.3f).", c.k, c.kSd), ifCorrector + "decrease the corrector-sensor distance in small steps.");
+            "(k = %.3f ± %.3f).", c.k, c.kSd),
+            ifCorrector + "decrease the " + distance + " in small steps." + fromBackFocus);
       }
 
       let dx = c.x0 - m.w / 2, dy = c.y0 - m.h / 2;
@@ -3467,7 +4758,24 @@ function assessImage(m, opticsType) {
       let sd = Math.hypot(c.x0Sd, c.y0Sd);
       if (off > 0.15 && isFinite(sd) && dist > 2 * sd) {
          let dirDeg = ((Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
-         let advice = (opticsType === OPTICS_UNCORRECTED) ? "Collimate the primary and secondary mirror." :
+         // Lenses are collimated at the factory, and only some cells can be
+         // adjusted: the mechanics come first.
+         let lensOptics = refractor || P.kind === "astrograph";
+         let advice = lensOptics ?
+               "The lenses are collimated at the factory: check first that the focuser, " +
+               (opticsType === OPTICS_REFRACTOR_FLAT ? "the flattener, " : "") + "the adapters and the camera sit " +
+               "straight and without play; only then the lens cell (only some can be adjusted). With the little " +
+               "coma of a lens system, the coma-free point is uncertain - compare several frames." :
+            P.kind === "sct" ?
+               "Collimate with the secondary mirror's screws (defocused star in the center, rings concentric). " +
+               "Focusing moves the primary: approach focus from the same direction, lock the mirror if possible." :
+            classicCat ?
+               "A classic SCT is collimated with the secondary mirror's screws; most Maksutovs are collimated at " +
+               "the factory - check the visual back, the focuser and the camera for tilt first." :
+            P.kind === "rasa" ?
+               "Check that the camera sits centered and square on the corrector (adapter, tilt plate); then the " +
+               "collimation of the primary mirror, where the model allows it." :
+            (opticsType === OPTICS_UNCORRECTED) ? "Collimate the primary and secondary mirror." :
             (opticsType === OPTICS_CORRECTED) ? "Collimate the optics, or check the corrector for tilt or decentering." :
                "Collimate the optics; with a corrector, also check it for tilt or decentering.";
          // Uneven tracking adds a constant asymmetry along the drift, which
@@ -3478,15 +4786,15 @@ function assessImage(m, opticsType) {
                advice += " Caution: the offset lies along the tracking elongation and may come from uneven " +
                   "tracking - compare several frames first.";
          }
-         add(ASSESS_ACTION, "Collimation", format("The coma-free point lies %s of the half diagonal off the center, " +
-            "toward the %s (%.0f°).", pct(off), side(dirDeg), dirDeg), advice);
+         add(lensOptics ? ASSESS_NOTE : ASSESS_ACTION, "Collimation", format("The coma-free point lies %s of the " +
+            "half diagonal off the center, toward the %s (%.0f°).", pct(off), side(dirDeg), dirDeg), advice);
       } else {
          add(ASSESS_OK, "Collimation", format("The coma-free point is near the center (%s of the half diagonal).",
             pct(off)));
       }
    }
 
-   const ORDER = ["Focus", "Tracking", "Tilt", "Collimation", "Spacing", "Coma", "Field curvature", "Data"];
+   const ORDER = ["Mount", "Focus", "Tracking", "Tilt", "Collimation", "Spacing", "Coma", "Field curvature", "Data"];
    let actions = findings.filter(function(f) { return f.level === ASSESS_ACTION; });
    actions.sort(function(a, b) { return ORDER.indexOf(a.topic) - ORDER.indexOf(b.topic); });
    return { findings: findings, actions: actions };
@@ -3514,19 +4822,637 @@ function formatAssessment(assessment) {
    return lines.join("<br>");
 }
 
-// Draws the vector map of an analysis with the given settings and returns
-// it as a bitmap of the size of the target image. With verbose, notes and
-// progress are written to the console; the dialog redraws its preview
-// without them whenever a layer is switched.
-function renderVectorMap(analysis, p, optics, verbose) {
+// -----------------------------------------------------------------------
+// AI review: sends the measured values, the rule-based assessment and
+// (optionally) the vector map to Claude (Anthropic Messages API) and returns
+// its review as text. The rules above stay the reference; the AI weighs the
+// findings against each other, points out contradictions and explains the
+// suggested order. PJSR has no Anthropic SDK, so the request is a plain
+// HTTPS POST with NetworkTransfer, which blocks until the answer is in.
+const AI_API_URL = "https://api.anthropic.com/v1/messages";
+const AI_MODEL = "claude-opus-5-5";
+const AI_KEY_SETTING = SETTINGS_MODULE + "/anthropicApiKey";
+const AI_MAP_MAX_SIDE = 1092; // longer side of each map sent as an image, px (3 maps: about 1100 tokens each)
+const AI_TIMEOUT_S = 300;
+
+const AI_SYSTEM_PROMPT = [
+   "You review the results of Star Aberration Diagnostics, a PixInsight script that measures the shape of every " +
+   "star in one astronomical frame (PSF fit: FWHM, elongation, orientation, and the asymmetry of the profile) to " +
+   "diagnose the optical train: focus, tracking/guiding, sensor tilt, corrector or flattener back focus (spacing), " +
+   "field curvature, coma and collimation.",
+   "",
+   "You get the measured values of a single frame as JSON with the rule-based assessment the script derived from " +
+   "them with fixed thresholds and possibly images of its maps, or the values of a series of frames " +
+   "before and after a meridian flip with the script's comparison of the two sides, or both. Give a second " +
+   "opinion that is more useful than the rules alone:",
+   "- Weigh the findings against each other. Several patterns share causes or mask each other: defocus, field " +
+   "curvature and tangential elongation; a tracking elongation and an offset coma-free point; tilt and an " +
+   "off-center sharpest point; too few stars in part of the field. Say which explanation fits all values best and " +
+   "which values contradict each other.",
+   "- Say where the rule-based assessment is too strict, too lenient or probably wrong, and why.",
+   "- Give the corrections in the order to work through them, each with a concrete first step and what to look " +
+   "for in the next test frame to confirm it. Stay with what one frame can tell; say when a verdict needs more " +
+   "frames or a different test frame.",
+   "- State your confidence in each conclusion (high, medium, low) and name the values it rests on.",
+   "Do not invent measurements that are not in the data. The script's thresholds are starting points, not " +
+   "calibrated limits.",
+   "",
+   "Conventions of the data:",
+   "- Image coordinates in pixels: x to the right, y downward, origin top left. Directions in degrees: 0 = right, " +
+   "90 = down, 180 = left, 270 = up. The top of the image need not be the top of the camera.",
+   "- Ellipticity = 1 - b/a of the fitted PSF. r is the distance from the image center divided by the half " +
+   "diagonal rMax (0 = center, 1 = corner). The image center is taken as the optical axis.",
+   "- tracking: the elongation shared by all stars (ellipticity ± se; angleDeg = elongation axis, 0-180). method " +
+   "\"model\": the uniform term of the optics model, fitted together with the radial and linear terms and corrected " +
+   "for an off-center axis - unlike the plain median (tracking.median, kept for comparison), which a radial pattern " +
+   "on a non-square sensor or an off-center axis biases. On one frame, astigmatism on the axis looks the same. When " +
+   "trackingSubtracted is true it was removed from every star before the other values were computed.",
+   "- rings.profile: rings of r from r0 to r1 with n stars, median FWHM (px), median ellipticity, epsRad " +
+   "(+ radial, - tangential/concentric elongation), asymRad (direction of the PSF flare: + outward, - inward; null " +
+   "if not measured) and align (+1: flare parallel to the elongation, i.e. coma shapes the star; -1: " +
+   "perpendicular). rings.eRad and rings.outerAsym are the medians over r > 2/3; rings.defocusSuspect: the center " +
+   "(r < 1/3) is more than 5% softer than the outer field.",
+   "- surface: fit FWHM^2 = c0 + c1*X + c2*Y + c3*(X^2 + Y^2), X and Y normalized by rMax. fCenter and fEdge: " +
+   "FWHM (px) at the center and at r = 1 from the symmetric part; c3 < 0 means the edge is sharper than the " +
+   "center. tiltDirDeg: direction of the softer side; fBad and fGood: FWHM at the edge on the softer and the " +
+   "sharper side. dzUm: defocus at the edge in micrometers (sign not determinable), tiltDeg the matching tilt " +
+   "angle, sagUm the field curvature sag between center and edge; null without pixel pitch, focal length and " +
+   "aperture. x0, y0: sharpest point of the fitted surface (only when c3 > 0).",
+   "- siril: 25%-trimmed mean FWHM (px) per quadrant (m1 top left, m2 top right, m3 bottom left, m4 bottom " +
+   "right), mInner (r < 0.25) and mOuter (r > 0.75).",
+   "- fwhmGrid: 5 x 5 grid of the 25%-trimmed mean FWHM (px), row 0 = top, column 0 = left; null = no stars.",
+   "- guiding: chosen by the user, or \"Guided, method unknown\" from a guide camera in the header (GUIDECAM). It " +
+   "decides what a common elongation means: not guided - the mount's periodic error and polar drift; guide scope - " +
+   "differential flexure or mirror flop when static, guiding quality when changing; off-axis guider - no " +
+   "differential flexure, so a static common elongation points rather to astigmatism on the axis.",
+   "- mount: the mount type (name), estimated from PIERSIDE or the mount driver's name in TELESCOP (source), or " +
+   "chosen by the user (source \"dialog\"). fieldRotationCornerPx: for an alt-azimuth mount, the arc a corner " +
+   "star describes during the exposure (exposureS) - field rotation makes stars tangential arcs around the " +
+   "rotation center, which mimics field curvature or too short a corrector spacing.",
+   "- shapeAssessment: star shapes in the distortion chi = (a²-b²)/(a²+b²) (≈ ellipticity), after the tracking " +
+   "subtraction if enabled, with standard errors (Se). centerElongation: mean of the inner 3 x 3 cells. " +
+   "edgeEpsRad / cornerEpsRad (TL, TR, BL, BR): mean radial component, + radial, - tangential. A model of what " +
+   "optics produce (uniform + linear + r² radial terms) was fitted: modelExplained = share of the cell pattern " +
+   "it explains, modelChi2dof = residual chi²/dof (about 1 = explained down to the noise; > 1.5 structure no optics " +
+   "produce), curvatureTerm = the radial term at the corner (+ radial, - tangential), uniformTerm, " +
+   "linearAstigmatism (binodal), axisX/Y = center of the radial pattern (px; null if not significant), " +
+   "unexplainedCells = cells > 3 sigma off the model. singularPlus/Minus: singular points of the smoothed axis " +
+   "field - optics give at most two + and no -, more means noise. cells: elongated (>= 2.45 sigma) / round / " +
+   "uncertain cells.",
+   "- fwhmGridAssessment: from an 11 x 11 grid. center: FWHM (px) of the inner 3 x 3 cells, centerSe its " +
+   "standard error. cornerRatios: FWHM of each corner (2 x 2 cells) / center, top left, top right, bottom left, " +
+   "bottom right; cornerRatio their median (<= 1.10 good, <= 1.25 slight, <= 1.50 clear, above strong). " +
+   "tiltRel: relative FWHM difference of the corners of the more unequal diagonal, tiltSigma its " +
+   "significance in standard errors, tiltSoftCorner the softer corner (< 5% unremarkable, 5-10% slight, " +
+   "> 10% worth correcting, significant from 2 sigma). edgeSpread: (max - min) / median FWHM of the outer " +
+   "ring cells. cells: number of cells per class (a cell counts only when it differs significantly from the " +
+   "center or is good; uncertain: fewer than 5 stars or a standard error above 10%).",
+   "- coma: fit of the PSF asymmetry vectors a = k * (p - P0) / rMax with the coma-free point P0 = (x0, y0) px. " +
+   "k > 0: the flares point away from P0 (under-corrected coma, e.g. a bare Newtonian or a corrector too close " +
+   "to the sensor); k < 0: toward P0 (over-corrected). kSd, x0Sd, y0Sd: bootstrap spreads; significant: " +
+   "|k| > 3 kSd; n: stars used. coma is missing when it was not measured and null when too few stars had a " +
+   "valid asymmetry.",
+   "- optics: pixelPitchUm is the effective pitch (doubled after SuperPixel debayering); 0 = unknown. opticsType " +
+   "is the user's description of the optical system.",
+   "- Refractors: they have hardly any coma by design, so a significant k or an offset coma-free point is weak " +
+   "and uncertain there; it points to a tilted focuser, adapter or flattener, a decentered lens cell, or lateral " +
+   "color rather than to collimation (the lens is collimated at the factory; only some cells are adjustable). " +
+   "Without a flattener, field curvature and astigmatism at the edge are expected and there is no spacing to " +
+   "adjust. Lateral color (the colors imaged at slightly different scales, also from a flattener or reducer) " +
+   "elongates the edge stars radially in a color or broadband frame and mimics under-corrected spacing; a " +
+   "narrowband frame or a single color channel tells it apart. Axial color of an achromat enlarges the FWHM " +
+   "everywhere. There is no mirror flop; a change at the flip comes from the focuser, the flattener, the " +
+   "camera connection or the lens cell. The PSF fit and the asymmetry use channel 0 (red) of a color image.",
+   "- Catadioptric systems (SCT, Maksutov, RASA/Hyperstar) focus by moving the primary mirror: the image can " +
+   "shift or tilt with it (mirror flop), at the flip and between focus runs. A classic SCT has coma and a curved " +
+   "field by design (a Maksutov little coma), with no spacing to adjust; most Maksutovs are collimated at the " +
+   "factory, SCTs via the secondary. An SCT with reducer has a reducer-sensor distance (usually 105 mm). An " +
+   "aplanatic SCT (EdgeHD), a RASA and an astrograph with built-in flattener are meant to be flat and coma-free: " +
+   "curvature or coma point to the back focus or a tilted or decentered corrector. A RASA at f/2 has a critical " +
+   "focus zone of only a few micrometers - tilt dominates. fRatio: focal length / aperture (null = unknown); the " +
+   "critical focus zone is about ±2.44 x 0.55 µm x fRatio²; from about f/8 tilt and curvature below it hardly " +
+   "show and the seeing sets the star size.",
+   "- series.frames: one row per light frame, the fields named in series.columns: side (West = before the flip, " +
+   "telescope pointing east; East = after the flip; Side A/B = two sides whose names are unknown; ? = unknown), " +
+   "where the side was read from, hour angle (h), altitude (deg), focuser position (steps), temperature (C), " +
+   "measured stars, FWHM center and edge (px), tilt as the relative one-sided blur with its direction (deg), " +
+   "epsRad, tracking ellipticity and axis (deg), coma k and the coma-free point offset (x, y as fractions of rMax " +
+   "from the center). Empty values: not measured. The frames are in time order.",
+   "- sipMaxShiftPx, sipCornerShiftsPx, sipTiltEquivDeg: the quadratic distortion terms of the frame's plate " +
+   "solve (SIP, from the header, written by the capture or solving software), as the shift of the four corners " +
+   "(dx, dy of top left, top right, bottom left, bottom right, px), its largest value, and the sensor tilt a pure " +
+   "perspective would need for their perspective part. Real sensor tilts stay below about 0.2 degrees; a larger " +
+   "value means the terms have other causes (decentered or tilted optics, a shifting mirror or corrector, the " +
+   "solver). Quadratic terms do not depend on the reference pixel. A change at the flip, in particular a " +
+   "reversal of sign, can be a real shift in the optics under gravity or a convention of the solver; compare " +
+   "with the coma-free point and the tilt. The distortion measures positions, independent of the star shapes.",
+   "- series.comparison: the script's comparison per value: median and robust spread per side, the difference " +
+   "(for vectors its length), a verdict (changes: at the flip, beyond 3 standard errors and a practical minimum; " +
+   "stable; unclear: a relevant difference within the scatter; few: fewer than 3 frames on a side) and a drift " +
+   "over the session (per hour, correlation, hours) when one was found. series.notes: the script's caveats.",
+   "- For a series, separate what changes with the pier side (gravity: sag, play, mirror flop, balance) from what " +
+   "is fixed in the optical train, and both from drifts with time, temperature or altitude. The frames of a side " +
+   "are consecutive in time, so a drift can look like a change at the flip; refocusing between the sides " +
+   "changes FWHM and the edge pattern. A single frame, if given as well, need not belong to the series.",
+   "- The maps, if attached, each on the stretched frame: Star shape - one ellipse per star (length and color = " +
+   "elongation, blue round to red elongated), streamlines of the elongation trend and a marker for the tracking " +
+   "component; Star size - the 11 x 11 FWHM grid, each cell labeled with its ratio to the center (x1.17) and " +
+   "filled by it where significant - green (good, <= 1.10), yellow, orange, red (>= 1.50); hatched: uncertain; Coma - the coma field in orange " +
+   "(flare direction) with the coma-free point. The Siril quadrants come as numbers (siril), not as a map.",
+   "",
+   "The answer is JSON in the given schema. Write every text in plain text without Markdown (no #, *, or " +
+   "tables); line breaks are allowed. List the findings in the order in which to work through them. Be " +
+   "concise: every sentence must add information - no restating of the data, no filler, no repetition " +
+   "between fields. The length limits are stated with each request; keep to them."
+].join("\n");
+
+// The answer's form, enforced by the API (structured outputs): per finding
+// the measurement, what it looks like, the derivation, the alternatives,
+// what to do and how to check it - so that the reasoning is always there.
+// labels: the field headings in the answer language, for formatAiReview().
+const AI_REVIEW_SCHEMA = {
+   type: "object",
+   properties: {
+      labels: {
+         type: "object",
+         properties: {
+            verdict: { type: "string" }, order: { type: "string" }, confidence: { type: "string" },
+            observation: { type: "string" }, appearance: { type: "string" }, reasoning: { type: "string" },
+            alternatives: { type: "string" }, action: { type: "string" }, check: { type: "string" },
+            disagreements: { type: "string" },
+            statusOk: { type: "string" }, statusNote: { type: "string" }, statusAction: { type: "string" },
+            high: { type: "string" }, medium: { type: "string" }, low: { type: "string" }
+         },
+         required: ["verdict", "order", "confidence", "observation", "appearance", "reasoning", "alternatives",
+                    "action", "check", "disagreements", "statusOk", "statusNote", "statusAction", "high", "medium",
+                    "low"],
+         additionalProperties: false
+      },
+      verdict: { type: "string" },
+      order: { type: "array", items: { type: "string" } },
+      findings: {
+         type: "array",
+         items: {
+            type: "object",
+            properties: {
+               topic: { type: "string" },
+               status: { type: "string", enum: ["ok", "note", "action"] },
+               confidence: { type: "string", enum: ["high", "medium", "low"] },
+               confidenceText: { type: "string" },
+               observation: { type: "string" },
+               appearance: { type: "string" },
+               reasoning: { type: "string" },
+               alternatives: { type: "string" },
+               action: { type: "string" },
+               check: { type: "string" }
+            },
+            required: ["topic", "status", "confidence", "confidenceText", "observation", "appearance", "reasoning",
+                       "alternatives", "action", "check"],
+            additionalProperties: false
+         }
+      },
+      disagreements: { type: "string" }
+   },
+   required: ["labels", "verdict", "order", "findings", "disagreements"],
+   additionalProperties: false
+};
+
+// How detailed the review is: the dialog's choice and the instruction sent
+// with each request.
+const AI_DETAIL_LEVELS = ["Short (for experienced users)", "Step by step (for beginners)"];
+const AI_DETAIL_INSTRUCTIONS = [
+   "Detail: short, for a reader who knows the terms. Hard limits: verdict at most 2 sentences; order at most 5 " +
+   "items of a few words; only the topics that need action or where you disagree with the rules, at most 5; " +
+   "each field at most 25 words, observation only the decisive numbers; leave appearance, alternatives and " +
+   "confidenceText empty unless they change the conclusion; disagreements at most 2 sentences or empty. " +
+   "Aim for 300 words in all.",
+   "Detail: for an amateur astrophotographer with little background in optics, who wants to understand the " +
+   "conclusions, not only follow them. Plain words, short sentences, no repetition between fields. Hard " +
+   "limits: verdict at most 3 sentences; order at most 6 items; at most 6 findings, only the topics that need " +
+   "attention or where you disagree with the rules - name the topics that are fine in one sentence of the " +
+   "verdict instead of a finding; each field at most 2 sentences (about 40 words):\n" +
+   "- observation: the decisive values with their numbers and what they mean.\n" +
+   "- appearance: what the stars look like, and where on the maps if attached; empty if obvious.\n" +
+   "- reasoning: the steps from the values to the cause.\n" +
+   "- alternatives: at most 2 other causes, each with the value that speaks against it; empty if none.\n" +
+   "- action: the part to adjust and by how much per step.\n" +
+   "- check: what the next test frame should show.\n" +
+   "- confidenceText: a few words.\n" +
+   "Explain a technical term in a few words only where it first appears. disagreements at most 3 sentences or " +
+   "empty. Aim for 700 words in all."
+];
+
+// The API key: the environment variable ANTHROPIC_API_KEY, else the key
+// entered on the Assessment page. That one is kept in PixInsight's settings
+// on its own, not in ScriptParameters, so it never ends up in a process icon.
+function aiApiKey() {
+   let env = System.getEnvironmentVariable("ANTHROPIC_API_KEY");
+   if (env && String(env).trim().length > 0)
+      return { key: String(env).trim(), source: "environment" };
+   let stored = Settings.read(AI_KEY_SETTING, DataType.UTF16String);
+   if (Settings.lastReadOK && stored && stored.trim().length > 0)
+      return { key: stored.trim(), source: "settings" };
+   return null;
+}
+
+function aiStoreApiKey(key) {
+   key = key.trim();
+   if (key.length > 0)
+      Settings.write(AI_KEY_SETTING, DataType.UTF16String, key);
+   else
+      Settings.remove(AI_KEY_SETTING);
+}
+
+// JSON with numbers rounded to 4 significant digits and every non-ASCII
+// character escaped: the request body is then pure ASCII, so its length in
+// characters is its length in bytes, whatever encoding post() uses.
+function aiJson(obj) {
+   return JSON.stringify(obj, function(key, v) {
+      return (typeof v === "number" && isFinite(v)) ? Number(v.toPrecision(4)) : v;
+   }).replace(/[\u007f-￿]/g, function(ch) {
+      return "\\u" + ("000" + ch.charCodeAt(0).toString(16)).slice(-4);
+   });
+}
+
+// The bitmap as a base64 PNG, reduced to maxSide pixels on its longer side.
+function bitmapToPngBase64(bmp, maxSide) {
+   let k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+   if (k < 1)
+      bmp = bmp.scaledTo(Math.max(1, Math.round(bmp.width * k)), Math.max(1, Math.round(bmp.height * k)));
+   let path = File.systemTempDirectory + "/StarAberrationDiagnostics_ai_map.png";
+   if (bmp.save(path) === false)
+      throw new Error("Cannot write the vector map to " + path);
+   try {
+      return File.readFile(path).toBase64();
+   } finally {
+      if (File.exists(path))
+         File.remove(path);
+   }
+}
+
+// The data of a single frame for the AI review: optics, measured values
+// and the rule-based assessment. single: { analysis, stars, metrics,
+// optics, assessment }.
+function aiSingleFrameText(single, p) {
+   const LABELS = ["OK", "Note", "Action"];
+   let metrics = single.metrics, optics = single.optics;
+   let data = {
+      image: { w: metrics.w, h: metrics.h, stars: metrics.n, debayered: single.analysis.debayer },
+      optics: {
+         pixelPitchUm: optics.pixelPitchUm, focalLengthMm: optics.focalLengthMm, apertureMm: optics.apertureMm,
+         fRatio: (optics.focalLengthMm > 0 && optics.apertureMm > 0) ? optics.focalLengthMm / optics.apertureMm : 0,
+         opticsType: OPTICS_TYPES[p.opticsType]
+      },
+      tracking: metrics.tracking,
+      trackingSubtracted: metrics.trackingSubtracted,
+      rings: metrics.rings,
+      surface: metrics.surface,
+      siril: metrics.siril,
+      fwhmGrid: computeFwhmGrid(single.stars, metrics.w, metrics.h, 5),
+      fwhmGridAssessment: metrics.grid,
+      shapeAssessment: metrics.shape,
+      mount: metrics.mount,
+      guiding: metrics.guiding,
+      coma: metrics.coma === undefined ? "not measured" : metrics.coma
+   };
+   let rules = single.assessment.findings.map(function(f) {
+      return "[" + LABELS[f.level] + "] " + f.topic + ": " + f.text + (f.advice.length > 0 ? " -> " + f.advice : "");
+   });
+   return "Single frame - measured values (JSON):\n" + aiJson(data) + "\n\n" +
+      "Rule-based assessment of that frame:\n" + rules.join("\n");
+}
+
+// The data of a series for the AI review: one row per frame and the
+// comparison of compareSeries(), as JSON.
+function aiSeriesText(frames, result, p) {
+   const COLUMNS = ["file", "side", "sideFrom", "haH", "altDeg", "focusPos", "tempC", "stars", "fwhmCenter",
+                    "fwhmEdge", "tiltRel", "tiltDirDeg", "epsRad", "trackingEllipticity", "trackingAngleDeg",
+                    "comaK", "comaPointX", "comaPointY", "sipMaxShiftPx", "sipTiltEquivDeg", "sipCornerShiftsPx"];
+   let rows = frames.map(function(f) {
+      let m = f.metrics, s = m ? m.surface : null;
+      let tilt = m ? seriesMetric("tilt").get(m) : null;
+      let point = m ? seriesMetric("comaPoint").get(m) : null;
+      return [f.name, f.side, f.sideSource, f.haH, f.altDeg, f.focusPos, f.tempC, m ? m.n : null,
+         s ? s.fCenter : null, s ? s.fEdge : null,
+         tilt ? Math.hypot(tilt[0], tilt[1]) : null, s ? s.tiltDirDeg : null,
+         m && m.rings ? m.rings.eRad : null,
+         m && m.tracking ? m.tracking.ellipticity : null, m && m.tracking ? m.tracking.angleDeg : null,
+         m && m.coma ? m.coma.k : null, point ? point[0] : null, point ? point[1] : null,
+         f.sip ? sipMaxShift(sipCornerShifts(f)) : null, sipTiltEquivalentDeg(f), sipCornerShifts(f)];
+   });
+   let comparison = result.rows.map(function(row) {
+      let sides = {};
+      result.sides.forEach(function(side, k) {
+         if (row.stats[k])
+            sides[side] = row.stats[k];
+      });
+      return { value: row.metric.label, vector: !!row.metric.vector, sides: sides, difference: row.diff,
+               verdict: row.verdict, drift: row.drift };
+   });
+   let data = {
+      opticsType: OPTICS_TYPES[p.opticsType],
+      trackingSubtracted: p.subtractTracking,
+      columns: COLUMNS,
+      frames: rows,
+      failed: frames.filter(function(f) { return f.error; }).map(function(f) { return f.name + ": " + f.error; }),
+      comparison: comparison,
+      notes: result.notes
+   };
+   return "Series before and after a meridian flip (JSON, key series):\n" + aiJson({ series: data });
+}
+
+// The user message: the data of a single frame (or null) and of a series
+// (or null: { frames, result }), with the vector map (a Bitmap, or null) in
+// front.
+function buildAiMessage(p, single, series, maps) {
+   let parts = [];
+   if (single)
+      parts.push(aiSingleFrameText(single, p));
+   if (series)
+      parts.push(aiSeriesText(series.frames, series.result, p));
+   parts.push((maps ? "The maps of the single frame are attached above (" +
+      maps.map(function(m) { return m.label; }).join(", ") + ")." : "No maps attached.") +
+      "\n" + AI_DETAIL_INSTRUCTIONS[Math.range(p.aiDetail, 0, AI_DETAIL_INSTRUCTIONS.length - 1)] +
+      "\nWrite all texts, the labels included, in " +
+      (p.aiLanguage.trim().length > 0 ? p.aiLanguage.trim() : "English") + ".");
+
+   let content = [];
+   if (maps)
+      maps.forEach(function(m) {
+         content.push({ type: "text", text: "Map: " + m.label });
+         content.push({ type: "image", source: { type: "base64", media_type: "image/png",
+                        data: bitmapToPngBase64(m.bitmap, AI_MAP_MAX_SIDE) } });
+      });
+   content.push({ type: "text", text: parts.join("\n\n") });
+   return { role: "user", content: content };
+}
+
+// Asks Claude to go on with an answer cut off at the token limit: the
+// cut-off text goes back as Claude's own turn, followed by this request.
+// The continuation is sent without the schema (it is only the rest of the
+// JSON), and the two parts are joined and parsed together.
+const AI_CONTINUE_PROMPT =
+   "Your answer was cut off at the token limit. Continue it exactly where it stopped, even in the middle of a " +
+   "word or a string: output only the remaining characters of the JSON, without repeating anything, without " +
+   "any comment and without a code fence.";
+
+// Sends the message to Claude and returns { text, rawText, data, model,
+// usage, truncated }; throws an Error with a readable message when the
+// request fails. With previous (a truncated review), the cut-off answer is
+// continued instead and the result holds the joined answer and the summed
+// token usage. The server-side fallback ("fallbacks": "default") answers
+// with another model should the request be declined; the answer's model
+// field then says which one.
+function requestAiReview(apiKey, message, previous) {
+   let request = {
+      model: AI_MODEL,
+      max_tokens: 25000,
+      // Thinking is always on and billed as output; medium keeps it (and
+      // the time) in proportion to an analysis of one data set.
+      output_config: { effort: "medium" },
+      fallbacks: "default",
+      system: AI_SYSTEM_PROMPT,
+      messages: [message]
+   };
+   if (previous) {
+      request.messages.push({ role: "assistant", content: [{ type: "text", text: previous.rawText }] });
+      request.messages.push({ role: "user", content: [{ type: "text", text: AI_CONTINUE_PROMPT }] });
+   } else {
+      request.output_config.format = { type: "json_schema", schema: AI_REVIEW_SCHEMA };
+   }
+   let body = aiJson(request);
+
+   let T = new NetworkTransfer;
+   T.setURL(AI_API_URL);
+   T.setSSL();
+   T.setConnectionTimeout(AI_TIMEOUT_S);
+   T.setCustomHTTPHeaders([
+      "Content-Type: application/json",
+      "x-api-key: " + apiKey,
+      "anthropic-version: 2023-06-01",
+      "anthropic-beta: server-side-fallback-2026-07-01"
+   ]);
+   T.response = new ByteArray;
+   T.onDownloadDataAvailable = function(data) {
+      this.response.add(data);
+      return true;
+   };
+   // post() blocks; keep the dialog painted meanwhile.
+   T.onTransferProgress = function() {
+      CoreApplication.processEvents();
+      return true;
+   };
+
+   let ok = T.post(body);
+   let code = T.responseCode;
+   let json = null;
+   try {
+      json = JSON.parse(T.response.utf8ToString());
+   } catch (x) {
+   }
+   if (json && json.type === "error" && json.error)
+      throw new Error(format("Claude API error (HTTP %d, %s): %s", code, json.error.type, json.error.message));
+   if (!ok)
+      throw new Error("The request failed: " + T.errorInformation);
+   if (json === null || !json.content)
+      throw new Error(format("Unexpected answer from the Claude API (HTTP %d).", code));
+   if (json.stop_reason === "refusal")
+      throw new Error("Claude declined to answer this request.");
+
+   let rawText = json.content
+      .filter(function(b) { return b.type === "text"; })
+      .map(function(b) { return b.text; })
+      .join("\n");
+   let usage = json.usage || { input_tokens: 0, output_tokens: 0 };
+   if (previous) {
+      // Without the schema the rest may come in a code fence or repeat the
+      // last characters before the cut; both are removed.
+      rawText = rawText.replace(/^\s*```(?:json)?\n?/, "").replace(/\n?```\s*$/, "");
+      let prev = previous.rawText;
+      for (let k = Math.min(200, prev.length, rawText.length); k >= 20; --k)
+         if (prev.slice(-k) === rawText.slice(0, k)) {
+            rawText = rawText.slice(k);
+            break;
+         }
+      rawText = prev + rawText;
+      let u = previous.usage || { input_tokens: 0, output_tokens: 0 };
+      usage = { input_tokens: u.input_tokens + (usage.input_tokens || 0),
+                output_tokens: u.output_tokens + (usage.output_tokens || 0) };
+   }
+   // The schema guarantees valid JSON unless the answer was cut off (or a
+   // fallback model answered without it): then the raw text is shown.
+   let truncated = json.stop_reason === "max_tokens";
+   let text = rawText.trim();
+   let data = null;
+   if (!truncated) {
+      try {
+         data = JSON.parse(text);
+      } catch (x) {
+      }
+   } else {
+      text += "\n\n[The answer was cut off at the token limit - click Continue to get the rest.]";
+   }
+   return { text: text, rawText: rawText, data: data, model: json.model, usage: usage, truncated: truncated,
+            parts: previous ? (previous.parts || 1) + 1 : 1 };
+}
+
+// The review for a TextBox or the Console: the structured answer with its
+// own headings, or the raw text when there is none. Texts from the answer
+// are shown raw (no tags interpreted); the model and the token usage below.
+function formatAiReview(review) {
+   let raw = function(text) {
+      return String(text || "").split("\n").map(function(line) {
+         return "<raw>" + line.replace(/<\/raw>/g, "") + "</raw>";
+      }).join("<br>");
+   };
+   // A continued answer is not bound to the schema, so a text field can
+   // arrive as an array, an object or a number: shown as text all the same.
+   let text = function(v) {
+      if (v === null || v === undefined)
+         return "";
+      if (Array.isArray(v))
+         return v.map(text).filter(function(s) { return s.length > 0; }).join("\n");
+      if (typeof v === "object")
+         return Object.keys(v).map(function(key) { return key + ": " + text(v[key]); }).join("\n");
+      return String(v).trim();
+   };
+   let lines = [];
+   let r = review.data;
+   if (r && typeof r === "object" && Array.isArray(r.findings)) {
+      let L = r.labels && typeof r.labels === "object" ? r.labels : {};
+      let label = function(key) { return text(L[key]) || key; };
+      let status = { ok: label("statusOk"), note: label("statusNote"), action: label("statusAction") };
+      lines.push("<b>" + raw(label("verdict")) + ":</b> " + raw(text(r.verdict)));
+      let order = (Array.isArray(r.order) ? r.order.map(text) : [text(r.order)])
+         .filter(function(t) { return t.length > 0; });
+      if (order.length > 0) {
+         lines.push("");
+         lines.push("<b>" + raw(label("order")) + ":</b>");
+         order.forEach(function(t, i) { lines.push(format("   %d. ", i + 1) + raw(t)); });
+      }
+      r.findings.forEach(function(f) {
+         lines.push("");
+         if (!f || typeof f !== "object") {
+            lines.push(raw(text(f)));
+            return;
+         }
+         let s = text(f.status), c = text(f.confidence), ct = text(f.confidenceText);
+         lines.push("<b>[" + raw(status[s] || s) + "] " + raw(text(f.topic)) + "</b> - " + raw(label("confidence")) +
+            ": " + raw(text(L[c]) || c) + (ct ? " (" + raw(ct) + ")" : ""));
+         ["observation", "appearance", "reasoning", "alternatives", "action", "check"].forEach(function(key) {
+            if (text(f[key]).length > 0)
+               lines.push("<i>" + raw(label(key)) + ":</i> " + raw(text(f[key])));
+         });
+      });
+      if (text(r.disagreements).length > 0) {
+         lines.push("");
+         lines.push("<b>" + raw(label("disagreements")) + ":</b> " + raw(text(r.disagreements)));
+      }
+   } else {
+      lines.push(raw(review.text));
+   }
+   lines.push("");
+   lines.push(format("<i>%s - %d input / %d output tokens</i>", review.model,
+      review.usage ? review.usage.input_tokens : 0, review.usage ? review.usage.output_tokens : 0));
+   return lines.join("<br>");
+}
+
+// Saves an AI request and its answer (or error) as a UTF-8 text file:
+// a header with the date, the model and the analyzed files, the request as
+// sent (system prompt and message; images only as a placeholder), and the
+// answer, readable and as JSON. log: { timeMs, files: [{ label, path }],
+// settings: [text], message, review, error }. The file goes to dir as
+// StarAberrationAI_<date>_<time>.txt; returns its path.
+function saveAiLog(dir, log) {
+   let pad = function(n, w) { return ("000" + n).slice(-(w || 2)); };
+   let t = new Date(log.timeMs);
+   let local = format("%d-%s-%s %s:%s:%s", t.getFullYear(), pad(t.getMonth() + 1), pad(t.getDate()),
+      pad(t.getHours()), pad(t.getMinutes()), pad(t.getSeconds()));
+   let path = dir + "/StarAberrationAI_" + local.replace(" ", "_").replace(/:/g, "-") + ".txt";
+   let rule = "================================================================================";
+
+   let lines = [];
+   lines.push(TITLE + " " + VERSION + " - AI review");
+   lines.push("Date:     " + local + " (local), " + t.toISOString().replace(/\.\d+Z$/, "Z") + " (UTC)");
+   lines.push("Model:    " + AI_MODEL + (log.review && log.review.model && log.review.model !== AI_MODEL ?
+      " (answered by " + log.review.model + ")" : ""));
+   log.settings.forEach(function(line) { lines.push(line); });
+   lines.push("Analyzed files:");
+   if (log.files.length === 0)
+      lines.push("   (none)");
+   log.files.forEach(function(f) { lines.push("   " + f.label + (f.label && f.path ? "  " : "") + f.path); });
+
+   lines.push("");
+   lines.push(rule);
+   lines.push("REQUEST");
+   lines.push(rule);
+   lines.push("--- System prompt ---");
+   lines.push(AI_SYSTEM_PROMPT);
+   lines.push("");
+   lines.push("--- Message ---");
+   log.message.content.forEach(function(block) {
+      if (block.type === "image")
+         lines.push(format("[Image: a map as PNG, %d characters of base64 - not included here]",
+            block.source.data.length));
+      else if (block.type === "text")
+         lines.push(block.text);
+   });
+
+   lines.push("");
+   lines.push(rule);
+   lines.push("ANSWER");
+   lines.push(rule);
+   if (log.error) {
+      lines.push("The request failed: " + log.error);
+   } else {
+      // The readable form of formatAiReview() without its tags.
+      lines.push(formatAiReview(log.review).split("<br>").join("\n").replace(/<\/?(raw|b|i)>/g, ""));
+      if (log.review.data) {
+         lines.push("");
+         lines.push("--- As received (JSON) ---");
+         lines.push(JSON.stringify(log.review.data, null, 2));
+      }
+   }
+   File.writeTextFile(path, lines.join("\n") + "\n");
+   return path;
+}
+
+// The maps of an analysis. Each shows one measured quantity on the
+// stretched frame and has its own tab in the dialog; the preview shows the
+// map of the selected tab, Save opens one window per map, a series saves
+// one PNG per map and frame; the AI review gets those marked ai.
+//   size   star size: the 11x11 FWHM grid
+//   shape  star shape: one ellipse per star (elongation and orientation),
+//          the streamlines of its trend, optionally the orientation heatmap
+//          as background, and the tracking marker
+//   coma   PSF asymmetry: the coma field (arrows, coma-free point), its
+//          streamlines and optionally one arrow per star
+//   tilt   Siril-style tilt: the quadrant polygon and the tilt axis (not
+//          sent to the AI review, which gets the quadrant values as numbers)
+const MAP_VIEWS = [
+   { key: "size", label: "Star size", windowPrefix: "AberrationSize", fileSuffix: "_Size.png", ai: true },
+   { key: "shape", label: "Star shape", windowPrefix: "AberrationShape", fileSuffix: "_Shape.png", ai: true },
+   { key: "coma", label: "Coma", windowPrefix: "AberrationComa", fileSuffix: "_Coma.png", ai: true },
+   { key: "tilt", label: "Tilt", windowPrefix: "AberrationTilt", fileSuffix: "_Tilt.png", ai: false }
+];
+
+function mapViewByKey(key) {
+   return MAP_VIEWS.filter(function(v) { return v.key === key; })[0] || MAP_VIEWS[0];
+}
+
+// Draws the map `mapView` (a key of MAP_VIEWS) of an analysis with the
+// given settings and returns it as a bitmap of the size of the target
+// image. With verbose, notes and progress are written to the console; the
+// dialog redraws its preview without them whenever a layer is switched.
+function renderVectorMap(analysis, p, optics, verbose, mapView) {
    let w = analysis.w, h = analysis.h;
    let stars = starsFor(analysis, p.subtractTracking);
    let showComa = analysis.hasAsymmetry && p.measureAsymmetry;
 
    let background = analysis.background;
-   if (p.showOrientationHeatmap) {
+   if (mapView === "shape" && p.showOrientationHeatmap) {
       let heatmap = cachedLayer(analysis, "heatmap", p.subtractTracking + "/" + p.orientationHeatmapDegree, function() {
-         Console.writeln("Computing orientation heatmap ...");
+         Quiet.writeln("Computing orientation heatmap ...");
          let bmp = computeOrientationHeatmapBitmap(stars, w, h, p.orientationHeatmapDegree);
          if (bmp === null)
             Console.warningln(format("Orientation heatmap: too few stars for a meaningful " +
@@ -3544,40 +5470,40 @@ function renderVectorMap(analysis, p, optics, verbose) {
    g.drawBitmap(0, 0, background);
    g.antialiasing = true;
 
-   // Draw the streamlines (smoothed large-scale trend) first, so they sit
-   // in the background and the per-star vectors/tilt overlay on top of
-   // them stay readable.
+   if (mapView === "shape")
+      drawShapeLayers(g, analysis, stars, p, verbose);
+   else if (mapView === "size")
+      drawSizeLayers(g, w, h, stars, p, optics);
+   else if (mapView === "coma")
+      drawComaLayers(g, analysis, stars, p, showComa, verbose);
+   else if (mapView === "tilt")
+      drawTiltLayers(g, w, h, stars, p, optics);
+
+   g.end();
+   return bmp;
+}
+
+// Star shape: the streamlines of the elongation trend first (so that the
+// per-star ellipses on top of them stay readable), the ellipses, and the
+// tracking marker.
+function drawShapeLayers(g, analysis, stars, p, verbose) {
+   let w = analysis.w, h = analysis.h;
+   let ev = shapeEvaluationFor(analysis, p);
+   // The cell grid of the evaluation first, under all layers.
+   drawCellGrid(g, w, h, ev.gridSize);
    if (p.showStreamlines) {
-      let lines = cachedLayer(analysis, "streamlines", p.subtractTracking + "/" + p.streamlineRadiusPercent, function() {
+      let lines = cachedLayer(analysis, "streamlines", p.subtractTracking + "/" + p.streamlineRadiusPercent + "/" +
+            p.shapeSignificantOnly, function() {
          let radius = Math.sqrt(w * w + h * h) * (p.streamlineRadiusPercent / 100);
-         Console.writeln("Computing streamlines ...");
+         Quiet.writeln("Computing streamlines ...");
          let slT0 = Date.now();
-         if (DEBUG_DUMP_RAW)
-            diagnoseOrientationConvention(stars, radius);
-         let result = generateStreamlines(stars, w, h, radius);
-         Console.writeln(format("Streamlines finished after %.1f s (%d lines).",
+         let result = generateStreamlines(stars, w, h, radius, p.shapeSignificantOnly ?
+            function(x, y) { return shapeSignificantAt(ev.grid, x, y); } : null);
+         Quiet.writeln(format("Streamlines finished after %.1f s (%d lines).",
             (Date.now() - slT0) / 1000, result.length));
          return result;
       });
-      drawStreamlines(g, lines);
-   }
-
-   // Coma streamlines (asymmetry field) on top of the elongation
-   // streamlines; need the asymmetry measurement.
-   if (p.showComaStreamlines && showComa) {
-      let lines = cachedLayer(analysis, "comaStreamlines",
-         p.comaStreamlineRadiusPercent + "/" + p.comaStreamlineMinPercent, function() {
-         let radius = Math.sqrt(w * w + h * h) * (p.comaStreamlineRadiusPercent / 100);
-         Console.writeln("Computing coma streamlines ...");
-         let cT0 = Date.now();
-         let res = generateComaStreamlines(stars, w, h, radius, p.comaStreamlineMinPercent);
-         Console.writeln(format("Coma streamlines finished after %.1f s (%d lines, stop below |m3| = %.3f).",
-            (Date.now() - cT0) / 1000, res.lines.length, res.minMag));
-         return res.lines;
-      });
-      drawComaStreamlines(g, w, h, lines);
-   } else if (p.showComaStreamlines && verbose) {
-      Console.warningln("Coma streamlines need \"Measure PSF asymmetry\" - skipped.");
+      drawStreamlines(g, lines, ev.grid);
    }
 
    if (!p.hideEllipses) {
@@ -3586,7 +5512,7 @@ function renderVectorMap(analysis, p, optics, verbose) {
          eccMax = Math.max(eccMax, stars[i].eccentricity);
       if (eccMax <= 0) eccMax = 1;
 
-      let progress = verbose ? withProgress("Drawing vector map", stars.length) : null;
+      let progress = verbose ? withProgress("Drawing star ellipses", stars.length) : null;
       for (let i = 0; i < stars.length; ++i) {
          let s = stars[i];
          let len = s.eccentricity * p.vectorScale * 100; // px, scaled for visibility
@@ -3594,20 +5520,15 @@ function renderVectorMap(analysis, p, optics, verbose) {
          // Instead of a double-headed arrow, the PSF shape is drawn as an
          // ellipse: the unambiguous direction that a single arrowhead would
          // suggest doesn't exist anyway (theta and theta+180° describe the
-         // same ellipse). Major semi-axis = half the vector length
-         // (length/orientation as with the former double-headed arrow),
-         // minor semi-axis derived from the eccentricity
-         // (e = sqrt(1-(b/a)^2)), so the shape and size of the ellipse
-         // directly show the measured eccentricity.
+         // same ellipse). Major semi-axis = half the vector length, minor
+         // semi-axis derived from the eccentricity (e = sqrt(1-(b/a)^2)),
+         // so the shape and size of the ellipse directly show the measured
+         // eccentricity.
          let a = len / 2;
          let e = s.eccentricity;
          let b = a * Math.sqrt(Math.max(0, 1 - e * e));
 
-         let col = eccColor(s.eccentricity, eccMax);
-
-         // Ellipse: major axis = a (length/orientation as with the former
-         // double-headed arrow), minor axis = b (from the eccentricity)
-         g.pen = new Pen(col, 2);
+         g.pen = new Pen(eccColor(s.eccentricity, eccMax), 2);
          drawOrientedEllipse(g, s.x, s.y, a, b, -s.rotation); // image angle = -theta (y down)
 
          // small dot at the centroid
@@ -3621,43 +5542,256 @@ function renderVectorMap(analysis, p, optics, verbose) {
          progress.end();
    }
 
-   if (p.showStarAsymArrows && showComa)
-      drawStarAsymmetryArrows(g, w, h, stars, p.vectorScale, p.starAsymMinSigma, p.starAsymColorByStrength, !verbose);
-   else if (p.showStarAsymArrows && verbose)
-      Console.warningln("Per-star asymmetry arrows need \"Measure PSF asymmetry\" - skipped.");
-
-   if (p.showSirilTilt) {
-      let tilt = computeSirilTilt(stars, w, h);
-      if (tilt !== null) {
-         if (p.showFwhmGrid) {
-            let fwhmGrid = computeFwhmGrid(stars, w, h, 11);
-            // optics.pixelPitchUm is the effective pitch (2x after SuperPixel
-            // debayering, see resolveOptics()).
-            let gridScale = 1, gridUnit = "px";
-            if (p.fwhmGridArcsec && optics.pixelPitchUm > 0 && optics.focalLengthMm > 0) {
-               gridScale = 206.265 * optics.pixelPitchUm / optics.focalLengthMm;
-               gridUnit = "arcsec"; // plain text: the ″ glyph is not guaranteed in the bitmap font
-            }
-            drawFwhmGrid(g, w, h, fwhmGrid, gridScale, gridUnit);
-         } else {
-            drawSirilTiltPolygon(g, w, h, tilt);
-         }
-
-         if (p.showTiltAxis) {
-            let axis = computeTiltAxis(tilt, w, h, optics.pixelPitchUm, optics.focalLengthMm, optics.apertureMm);
-            drawTiltAxis(g, w, h, axis);
-         }
-      }
+   // The optics model on top of the measured layers: its streamlines and
+   // the cells it does not explain.
+   if (p.shapeShowModel && ev.model) {
+      let radius = Math.sqrt(w * w + h * h) * (p.streamlineRadiusPercent / 100);
+      let modelLines = cachedLayer(analysis, "modelStreamlines", p.subtractTracking + "/" + p.streamlineRadiusPercent,
+         function() {
+            return traceField(function(x, y) { return shapeModelFieldAt(ev.model, x, y); }, w, h, radius, null);
+         });
+      drawModelStreamlines(g, modelLines, w, h, ev.model, p.shapeModelSignificantOnly);
    }
-
-   if (showComa)
-      drawComaOverlay(g, w, h, stars, analysis.comaFit, p.vectorScale, p.showComaArrows);
+   if (p.shapeShowMatch && ev.model)
+      drawModelMatchCells(g, w, h, ev);
+   if (p.shapeShowCells)
+      drawShapeCells(g, w, h, ev, p.vectorScale);
+   if (p.shapeShowDefects)
+      drawShapeDefects(g, w, h, ev.defects);
 
    if (analysis.tracking)
       drawTrackingMarker(g, w, h, analysis.tracking, p.subtractTracking);
+}
 
-   g.end();
-   return bmp;
+// The shape evaluation (evaluateShapeField()) of an analysis for the
+// current tracking subtraction and streamline radius, cached.
+function shapeEvaluationFor(analysis, p) {
+   let stars = starsFor(analysis, p.subtractTracking);
+   return cachedLayer(analysis, "shapeEvaluation", p.subtractTracking + "/" + p.streamlineRadiusPercent, function() {
+      let radius = Math.hypot(analysis.w, analysis.h) * (p.streamlineRadiusPercent / 100);
+      return evaluateShapeField(stars, analysis.w, analysis.h, radius);
+   });
+}
+
+// The mean shape of each cell of the 11x11 grid: a headless bar along the
+// mean axis, its length the mean elongation (scaled like the ellipses),
+// with a fan of ± the axis uncertainty (se / (2 · elongation), at most
+// 90°). Significant cells (magnitude ≥ SHAPE_MIN_Z se) are drawn bright
+// with their fan; the others thin and gray: round within the noise.
+// Uncertain cells (too few stars) get a gray dot only.
+const SHAPE_CELL_COLOR = 0xFFFFFFFF;
+const SHAPE_CELL_FAN = 0x60FFFFFF;
+const SHAPE_CELL_WEAK = 0xA0B0B0B0;
+function drawShapeCells(g, w, h, ev, vectorScale) {
+   let n = ev.gridSize, cellW = w / n, cellH = h / n;
+   let half = Math.min(cellW, cellH) * 0.45;
+   // Length: the 90th percentile of the significant cells fills the cell.
+   let chis = ev.cells.filter(function(c) { return c && !c.uncertain && c.z >= SHAPE_MIN_Z; })
+      .map(function(c) { return c.chi; }).sort(function(a, b) { return a - b; });
+   let ref = Math.max(0.02, chis.length > 0 ? chis[Math.floor(0.9 * (chis.length - 1))] : 0.05);
+   let lw = Math.max(2, Math.round(Math.min(cellW, cellH) * 0.02));
+   g.antialiasing = true;
+   for (let r = 0; r < n; ++r) {
+      for (let c = 0; c < n; ++c) {
+         let e = ev.cells[r * n + c];
+         let ccx = (c + 0.5) * cellW, ccy = (r + 0.5) * cellH;
+         if (!e)
+            continue;
+         if (e.uncertain) {
+            g.fillEllipse(ccx - lw, ccy - lw, ccx + lw, ccy + lw, new Brush(SHAPE_CELL_WEAK));
+            continue;
+         }
+         let len = Math.min(1.2, e.chi / ref) * half * vectorScale;
+         let dx = Math.cos(e.psi) * len, dy = Math.sin(e.psi) * len;
+         let significant = e.z >= SHAPE_MIN_Z;
+         if (significant) {
+            let spread = Math.min(Math.PI / 2, e.se / (2 * Math.max(1e-6, e.chi)));
+            [0, Math.PI].forEach(function(side) {
+               let pts = [new Point(ccx, ccy)];
+               for (let k = 0; k <= 12; ++k) {
+                  let a = e.psi + side - spread + 2 * spread * k / 12;
+                  pts.push(new Point(ccx + Math.cos(a) * len, ccy + Math.sin(a) * len));
+               }
+               g.fillPolygon(pts, new Brush(SHAPE_CELL_FAN));
+            });
+            g.pen = new Pen(0xC0000000, lw + 2);
+            g.drawLine(ccx - dx, ccy - dy, ccx + dx, ccy + dy);
+            g.pen = new Pen(SHAPE_CELL_COLOR, lw);
+         } else {
+            g.pen = new Pen(SHAPE_CELL_WEAK, Math.max(1, lw / 2));
+         }
+         g.drawLine(ccx - dx, ccy - dy, ccx + dx, ccy + dy);
+      }
+   }
+}
+
+// The streamlines of the optics model, solid, in a light violet - the
+// complement of green, so it stands out on frames with a green cast (no
+// color calibration), and distinct from the white/gray measured lines, the
+// orange coma and the magenta cell frames - on an opaque dark halo that
+// carries it on any background. Where the model is not significant
+// (shapeModelSignificantAt()) a muted gray-violet, or nothing with
+// hideWeak.
+const MODEL_LINE_COLOR = 0xFFD08CFF;
+const MODEL_LINE_WEAK = 0xFF8A7A9E;
+function drawModelStreamlines(g, lines, w, h, fit, hideWeak) {
+   g.antialiasing = true;
+   let core = Math.max(3, Math.round(Math.min(w, h) / 1200));
+   let significant = function(pts, j) {
+      return shapeModelSignificantAt(fit, 0.5 * (pts[j - 1][0] + pts[j][0]), 0.5 * (pts[j - 1][1] + pts[j][1]));
+   };
+   let pass = function(pen, wanted) {
+      g.pen = pen;
+      drawLineRuns(g, lines, function(pts, j) { return significant(pts, j) === wanted; });
+   };
+   if (!hideWeak) {
+      pass(new Pen(0xF0000000, core + 4), false);
+      pass(new Pen(MODEL_LINE_WEAK, core), false);
+   }
+   pass(new Pen(0xF0000000, core + 4), true);
+   pass(new Pen(MODEL_LINE_COLOR, core), true);
+}
+
+// How well the optics model matches each cell: a magenta frame where the
+// cell's mean residual is 3σ or more (structure the model does not
+// explain), a green one where it is less (the cell agrees with the model
+// within its noise); no frame for a cell with too few stars.
+const MATCH_BAD_COLOR = 0xFFFF4FD8;
+const MATCH_GOOD_COLOR = 0xFF4CFF6A;
+function drawModelMatchCells(g, w, h, ev) {
+   let n = ev.gridSize, cellW = w / n, cellH = h / n;
+   let lw = Math.max(2, Math.round(Math.min(cellW, cellH) * 0.015));
+   ev.model.judgedCells.forEach(function(b) {
+      let x0 = b.col * cellW + lw, y0 = b.row * cellH + lw;
+      g.pen = new Pen(0xC0000000, lw + 2);
+      g.drawRect(x0, y0, x0 + cellW - 2 * lw, y0 + cellH - 2 * lw);
+      g.pen = new Pen(b.z >= 3 ? MATCH_BAD_COLOR : MATCH_GOOD_COLOR, lw);
+      g.drawRect(x0, y0, x0 + cellW - 2 * lw, y0 + cellH - 2 * lw);
+   });
+}
+
+// The singular points of the smoothed field: a ring with its index, yellow
+// for +, cyan for - (no optics produce a - point).
+function drawShapeDefects(g, w, h, defects) {
+   let size = Math.max(10, Math.round(Math.min(w, h) / 60));
+   let font = new Font("Helvetica", Math.round(size * 0.9));
+   try { font.bold = true; } catch (e) { /* not critical */ }
+   g.font = font;
+   g.antialiasing = true;
+   defects.forEach(function(dft) {
+      let color = dft.index > 0 ? 0xFFFFE45C : 0xFF5CE1FF;
+      g.pen = new Pen(0xC0000000, 5);
+      g.drawEllipse(dft.x - size, dft.y - size, dft.x + size, dft.y + size);
+      g.pen = new Pen(color, 3);
+      g.drawEllipse(dft.x - size, dft.y - size, dft.x + size, dft.y + size);
+      let label = (dft.index > 0 ? "+" : "\u2212") + (Math.abs(dft.index) === 0.5 ? "\u00BD" : "1");
+      drawTextWithHalo(g, dft.x + size * 1.2, dft.y - size * 0.6, label, color, Math.round(size * 0.9));
+   });
+}
+
+// Arcseconds per pixel, or 0 without pixel pitch and focal length
+// (optics.pixelPitchUm is the effective pitch, 2x after SuperPixel
+// debayering, see resolveOptics()).
+function fwhmArcsecScale(optics) {
+   return (optics.pixelPitchUm > 0 && optics.focalLengthMm > 0) ?
+      206.265 * optics.pixelPitchUm / optics.focalLengthMm : 0;
+}
+
+// What each cell of the FWHM grid shows (p.fwhmCellValue).
+const FWHM_CELL_PX = 0, FWHM_CELL_ARCSEC = 1, FWHM_CELL_RATIO = 2;
+
+// The unit of the FWHM in the cells, the evaluation and the cell details:
+// { scale, unit } - arcseconds when chosen and known, else pixels.
+function fwhmDisplayUnit(p, optics) {
+   let arcsec = fwhmArcsecScale(optics);
+   if (p.fwhmCellValue === FWHM_CELL_ARCSEC && arcsec > 0)
+      return { scale: arcsec, unit: "\"" }; // plain ASCII: the ″ glyph is not guaranteed in the bitmap font
+   return { scale: 1, unit: "px" };
+}
+
+// Star size: the FWHM grid.
+function drawSizeLayers(g, w, h, stars, p, optics) {
+   let u = fwhmDisplayUnit(p, optics);
+   // Arcseconds without pixel pitch or focal length: pixels instead.
+   let ratio = p.fwhmCellValue === FWHM_CELL_RATIO;
+   drawFwhmGrid(g, w, h, evaluateFwhmGrid(stars, w, h, FWHM_GRID_SIZE), {
+      px: !ratio && u.unit === "px",
+      arcsecScale: !ratio && u.unit !== "px" ? u.scale : 0,
+      ratio: ratio,
+      details: p.fwhmGridDetails, detailScale: u.scale, detailUnit: u.unit });
+}
+
+// Tilt: Siril's quadrant polygon and the tilt axis. Without stars in every
+// quadrant and ring, a note says so.
+function drawTiltLayers(g, w, h, stars, p, optics) {
+   let tilt = computeSirilTilt(stars, w, h);
+   if (tilt === null) {
+      let fontSize = Math.max(14, Math.round(Math.min(w, h) / 40));
+      g.font = new Font("Helvetica", fontSize);
+      drawTextWithHalo(g, fontSize, fontSize * 2, "Not every quadrant and ring has stars - no tilt evaluation.",
+         0xFFFFCCB2, fontSize);
+      return;
+   }
+   drawSirilTiltPolygon(g, w, h, tilt);
+   if (p.showTiltAxis)
+      drawTiltAxis(g, w, h, computeTiltAxis(tilt, w, h, optics.pixelPitchUm, optics.focalLengthMm, optics.apertureMm));
+}
+
+// The evaluation of the Tilt map as text lines ("Topic: text"; lines
+// starting with spaces belong to the line above). FWHM in the unit of
+// fwhmDisplayUnit(); texts joined with + (see formatShapeEvaluation()).
+function formatTiltEvaluation(tilt, axis, scale, unit) {
+   if (tilt === null)
+      return ["Quadrants: not every quadrant and ring has stars - not evaluated."];
+   let fw = function(v) { return format("%.2f", v * scale) + (unit === "px" ? " px" : unit); };
+   let q = [tilt.m1, tilt.m2, tilt.m3, tilt.m4];
+   let mean = (q[0] + q[1] + q[2] + q[3]) / 4;
+   let best = Math.min.apply(null, q), worst = Math.max.apply(null, q);
+   let lines = ["Quadrants (25%-trimmed mean FWHM):"];
+   ["Top left", "Top right", "Bottom left", "Bottom right"].forEach(function(name, i) {
+      lines.push("   " + name + ": " + fw(q[i]) + " (" + format("%+.0f", 100 * (q[i] - mean) / mean) + "% of the mean)");
+   });
+   lines.push("Sensor tilt (Siril): " + fw(worst - best) + " between the softest and the sharpest quadrant (" +
+      format("%.0f", 100 * (worst - best) / mean) + "% of the mean).");
+   lines.push("Off-axis aberration (Siril): " + fw(tilt.mOuter - tilt.mInner) + " (outer ring " + fw(tilt.mOuter) +
+      " against inner circle " + fw(tilt.mInner) + ").");
+   if (axis)
+      lines.push("Tilt axis: direction " + format("%.0f", axis.directionDeg) + "\u00B0" +
+         (axis.angleDeg !== null ? ", tilt angle " + format("%.3f", axis.angleDeg) + "\u00B0" :
+            " (the tilt angle needs pixel pitch, focal length and aperture)") + ".");
+   return lines;
+}
+
+// Coma: the streamlines of the asymmetry field, the per-star arrows and the
+// coma field (median arrows, coma-free point). Without the asymmetry
+// measurement, a note says so.
+function drawComaLayers(g, analysis, stars, p, showComa, verbose) {
+   let w = analysis.w, h = analysis.h;
+   if (!showComa) {
+      let fontSize = Math.max(14, Math.round(Math.min(w, h) / 40));
+      g.font = new Font("Helvetica", fontSize);
+      drawTextWithHalo(g, fontSize, fontSize * 2,
+         "PSF asymmetry not measured - enable \"Measure PSF asymmetry\" on Maps > Coma.", 0xFFFFCCB2, fontSize);
+      if (verbose)
+         Console.warningln("Coma map: needs \"Measure PSF asymmetry\" - only the background is drawn.");
+      return;
+   }
+   if (p.showComaStreamlines) {
+      let lines = cachedLayer(analysis, "comaStreamlines",
+         p.comaStreamlineRadiusPercent + "/" + p.comaStreamlineMinPercent, function() {
+         let radius = Math.sqrt(w * w + h * h) * (p.comaStreamlineRadiusPercent / 100);
+         Quiet.writeln("Computing coma streamlines ...");
+         let cT0 = Date.now();
+         let res = generateComaStreamlines(stars, w, h, radius, p.comaStreamlineMinPercent);
+         Quiet.writeln(format("Coma streamlines finished after %.1f s (%d lines, stop below |m3| = %.3f).",
+            (Date.now() - cT0) / 1000, res.lines.length, res.minMag));
+         return res.lines;
+      });
+      drawComaStreamlines(g, w, h, lines);
+   }
+   if (p.showStarAsymArrows)
+      drawStarAsymmetryArrows(g, w, h, stars, p.vectorScale, p.starAsymMinSigma, p.starAsymColorByStrength, !verbose);
+   drawComaOverlay(g, w, h, stars, analysis.comaFit, p.vectorScale, p.showComaArrows);
 }
 
 // -----------------------------------------------------------------------
@@ -3714,17 +5848,163 @@ function readOpticsFromHeader(view) {
    return result;
 }
 
+// The camera named in the FITS header of the view's window (INSTRUME, with
+// the binning from XBINNING/YBINNING when above 1), or "" when absent.
+function readCameraFromHeader(view) {
+   let values = {};
+   try {
+      let keywords = view.window.keywords;
+      for (let i = 0; i < keywords.length; ++i) {
+         let name = String(keywords[i].name).trim().toUpperCase();
+         if (!(name in values))
+            values[name] = String(keywords[i].value).trim().replace(/^'+|'+$/g, "").trim();
+      }
+   } catch (e) {
+      return "";
+   }
+   let camera = values["INSTRUME"] || "";
+   if (camera.length === 0)
+      return "";
+   let bx = parseInt(values["XBINNING"]), by = parseInt(values["YBINNING"]);
+   if (bx > 1 || by > 1)
+      camera += format(" (bin %dx%d)", bx > 0 ? bx : 1, by > 0 ? by : bx);
+   return camera;
+}
+
+// -----------------------------------------------------------------------
+// The mount. No FITS keyword names its type, so it is estimated:
+//   PIERSIDE East/West   only a German equatorial mount has a pier side
+//                        (and a meridian flip)
+//   TELESCOP             the mount driver's name (ASCOM/INDI call the mount
+//                        "telescope"): EQMod, GS Server, iOptron CEM/GEM,
+//                        AM5 ... equatorial; Alt-Az, AZ-GTi, Seestar, Dwarf,
+//                        NexStar ... alt-azimuth
+// otherwise unknown; with "Read the values from the FITS header" unchecked,
+// the dialog's choice. An alt-azimuth mount without a derotator turns the
+// field during the exposure: the stars become arcs around the rotation
+// center, a tangential pattern growing with the distance - which looks
+// like field curvature or too short a corrector spacing.
+const MOUNT_TYPES = ["Unknown", "German equatorial (GEM)", "Equatorial fork", "Alt-azimuth, tracked", "Not tracked"];
+const MOUNT_UNKNOWN = 0, MOUNT_GEM = 1, MOUNT_FORK = 2, MOUNT_ALTAZ = 3, MOUNT_NONE = 4;
+
+// The FITS keywords of a view as { NAME: value string } (first occurrence).
+function viewKeywordValues(view) {
+   let values = {};
+   try {
+      let keywords = view.window.keywords;
+      for (let i = 0; i < keywords.length; ++i) {
+         let name = String(keywords[i].name).trim().toUpperCase();
+         if (!(name in values))
+            values[name] = String(keywords[i].value).trim().replace(/^'+|'+$/g, "").trim();
+      }
+   } catch (e) {
+      // no keywords: nothing to estimate from
+   }
+   return values;
+}
+
+// { type (index of MOUNT_TYPES), source (text) } from the keywords.
+function estimateMount(values) {
+   let pier = (values["PIERSIDE"] || "").toUpperCase();
+   if (pier.indexOf("EAST") >= 0 || pier.indexOf("WEST") >= 0)
+      return { type: MOUNT_GEM, source: "PIERSIDE " + values["PIERSIDE"] };
+   let tel = values["TELESCOP"] || "";
+   if (/alt.?az|\baz\b|az-?gti|seestar|dwarf|vespera|stellina|nexstar|evolution|\bslt\b/i.test(tel))
+      return { type: MOUNT_ALTAZ, source: "TELESCOP '" + tel + "'" };
+   if (/eqmod|gsserver|gs server|green ?swamp|\beq\d|heq|neq|\bcem|\bgem|ioptron|10micron|mach ?\d|astro-?physics|losmandy|avalon|\bam[35]\b|onstep|cgem|\bcgx|\bcge\b/i.test(tel))
+      return { type: MOUNT_GEM, source: "TELESCOP '" + tel + "'" };
+   return { type: MOUNT_UNKNOWN, source: "" };
+}
+
+// Guiding. No FITS keyword says whether it ran, let alone how; the ASIAIR
+// writes the guide camera (GUIDECAM), which shows only that one was there.
+// So the user chooses it (saved, also with the header option); with
+// "Unknown" and a guide camera in the header it counts as guided, method
+// unknown. It decides what a common elongation (tracking component) means:
+//   not guided       the mount: periodic error of the worm, polar drift
+//   guide scope      differential flexure between guide scope and main
+//                    optics, mirror flop - or the guiding itself, wind
+//   off-axis guider  no differential flexure: the guiding, wind - or, the
+//                    same in every frame, astigmatism on the axis
+const GUIDING_TYPES = ["Unknown", "Not guided", "Guide scope", "Off-axis guider (OAG)", "Guided, method unknown"];
+const GUIDING_UNKNOWN = 0, GUIDING_OFF = 1, GUIDING_SCOPE = 2, GUIDING_OAG = 3, GUIDING_ON = 4;
+
+// { type, source } - the user's choice, else a guide camera in the header.
+function effectiveGuiding(guidingType, values) {
+   let type = Math.range(guidingType || 0, 0, GUIDING_TYPES.length - 1);
+   if (type !== GUIDING_UNKNOWN)
+      return { type: type, source: "dialog" };
+   let cam = values["GUIDECAM"] || "";
+   if (cam.length > 0)
+      return { type: GUIDING_ON, source: "GUIDECAM '" + cam + "'" };
+   return { type: GUIDING_UNKNOWN, source: "" };
+}
+
+// What a common elongation means with this guiding: the likely causes, for
+// the assessment and the series' static/dynamic tracking.
+function guidingCauses(type) {
+   switch (type) {
+   case GUIDING_OFF:
+      return "Not guided: the mount's tracking - the periodic error of the worm (on an EQ6-R one period takes " +
+         "about 479 s, so it differs from frame to frame) and the drift of the polar alignment. Guiding removes " +
+         "both.";
+   case GUIDING_SCOPE:
+      return "Guided with a guide scope: when it is the same in every frame, differential flexure between guide " +
+         "scope and main optics (often changing with altitude), mirror flop or a moving focuser - or astigmatism " +
+         "on the axis; when it changes from frame to frame, the guiding (RMS, oscillation, DEC backlash), balance " +
+         "and wind.";
+   case GUIDING_OAG:
+      return "Guided with an off-axis guider (no differential flexure): when it is the same in every frame, " +
+         "rather astigmatism on the axis (optics) or a moving focuser; when it changes from frame to frame, the " +
+         "guiding (RMS, oscillation, DEC backlash), balance and wind.";
+   case GUIDING_ON:
+      return "Guided, method unknown: with a guide scope differential flexure or mirror flop, with an off-axis " +
+         "guider rather astigmatism on the axis when it is the same in every frame; changing from frame to frame, " +
+         "the guiding, balance and wind. Choose the guiding method (Setup > General) for a clearer verdict.";
+   default:
+      return "";
+   }
+}
+
+// What the field rotation needs from the header: exposure (s), altitude,
+// azimuth and site latitude (°); null where missing.
+function mountObservation(values) {
+   let take = function(names) { let k = keywordNumber(values, names); return k ? k.value : null; };
+   return { exposureS: take(["EXPTIME", "EXPOSURE"]), altDeg: take(["CENTALT", "OBJCTALT"]),
+            azDeg: take(["CENTAZ", "OBJCTAZ"]), latDeg: take(["SITELAT", "LAT-OBS", "OBSGEO-B"]) };
+}
+
+// The arc a star at the image corner describes during the exposure on an
+// alt-azimuth mount (px of an image w x h): field rotation rate
+// ω = Ω cos φ cos A / cos h (Ω = Earth's rotation, φ latitude, A azimuth,
+// h altitude) times the exposure times the half diagonal. null without the
+// values or near the zenith.
+function fieldRotationSmearPx(obs, w, h) {
+   if (!obs || obs.exposureS === null || obs.altDeg === null || obs.azDeg === null || obs.latDeg === null)
+      return null;
+   let r = Math.PI / 180;
+   let cosAlt = Math.cos(obs.altDeg * r);
+   if (cosAlt < 0.05)
+      return null;
+   let rate = 7.2921e-5 * Math.cos(obs.latDeg * r) * Math.cos(obs.azDeg * r) / cosAlt; // rad/s
+   return Math.abs(rate) * obs.exposureS * Math.hypot(w, h) / 2;
+}
+
 // -----------------------------------------------------------------------
 // Runs the diagnostics for a given target image: the analysis (unless a
-// kept one is passed in), the console summary and the vector map, then -
-// unless previewOnly - the map window, the optional 3D plot and CSV export.
+// kept one is passed in), the console summary and the maps, then - unless
+// previewOnly - one window per map (MAP_VIEWS), the optional 3D plot and
+// CSV export. A preview draws only the map `mapView` (default: the first).
 // p holds the settings under the names of ScriptParameters (the script's
 // parameters object or the dialog's current settings). Used by the
 // interactive dialog (Preview and Apply) and by the direct drag&drop apply
 // ("New Instance" onto a target image). viewBitmap: see analyzeView().
-// Returns { analysis, bitmap, assessment }, or null when the analysis failed.
-function processView(view, p, previewOnly, analysis, viewBitmap) {
-   DEBUG_DUMP_RAW = p.debug;
+// Returns { analysis, bitmap (the map mapView), assessment }, or null when
+// the analysis failed.
+function processView(view, p, previewOnly, analysis, viewBitmap, mapView) {
+   mapView = mapView || MAP_VIEWS[0].key;
+   let runT0 = Date.now();
+   Console.writeln((previewOnly ? "Calculate: " : "Save: ") + view.id);
 
    // Permanently remember all options of this run for future runs (even
    // without a process icon).
@@ -3734,48 +6014,1045 @@ function processView(view, p, previewOnly, analysis, viewBitmap) {
 
    // The preview always measures the PSF asymmetry and always closes a
    // debayer intermediate window (see analyzeView()).
+   // The time of the star measurement: the Series tab estimates a run from it.
+   let measureSeconds = null;
    if (!analysis) {
+      let measureT0 = Date.now();
       analysis = analyzeView(view, p, previewOnly || p.measureAsymmetry, previewOnly, viewBitmap);
       if (analysis === null)
          return null;
+      measureSeconds = (Date.now() - measureT0) / 1000;
    } else {
-      Console.writeln("Reusing the star measurement of the preview.");
+      Quiet.writeln("Reusing the star measurement of the preview.");
    }
 
-   let optics = resolveOptics(view, p, analysis.debayer, true);
+   let optics = resolveOptics(view, p, analysis.debayer, false);
    let stars = starsFor(analysis, p.subtractTracking);
    Progress.step("Evaluating", 0.85, 0.88);
-   let report = reportAnalysis(analysis, stars, p, optics);
+   let report = reportAnalysis(analysis, stars, p, optics, QUIET_CONSOLE);
    let tilt = report.tilt;
    let assessment = assessImage(report.metrics, p.opticsType);
-   Console.noteln("--- Assessment ---");
-   Console.writeln(formatAssessment(assessment));
-   Progress.step("Drawing the vector map", 0.88, 1);
-   let bmp = renderVectorMap(analysis, p, optics, true);
+   Progress.step("Drawing the maps", 0.88, 1);
+   let views = previewOnly ? [mapViewByKey(mapView)] : MAP_VIEWS;
+   let maps = {};
+   views.forEach(function(v) { maps[v.key] = renderVectorMap(analysis, p, optics, true, v.key); });
 
    if (!previewOnly) {
       if (p.show3DTiltPlot && !optics.physical)
          Console.warningln("3D sensor tilt plot skipped: it needs pixel pitch, focal length and aperture " +
-            "(General tab or FITS header).");
-      if (tilt !== null && optics.physical && p.show3DTiltPlot)
+            "(Setup > General or FITS header).");
+      if (tilt !== null && optics.physical && p.show3DTiltPlot) {
+         Progress.step("Drawing the 3D tilt plot", 1, 1);
          build3DTiltPlot(tilt, analysis.w, analysis.h, optics.pixelPitchUm, optics.focalLengthMm, optics.apertureMm);
+      }
 
-      let newId = uniqueViewId("AberrationMap_" + analysis.targetViewId);
-      let window = new ImageWindow(analysis.w, analysis.h, 3, 8, false, true, newId);
-      window.mainView.beginProcess(UndoFlag.NoSwapFile);
-      window.mainView.image.blend(bmp);
-      window.mainView.endProcess();
-      window.show();
-      window.zoomToFit();
+      Progress.step("Opening the map windows", 1, 1);
+      MAP_VIEWS.forEach(function(v) {
+         let window = new ImageWindow(analysis.w, analysis.h, 3, 8, false, true,
+            uniqueViewId(v.windowPrefix + "_" + analysis.targetViewId));
+         window.mainView.beginProcess(UndoFlag.NoSwapFile);
+         window.mainView.image.blend(maps[v.key]);
+         window.mainView.endProcess();
+         window.show();
+         window.zoomToFit();
+      });
 
       if (p.doExport) {
-         let path = File.systemTempDirectory + "/" + analysis.targetViewId + "_aberration.csv";
+         // Next to the original file, named after it; an image that was
+         // never saved goes to the temporary directory under its view id.
+         let filePath = view.window.filePath;
+         let path = filePath.length > 0 ?
+            File.extractDrive(filePath) + File.extractDirectory(filePath) + "/" +
+               File.extractName(filePath) + "_aberration.csv" :
+            File.systemTempDirectory + "/" + analysis.targetViewId + "_aberration.csv";
+         Progress.step("Exporting the CSV table", 1, 1);
          exportCSV(stars, path);
       }
    }
 
-   Console.noteln("Done.");
-   return { analysis: analysis, bitmap: bmp, assessment: assessment };
+   Progress.endStep();
+   Console.writeln(format("Done in %.1f s.", (Date.now() - runT0) / 1000));
+   return { analysis: analysis, bitmap: maps[mapView], assessment: assessment, measureSeconds: measureSeconds };
+}
+
+// -----------------------------------------------------------------------
+// Series analysis: several unregistered light frames of one night, before
+// and after a meridian flip. After the flip, gravity pulls on the optical
+// train from the other side: a value that changes with the pier side is
+// mechanical (sag, play, mirror flop, balance), one that stays the same is
+// fixed in the optical train. The frames are measured one by one with the
+// dialog's settings; no map is drawn.
+//
+// The pier side of a frame, in this order:
+//   manual      set by the user in the file list
+//   PIERSIDE    written by N.I.N.A. and most ASCOM/INDI capture programs
+//   angle       a camera angle keyword (ROTATOR as written by the ASIAIR from
+//               its plate solve, POSANGLE, ANGLE, CROTA2) turns by 180° at
+//               the flip: the frames fall into two groups, named by the
+//               hour angles of their members
+//   hour angle  from RA, the time and the site longitude: before the
+//               meridian no flip has happened yet, well after it one has;
+//               close after the meridian the side stays unknown
+// Sides are named as N.I.N.A. writes PIERSIDE: West before the meridian
+// (telescope pointing east), East after the flip.
+const SIDE_WEST = "West", SIDE_EAST = "East", SIDE_A = "Side A", SIDE_B = "Side B", SIDE_UNKNOWN = "?";
+const SERIES_HA_WEST_MAX = -0.05; // h: up to here, the mount cannot have flipped yet
+const SERIES_HA_EAST_MIN = 0.5;   // h: from here on, it has flipped (flips come a few minutes late)
+const SERIES_ANGLE_KEYS = ["ROTATOR", "POSANGLE", "ANGLE", "CROTA2"];
+const SIP_TERMS = ["A_2_0", "A_1_1", "A_0_2", "B_2_0", "B_1_1", "B_0_2"];
+
+// The quadratic SIP distortion of a frame as the shift (px) of the four
+// corners of the solved image: [dx, dy] of top left, top right, bottom left,
+// bottom right (8 values), or null. Quadratic terms do not depend on the
+// reference pixel (CRPIX), so they can be compared even where the rest of
+// the solution is missing.
+function sipCornerShifts(frame) {
+   if (!frame.sip)
+      return null;
+   let t = frame.sip.terms, u0 = frame.sip.w / 2, v0 = frame.sip.h / 2;
+   let out = [];
+   [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function(c) {
+      let u = c[0] * u0, v = c[1] * v0;
+      out.push(t.A_2_0 * u * u + t.A_1_1 * u * v + t.A_0_2 * v * v);
+      out.push(t.B_2_0 * u * u + t.B_1_1 * u * v + t.B_0_2 * v * v);
+   });
+   return out;
+}
+
+// The largest corner shift (px) of sipCornerShifts().
+function sipMaxShift(c) {
+   let best = 0;
+   for (let i = 0; i < c.length; i += 2)
+      best = Math.max(best, Math.hypot(c[i], c[i + 1]));
+   return best;
+}
+
+// The sensor tilt (degrees) a pure perspective would need to produce the
+// perspective part of the quadratic terms (x' ≈ x - p·x² - q·xy,
+// y' ≈ y - p·xy - q·y²), or null. Real sensor tilts stay below about 0.2°:
+// a larger value means the terms have other causes.
+function sipTiltEquivalentDeg(frame) {
+   if (!frame.sip || !(frame.pitchUm > 0) || !(frame.focalMm > 0))
+      return null;
+   let t = frame.sip.terms;
+   let p = -0.5 * (t.A_2_0 + t.B_1_1), q = -0.5 * (t.A_1_1 + t.B_0_2);
+   let fPx = frame.focalMm * 1000 / frame.pitchUm;
+   return Math.atan(Math.hypot(p, q) * fPx) * 180 / Math.PI;
+}
+
+// The FITS keywords of a file as { NAME: value }, read without the pixels.
+// The first occurrence of a name wins; strings lose their quotes.
+function readFileKeywords(path) {
+   let ext = File.extractExtension(path).toLowerCase();
+   let fmt = new FileFormat(ext, true, false);
+   if (fmt.isNull)
+      throw new Error("No installed file format can read '" + ext + "' files.");
+   let f = new FileFormatInstance(fmt);
+   if (f.isNull)
+      throw new Error("Cannot instantiate the file format " + fmt.name + ".");
+   let info = f.open(path, "verbosity 0");
+   if (!info || info.length < 1)
+      throw new Error("Cannot open the file.");
+   let values = {};
+   try {
+      let keywords = f.keywords;
+      for (let i = 0; i < keywords.length; ++i) {
+         let name = String(keywords[i].name).trim().toUpperCase();
+         if (!(name in values))
+            values[name] = String(keywords[i].value).trim().replace(/^'+|'+$/g, "").trim();
+      }
+   } finally {
+      f.close();
+   }
+   return values;
+}
+
+// "22 47 43", "+58:03:01" -> 22.795..., 58.050...
+function parseSexagesimal(s) {
+   let parts = s.trim().split(/[ :]+/);
+   let v = 0;
+   for (let i = parts.length - 1; i >= 0; --i)
+      v = Math.abs(parseFloat(parts[i])) + v / 60;
+   return parts[0].charAt(0) === "-" ? -v : v;
+}
+
+// The first of the keywords that holds a number: { value, name,
+// sexagesimal }, or null.
+function keywordNumber(values, names) {
+   for (let i = 0; i < names.length; ++i) {
+      let raw = values[names[i]];
+      if (raw === undefined || raw.length === 0)
+         continue;
+      let sexagesimal = /^[+-]?\d+([ :]+\d+(\.\d*)?){1,2}$/.test(raw);
+      let v = sexagesimal ? parseSexagesimal(raw) : parseFloat(raw);
+      if (isFinite(v))
+         return { value: v, name: names[i], sexagesimal: sexagesimal };
+   }
+   return null;
+}
+
+// A FITS date (UTC, any number of fraction digits) in ms since 1970, or null.
+function parseFitsDate(s) {
+   let m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)/.exec(s || "");
+   if (!m)
+      return null;
+   return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0) + parseFloat(m[6]) * 1000;
+}
+
+// Greenwich mean sidereal time in degrees (accurate to seconds of time).
+function gmstDeg(timeMs) {
+   let d = (timeMs - Date.UTC(2000, 0, 1, 12, 0, 0)) / 86400000;
+   return ((280.46061837 + 360.98564736629 * d) % 360 + 360) % 360;
+}
+
+// What the header of a light frame tells about when and where it was
+// taken. The pier side itself is decided for the whole series in
+// assignSeriesSides().
+function readSeriesFrame(path) {
+   let frame = {
+      path: path, name: File.extractName(path) + File.extractExtension(path),
+      timeMs: null, haH: null, altDeg: null, pierSide: null, angleDeg: null, angleKey: null,
+      focusPos: null, tempC: null, bayer: false, sip: null, pitchUm: null, focalMm: null,
+      side: SIDE_UNKNOWN, sideSource: "", manualSide: null,
+      headerError: null, metrics: null, error: null
+   };
+   let v;
+   try {
+      v = readFileKeywords(path);
+   } catch (x) {
+      frame.headerError = x.message || String(x);
+      return frame;
+   }
+
+   // The middle of the exposure.
+   let t = parseFitsDate(v["DATE-AVG"]);
+   if (t === null) {
+      t = parseFitsDate(v["DATE-OBS"]);
+      let exposure = keywordNumber(v, ["EXPTIME", "EXPOSURE"]);
+      if (t !== null && exposure)
+         t += 500 * exposure.value;
+   }
+   frame.timeMs = t;
+
+   let ra = keywordNumber(v, ["RA", "OBJCTRA"]);
+   let raDeg = ra ? (ra.sexagesimal ? 15 * ra.value : ra.value) : null;
+   let dec = keywordNumber(v, ["DEC", "OBJCTDEC"]);
+   let lon = keywordNumber(v, ["SITELONG", "LONG-OBS", "OBSGEO-L"]); // east positive
+   let lat = keywordNumber(v, ["SITELAT", "LAT-OBS", "OBSGEO-B"]);
+   if (t !== null && raDeg !== null && lon)
+      frame.haH = ((((gmstDeg(t) + lon.value - raDeg) % 360) + 540) % 360 - 180) / 15;
+
+   let alt = keywordNumber(v, ["CENTALT", "OBJCTALT"]);
+   if (alt) {
+      frame.altDeg = alt.value;
+   } else if (frame.haH !== null && dec && lat) {
+      let r = Math.PI / 180;
+      frame.altDeg = Math.asin(Math.sin(lat.value * r) * Math.sin(dec.value * r) +
+         Math.cos(lat.value * r) * Math.cos(dec.value * r) * Math.cos(15 * frame.haH * r)) / r;
+   }
+
+   let pier = (v["PIERSIDE"] || "").toUpperCase();
+   frame.pierSide = pier.indexOf("WEST") >= 0 ? SIDE_WEST : pier.indexOf("EAST") >= 0 ? SIDE_EAST : null;
+   let angle = keywordNumber(v, SERIES_ANGLE_KEYS);
+   if (angle) {
+      frame.angleDeg = angle.value;
+      frame.angleKey = angle.name;
+   }
+   let focus = keywordNumber(v, ["FOCPOS", "FOCUSPOS"]);
+   frame.focusPos = focus ? focus.value : null;
+   let temp = keywordNumber(v, ["FOCTEMP", "FOCUSTEM", "AMBTEMP"]);
+   frame.tempC = temp ? temp.value : null;
+   frame.bayer = (v["BAYERPAT"] || "").length > 0;
+   let pitch = keywordNumber(v, ["XPIXSZ"]), focal = keywordNumber(v, ["FOCALLEN"]);
+   frame.pitchUm = pitch ? pitch.value : null;
+   frame.focalMm = focal ? focal.value : null;
+
+   // The quadratic SIP distortion terms of a plate solve (A_p_q, B_p_q with
+   // p + q = 2), and the size of the image that was solved (IMAGEW/IMAGEH,
+   // else the file's own size): the terms are in its pixels.
+   let order = keywordNumber(v, ["A_ORDER"]);
+   if (order && order.value >= 2) {
+      let terms = {};
+      let complete = SIP_TERMS.every(function(t) {
+         let k = keywordNumber(v, [t]);
+         terms[t] = k ? k.value : NaN;
+         return k !== null;
+      });
+      let w = keywordNumber(v, ["IMAGEW", "NAXIS1"]), h = keywordNumber(v, ["IMAGEH", "NAXIS2"]);
+      let nw = keywordNumber(v, ["NAXIS1"]), nh = keywordNumber(v, ["NAXIS2"]);
+      if (complete && w && h)
+         frame.sip = { order: order.value, terms: terms, w: w.value, h: h.value,
+                       fileW: nw ? nw.value : null, fileH: nh ? nh.value : null };
+   }
+   return frame;
+}
+
+// Sets side and sideSource of every frame (see the overview above).
+function assignSeriesSides(frames) {
+   let opposite = function(s) { return s === SIDE_WEST ? SIDE_EAST : SIDE_WEST; };
+   let byHourAngle = function(f) {
+      if (f.haH === null)
+         return SIDE_UNKNOWN;
+      return f.haH <= SERIES_HA_WEST_MAX ? SIDE_WEST : f.haH >= SERIES_HA_EAST_MIN ? SIDE_EAST : SIDE_UNKNOWN;
+   };
+
+   // Camera angle groups of the frames without PIERSIDE: 0 = the angle of
+   // the first such frame, 1 = turned by 180°, null = neither.
+   let group = frames.map(function() { return null; });
+   let ref = null;
+   for (let i = 0; i < frames.length; ++i) {
+      let f = frames[i];
+      if (f.pierSide !== null || f.angleDeg === null)
+         continue;
+      if (ref === null)
+         ref = f.angleDeg;
+      let d = Math.abs((((f.angleDeg - ref) % 360) + 540) % 360 - 180); // 0 ... 180
+      group[i] = d < 45 ? 0 : d > 135 ? 1 : null;
+   }
+   // Each group is named by the majority of its members' hour angles.
+   let groupSide = [0, 1].map(function(g) {
+      let west = 0, east = 0;
+      for (let i = 0; i < frames.length; ++i) {
+         if (group[i] !== g)
+            continue;
+         let s = byHourAngle(frames[i]);
+         if (s === SIDE_WEST) ++west;
+         else if (s === SIDE_EAST) ++east;
+      }
+      return west > east ? SIDE_WEST : east > west ? SIDE_EAST : null;
+   });
+   if (groupSide[0] !== null && groupSide[0] === groupSide[1])
+      groupSide = [null, null];
+   if (groupSide[0] === null && groupSide[1] !== null)
+      groupSide[0] = opposite(groupSide[1]);
+   if (groupSide[1] === null && groupSide[0] !== null)
+      groupSide[1] = opposite(groupSide[0]);
+   if (groupSide[0] === null)
+      groupSide = [SIDE_A, SIDE_B];
+
+   for (let i = 0; i < frames.length; ++i) {
+      let f = frames[i];
+      if (f.manualSide) {
+         f.side = f.manualSide;
+         f.sideSource = "manual";
+      } else if (f.pierSide) {
+         f.side = f.pierSide;
+         f.sideSource = "PIERSIDE";
+      } else if (group[i] !== null) {
+         f.side = groupSide[group[i]];
+         f.sideSource = f.angleKey + " angle";
+      } else {
+         f.side = byHourAngle(f);
+         f.sideSource = f.side !== SIDE_UNKNOWN ? "hour angle" :
+            f.haH !== null ? "near the meridian" : "no data";
+      }
+   }
+}
+
+// A direction in image coordinates (0° = right, 90° = down) in words.
+function directionName(deg) {
+   const NAMES = ["right", "lower right", "bottom", "lower left", "left", "upper left", "top", "upper right"];
+   return NAMES[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
+}
+
+// The values compared between the sides, per frame from the metrics of
+// reportAnalysis(); null where a frame has none. Vectors ([x, y]) are
+// compared as vectors. minDiff: the smallest difference that matters in
+// practice (relMinDiff: as a fraction of the value). changed/stable: what a
+// change at the flip, or a clear value that stays, means.
+const SERIES_METRICS = [
+   {
+      key: "fwhmCenter", label: "FWHM center", relMinDiff: 0.05,
+      get: function(m) { return m.surface ? m.surface.fCenter : null; },
+      show: function(v) { return format("%.2f px", v); },
+      changed: "The focus differs between the sides: refocusing, temperature, or focuser slip under gravity."
+   },
+   {
+      key: "fwhmEdge", label: "FWHM edge", relMinDiff: 0.05,
+      get: function(m) { return m.surface ? m.surface.fEdge : null; },
+      show: function(v) { return format("%.2f px", v); },
+      changed: "The field edge changes with the side: play in the focuser or the corrector/flattener, or a " +
+         "different focus."
+   },
+   {
+      key: "tilt", label: "Tilt", vector: true, minDiff: 0.03,
+      get: function(m) {
+         let s = m.surface;
+         if (s === null || s === undefined)
+            return null;
+         let rel = (s.fBad - s.fGood) / Math.max(1e-6, 0.5 * (s.fBad + s.fGood));
+         let a = s.tiltDirDeg * Math.PI / 180;
+         return [rel * Math.cos(a), rel * Math.sin(a)];
+      },
+      show: function(v) {
+         let rel = Math.hypot(v[0], v[1]);
+         return format("%.0f%% softer toward the %s", 100 * rel,
+            directionName(Math.atan2(v[1], v[0]) * 180 / Math.PI));
+      },
+      changed: "The tilt changes with the side: the camera, the focuser or the adapter sags or has play " +
+         "under gravity. Tighten the focuser lock, the camera connection and the adapter threads before " +
+         "adjusting the tilt - an adjustment would only fit one side.",
+      stable: "The tilt is the same on both sides: it is fixed in the optical train, so adjusting it " +
+         "(tilt plate, adapter) is worthwhile.",
+      stableMin: 0.05
+   },
+   {
+      key: "gridCorners", label: "Corners / center (grid)", minDiff: 0.05,
+      get: function(m) { return m.grid ? m.grid.cornerRatio : null; },
+      show: function(v) { return format("x%.2f", v); },
+      changed: "The corners soften differently relative to the center on the two sides: the field curvature " +
+         "or the corrector/flattener spacing changes under gravity (play in the focuser or the drawtube), " +
+         "or the focus differs."
+   },
+   {
+      key: "eRad", label: "Edge elongation eps_rad", minDiff: 0.02,
+      get: function(m) { return m.rings ? m.rings.eRad : null; },
+      show: function(v) { return format("%+.3f", v); },
+      changed: "The radial/tangential pattern at the edge changes with the side: play in the corrector/flattener or " +
+         "the focuser drawtube, or a different focus. Fix that before changing the spacing.",
+      stable: "The edge pattern is the same on both sides: the spacing verdict of a single frame holds.",
+      stableMin: 0.04
+   },
+   {
+      key: "tracking", label: "Tracking elongation", minDiff: 0.02,
+      get: function(m) { return m.tracking ? m.tracking.ellipticity : null; },
+      show: function(v) { return format("%.3f", v); },
+      changed: "Tracking differs between the sides: balance (the mount is east- or west-heavy after the " +
+         "flip), DEC backlash, cable drag, or wind from one side."
+   },
+   {
+      key: "comaK", label: "Coma k", minDiff: 0,
+      get: function(m) { return m.coma ? m.coma.k : null; },
+      show: function(v) { return format("%+.3f", v); },
+      changed: "The coma strength changes with the side: the corrector/flattener or its spacing has play."
+   },
+   {
+      key: "comaPoint", label: "Coma-free point", vector: true, minDiff: 0.1,
+      get: function(m) {
+         let c = m.coma;
+         return c ? [(c.x0 - m.w / 2) / c.rMax, (c.y0 - m.h / 2) / c.rMax] : null;
+      },
+      show: function(v) {
+         return format("%.0f%% of the half diagonal toward the %s", 100 * Math.hypot(v[0], v[1]),
+            directionName(Math.atan2(v[1], v[0]) * 180 / Math.PI));
+      },
+      changed: "The collimation shifts with the side: mirror flop (in an SCT, Maksutov or RASA the primary " +
+         "mirror moved by the focuser), a loose secondary or corrector, or a sagging focuser (in a refractor: " +
+         "the focuser, the flattener or the lens cell). Secure the optics before collimating.",
+      stable: "The coma-free point is off center on both sides alike: the collimation is off, but stable - " +
+         "collimating is worthwhile.",
+      stableMin: 0.15
+   },
+   {
+      // From the header (plate solve), not from the star shapes.
+      key: "sipDistortion", label: "Plate-solve distortion (SIP)", vector: true, minDiff: 1.0,
+      get: function(m, f) { return f ? sipCornerShifts(f) : null; },
+      show: function(v) { return format("corners shifted by up to %.1f px", sipMaxShift(v)); },
+      spread: function(v) { return format("%.1f px", v); },
+      showDiff: function(a, b) {
+         return format("a corner moves by up to %.1f px between the sides",
+            sipMaxShift(a.map(function(x, k) { return b[k] - x; })));
+      },
+      changed: "The geometry of the image changes with the side: a part of the optical train shifts or tilts " +
+         "under gravity - in a Newtonian, SCT, Maksutov or RASA typically the primary mirror (mirror flop), in a refractor the lens " +
+         "cell, or a coma corrector, flattener or the focuser moving in the drawtube. If the coma-free point moves as well, that supports it. A " +
+         "change of sign can also come from the plate solver (a solution in a frame that turns with the sky): " +
+         "to be sure, solve one frame per side with PixInsight's ImageSolver and compare.",
+      stable: "The plate-solve distortion is the same on both sides: nothing in the optical train shifts " +
+         "measurably under gravity.",
+      stableMin: 0
+   }
+];
+
+function seriesMetric(key) {
+   return SERIES_METRICS.filter(function(m) { return m.key === key; })[0];
+}
+
+// The length of a vector, and of the difference of two.
+function vectorNorm(v) {
+   return Math.sqrt(v.reduce(function(p, x) { return p + x * x; }, 0));
+}
+function vectorDistance(a, b) {
+   return vectorNorm(a.map(function(x, k) { return x - b[k]; }));
+}
+
+// Robust spread (MAD scaled to a standard deviation).
+function robustSpread(values) {
+   if (values.length < 2)
+      return NaN;
+   let m = medianOf(values);
+   return 1.4826 * medianOf(values.map(function(v) { return Math.abs(v - m); }));
+}
+
+// Median and spread of a metric's values (numbers or [x, y]).
+function seriesStats(values, vector) {
+   if (values.length === 0)
+      return null;
+   if (!vector)
+      return { n: values.length, median: medianOf(values), sd: robustSpread(values) };
+   // Per component; the spread is the root mean square of the components'.
+   let median = [], sum2 = 0;
+   for (let k = 0; k < values[0].length; ++k) {
+      let c = values.map(function(v) { return v[k]; });
+      median.push(medianOf(c));
+      let sd = robustSpread(c);
+      sum2 += sd * sd;
+   }
+   return { n: values.length, median: median, sd: Math.sqrt(sum2 / median.length) };
+}
+
+// Compares the measured frames of a series between its two sides and looks
+// for drifts over the session. Returns { sides, counts, rows, notes }; each
+// row holds a metric, the stats per side, the difference and a verdict:
+// "changes" (at the flip), "stable", "unclear" (a relevant difference within
+// the scatter) or "few" (fewer than 3 frames on a side).
+function compareSeries(frames) {
+   let measured = frames.filter(function(f) { return f.metrics !== null; });
+   let counts = {};
+   measured.forEach(function(f) { counts[f.side] = (counts[f.side] || 0) + 1; });
+   let sides = [SIDE_WEST, SIDE_EAST, SIDE_A, SIDE_B].filter(function(s) { return counts[s] > 0; });
+   if (sides.length > 2) // mixed naming (e.g. manual West/East plus angle groups A/B)
+      sides = sides.slice(0, 2);
+   let notes = [];
+
+   // The SIP terms are compared only when all solutions refer to images of
+   // the same size (the same solver and binning).
+   let solved = measured.filter(function(f) { return f.sip; });
+   let sizes = {};
+   solved.forEach(function(f) { sizes[f.sip.w + "x" + f.sip.h] = true; });
+   let sipComparable = Object.keys(sizes).length === 1;
+   if (solved.length > 0) {
+      if (!sipComparable)
+         notes.push("The plate solves refer to images of different sizes (" + Object.keys(sizes).join(", ") +
+            " px): their distortion terms are not compared.");
+      else if (solved.length < measured.length)
+         notes.push(format("Only %d of %d measured frames carry a plate solve (SIP); the distortion is compared " +
+            "for those.", solved.length, measured.length));
+      let f0 = solved[0];
+      if (sipComparable && f0.sip.fileW !== null && (f0.sip.w !== f0.sip.fileW || f0.sip.h !== f0.sip.fileH))
+         notes.push(format("The plate solves were made on a %.0f x %.0f px version of the frames (the files have " +
+            "%.0f x %.0f px), e.g. inside the capture software; the distortion refers to that image.",
+            f0.sip.w, f0.sip.h, f0.sip.fileW, f0.sip.fileH));
+   }
+
+   let rows = SERIES_METRICS.map(function(metric) {
+      let valuesOf = function(side) {
+         let out = [];
+         measured.forEach(function(f) {
+            if (f.side !== side)
+               return;
+            if (metric.key === "sipDistortion" && !sipComparable)
+               return;
+            let v = metric.get(f.metrics, f);
+            if (v !== null && v !== undefined && (metric.vector ? v.every(isFinite) : isFinite(v)))
+               out.push(v);
+         });
+         return out;
+      };
+      let row = { metric: metric, stats: sides.map(function(s) { return seriesStats(valuesOf(s), metric.vector); }),
+                  diff: null, verdict: null, drift: null };
+
+      if (sides.length === 2 && row.stats[0] && row.stats[1]) {
+         let a = row.stats[0], b = row.stats[1];
+         row.diff = metric.vector ? vectorDistance(b.median, a.median) : b.median - a.median;
+         let size = metric.vector ? 0.5 * (vectorNorm(a.median) + vectorNorm(b.median)) :
+            0.5 * (Math.abs(a.median) + Math.abs(b.median));
+         let minDiff = metric.relMinDiff ? metric.relMinDiff * size : metric.minDiff;
+         // Standard error of a median ≈ 1.25 σ/√n.
+         let se = 1.253 * Math.sqrt(a.sd * a.sd / a.n + b.sd * b.sd / b.n);
+         let significant = isFinite(se) && Math.abs(row.diff) > 3 * se;
+         if (a.n < 3 || b.n < 3)
+            row.verdict = "few";
+         else if (minDiff > 0 && Math.abs(row.diff) < minDiff)
+            row.verdict = "stable";
+         else if (significant)
+            row.verdict = "changes";
+         else
+            row.verdict = (minDiff > 0) ? "unclear" : "stable";
+      }
+
+      // Drift over the session: the values minus their side's median against
+      // the time, pooled over the sides (not for vectors).
+      if (!metric.vector) {
+         let t = [], r = [];
+         sides.forEach(function(s, k) {
+            if (!row.stats[k])
+               return;
+            measured.forEach(function(f) {
+               let v = metric.get(f.metrics, f);
+               if (f.side === s && f.timeMs !== null && v !== null && v !== undefined && isFinite(v)) {
+                  t.push(f.timeMs / 3600000);
+                  r.push(v - row.stats[k].median);
+               }
+            });
+         });
+         if (t.length >= 6) {
+            let mt = t.reduce(function(p, q) { return p + q; }, 0) / t.length;
+            let mr = r.reduce(function(p, q) { return p + q; }, 0) / r.length;
+            let stt = 0, srr = 0, str = 0;
+            for (let i = 0; i < t.length; ++i) {
+               stt += (t[i] - mt) * (t[i] - mt);
+               srr += (r[i] - mr) * (r[i] - mr);
+               str += (t[i] - mt) * (r[i] - mr);
+            }
+            if (stt > 0 && srr > 0) {
+               let corr = str / Math.sqrt(stt * srr);
+               let slope = str / stt; // per hour
+               let span = Math.max.apply(null, t) - Math.min.apply(null, t);
+               let all = row.stats.filter(function(s) { return s; });
+               let size = all.reduce(function(p, s) { return p + Math.abs(s.median); }, 0) / all.length;
+               let minDiff = metric.relMinDiff ? metric.relMinDiff * size : metric.minDiff;
+               if (Math.abs(corr) >= 0.6 && Math.abs(slope * span) >= Math.max(minDiff, 1e-9))
+                  row.drift = { perHour: slope, corr: corr, hours: span };
+            }
+         }
+      }
+      return row;
+   });
+
+   // Refocused between the sides?
+   if (sides.length === 2) {
+      let focusOf = function(side) {
+         let v = measured.filter(function(f) { return f.side === side && f.focusPos !== null; })
+            .map(function(f) { return f.focusPos; });
+         return v.length > 0 ? medianOf(v) : null;
+      };
+      let fa = focusOf(sides[0]), fb = focusOf(sides[1]);
+      if (fa !== null && fb !== null && fa !== fb)
+         notes.push(format("The focuser position differs between the sides (%s %.0f, %s %.0f steps): the " +
+            "frames were refocused, so differences in FWHM, edge pattern and coma may come from that " +
+            "rather than from the flip. Tilt, collimation and tracking are hardly affected.",
+            sides[0], fa, sides[1], fb));
+   }
+   let unknown = frames.filter(function(f) { return f.metrics !== null && f.side === SIDE_UNKNOWN; }).length;
+   if (unknown > 0)
+      notes.push(format("%d measured frame(s) have no known side (close after the meridian or without " +
+         "time/position data) and are left out of the comparison. Set their side in the list if you know it.",
+         unknown));
+   if (sides.length < 2)
+      notes.push("All measured frames are on one side: there is no flip to compare, only the drift over the " +
+         "session.");
+   if (frames.some(function(f) { return f.metrics !== null && f.bayerWarning; }))
+      notes.push("Some frames are Bayer mosaics (BAYERPAT) measured without debayering: enable Debayer on " +
+         "Setup > General, or the shapes are distorted by the color pattern.");
+
+   return { sides: sides, counts: counts, rows: rows, notes: notes,
+            measured: measured.length, total: frames.length };
+}
+
+// Measures every frame of the series with the settings p: opens the file
+// in a hidden window, runs the analysis without the background and closes
+// it again. Sets metrics (or error) per frame. shouldStop() is asked
+// between the frames. The progress bar (Progress) covers the whole series.
+// With onFrame, the background is rendered as well and onFrame(frame,
+// analysis, optics, index, report) is called after each measured frame (to
+// show or save its map); the analysis is not kept.
+// "45 s", "12 min", "1.5 h".
+function formatDuration(seconds) {
+   if (seconds < 90)
+      return format("%.0f s", Math.max(1, seconds));
+   if (seconds < 90 * 60)
+      return format("%.0f min", seconds / 60);
+   return format("%.1f h", seconds / 3600);
+}
+
+// The part of the Series hints that depends on the list: the frames per
+// side, what is missing for a comparison, and the estimated run time from
+// timing ({ seconds per frame, source, maps } of the last Calculate or
+// series run, or null).
+function seriesHintsStatus(frames, timing, p) {
+   let out = [];
+   let counts = {};
+   frames.forEach(function(f) { counts[f.side] = (counts[f.side] || 0) + 1; });
+   let sides = [SIDE_WEST, SIDE_EAST, SIDE_A, SIDE_B].filter(function(s) { return counts[s] > 0; });
+   let unknown = counts[SIDE_UNKNOWN] || 0;
+   if (frames.length === 0) {
+      out.push("<b>No frames yet</b> - add them with Add files... on the right.");
+   } else {
+      out.push(format("<b>%d frame%s</b>: ", frames.length, frames.length === 1 ? "" : "s") +
+         sides.map(function(s) { return s + " " + counts[s]; }).concat(unknown > 0 ? ["side unknown " + unknown] : [])
+            .join(", ") + ".");
+      if (sides.length < 2)
+         out.push("<b>Only one side</b>: add frames from the other side of the flip, else there is nothing to " +
+            "compare - only the static optics and the drift over the session.");
+      let few = sides.filter(function(s) { return counts[s] < 3; });
+      if (sides.length >= 2 && few.length > 0)
+         out.push("<b>Fewer than 3 frames</b> on " + few.join(" and ") + ": the sides are not compared until " +
+            "each has at least 3.");
+      if (unknown > 0)
+         out.push(format("<b>%d frame%s without a known side</b> - left out of the comparison; set the side " +
+            "with West / East.", unknown, unknown === 1 ? "" : "s"));
+   }
+   // Run time: about one star measurement per frame (plus opening the file).
+   let maps = p.seriesShowMaps || p.seriesSaveMaps || p.seriesSaveMosaic;
+   if (timing === null) {
+      out.push("<b>Run time</b>: click Calculate on one frame of the series first - each frame takes about as " +
+         "long as its star measurement.");
+   } else {
+      let per = format("about %s per frame", formatDuration(timing.seconds));
+      let from = timing.source === "series" ? "from the last series run" : "from the last Calculate";
+      let extra = "";
+      if (maps && !(timing.source === "series" && timing.maps))
+         extra = ", plus a few seconds per frame for the maps";
+      else if (!maps && timing.source === "series" && timing.maps)
+         extra = ", a little less without the maps";
+      out.push("<b>Run time</b>: " + (frames.length > 0 ?
+         format("about %s for %d frames (%s, %s%s).", formatDuration(timing.seconds * frames.length),
+            frames.length, per, from, extra) :
+         per + " (" + from + extra + ")."));
+      out.push("Stop ends the run after the current frame; the frames measured so far are compared, pass 2 is " +
+         "skipped.");
+   }
+   return out.map(function(t) { return "<p style='margin-top:0px; margin-bottom:4px;'>" + t + "</p>"; }).join("");
+}
+
+// Returns { stopped: true, after: k } when Stop ended the run after k of the
+// frames, else { stopped: false }.
+function measureSeries(frames, p, shouldStop, onFrame) {
+   let pp = {};
+   for (let name in p)
+      pp[name] = p[name];
+   pp.closeIntermediateWindows = true;
+   let outer = Progress.listener;
+   let n = frames.length;
+   // Values of an earlier run belong to other settings, also for the
+   // frames a stop leaves out.
+   frames.forEach(function(f) {
+      f.metrics = null;
+      f.error = null;
+      f.bayerWarning = false;
+      f.mapBitmap = null;
+      f.outputFiles = [];
+      f.measurement = null;
+   });
+   for (let i = 0; i < n; ++i) {
+      let f = frames[i];
+      if (shouldStop && shouldStop()) {
+         Console.warningln(format("Stopped after frame %d of %d: %d frame%s not measured.",
+            i, n, n - i, n - i === 1 ? "" : "s"));
+         return { stopped: true, after: i };
+      }
+      if (f.headerError) {
+         f.error = f.headerError;
+         Console.warningln(format("Series frame %d of %d: %s: cannot read the header (%s) - skipped.",
+            i + 1, n, f.name, f.headerError));
+         continue;
+      }
+      Console.noteln(format("Series frame %d of %d: %s", i + 1, n, f.name));
+      Progress.listener = outer ? function(text, fraction) {
+         outer(text === null ? null : format("%d/%d: %s", i + 1, n, text), (i + fraction) / n);
+      } : null;
+      let windows = null;
+      try {
+         Progress.step("Opening the file", 0, 0);
+         windows = ImageWindow.open(f.path);
+         if (!windows || windows.length < 1)
+            throw new Error("Cannot open the file.");
+         let view = windows[0].mainView;
+         f.bayerWarning = f.bayer && !pp.debayer && !view.image.isColor;
+         let analysis = analyzeView(view, pp, true, true, null, !onFrame);
+         if (analysis === null)
+            throw new Error("No stars could be measured.");
+         let optics = resolveOptics(view, pp, analysis.debayer, false);
+         Progress.step("Evaluating", 0.85, 0.88);
+         let report = reportAnalysis(analysis, starsFor(analysis, pp.subtractTracking), pp, optics, SILENT_CONSOLE);
+         f.metrics = report.metrics;
+         // Kept for pass 2 (buildStaticSeries()): the stars as measured.
+         f.measurement = { stars: analysis.stars, w: analysis.w, h: analysis.h, tracking: analysis.tracking,
+                           hasAsymmetry: analysis.hasAsymmetry, debayer: analysis.debayer, optics: optics };
+         if (onFrame) {
+            // Only the display: a failure here does not fail the frame.
+            try {
+               onFrame(f, analysis, optics, i, report);
+            } catch (x) {
+               Console.warningln("Series frame " + f.name + ": cannot show the map: " + (x.message || x));
+            }
+         }
+      } catch (x) {
+         f.error = x.message || String(x);
+         Console.warningln("Series frame " + f.name + ": " + f.error);
+      } finally {
+         Progress.endStep();
+         if (windows)
+            windows.forEach(function(w) { w.forceClose(); });
+         Progress.listener = outer;
+      }
+   }
+   return { stopped: false };
+}
+
+// -----------------------------------------------------------------------
+// Pass 2 of a series: the static part of the optics, separated from the
+// dynamic tracking. Pass 1 (measureSeries()) keeps the measured stars of
+// every frame. The optics are fixed to the sensor, so the frames need no
+// registration: their stars are pooled - all frames, and each side of the
+// flip on its own - which lowers every standard error by about √n. Before
+// pooling, each frame loses only its dynamic tracking, its own uniform term
+// T_i less the mean over the group T̄; T̄ itself (constant tracking, or
+// astigmatism on the axis - the same on a single frame) stays in the
+// static result. The FWHM of each frame is scaled to the median center
+// FWHM of the group, so that the changing seeing drops out and curvature
+// and tilt remain. The result has the form of analyzeView()'s analysis, so
+// the maps and evaluations work on it unchanged; its background is dark
+// (the pooled stars belong to no single frame).
+// Returns a list of { label, analysis } (empty without measured frames).
+function buildStaticSeries(frames) {
+   let measured = frames.filter(function(f) { return f.measurement; });
+   if (measured.length === 0)
+      return [];
+   // Only frames of the most common size can be pooled.
+   let sizes = {};
+   measured.forEach(function(f) {
+      let k = f.measurement.w + "x" + f.measurement.h;
+      sizes[k] = (sizes[k] || 0) + 1;
+   });
+   let size = Object.keys(sizes).sort(function(a, b) { return sizes[b] - sizes[a]; })[0];
+   let skipped = measured.filter(function(f) { return f.measurement.w + "x" + f.measurement.h !== size; });
+   if (skipped.length > 0)
+      Console.warningln(format("Series static: %d frame(s) of another image size left out.", skipped.length));
+   measured = measured.filter(function(f) { return f.measurement.w + "x" + f.measurement.h === size; });
+   let w = measured[0].measurement.w, h = measured[0].measurement.h;
+
+   let groups = [{ label: "all", frames: measured }];
+   [SIDE_WEST, SIDE_EAST, SIDE_A, SIDE_B].forEach(function(side) {
+      let fs = measured.filter(function(f) { return f.side === side; });
+      if (fs.length > 0 && fs.length < measured.length)
+         groups.push({ label: side, frames: fs });
+   });
+
+   let background = null; // one dark bitmap for all groups
+   return groups.map(function(group) {
+      let fs = group.frames;
+      let t1 = medianOf(fs.map(function(f) { return f.measurement.tracking.chi1; }));
+      let t2 = medianOf(fs.map(function(f) { return f.measurement.tracking.chi2; }));
+      let centers = fs.map(function(f) {
+         let ev = evaluateFwhmGrid(f.measurement.stars, w, h, FWHM_GRID_SIZE);
+         return ev.center ? ev.center.value : null;
+      });
+      let ref = medianOf(centers.filter(function(c) { return c !== null; }));
+      let pooled = [];
+      let dynamic = [];
+      fs.forEach(function(f, i) {
+         let m = f.measurement;
+         let stars = m.stars.map(function(s) { return Object.assign(Object.create(Object.getPrototypeOf(s)), s); });
+         let d1 = m.tracking.chi1 - t1, d2 = m.tracking.chi2 - t2;
+         applyTrackingCorrection(stars, { chi1: d1, chi2: d2 });
+         let k = (centers[i] > 0 && ref > 0) ? ref / centers[i] : 1;
+         stars.forEach(function(s) { s.fwhmX *= k; s.fwhmY *= k; });
+         pooled = pooled.concat(stars);
+         dynamic.push({ name: f.name, side: f.side, d1: d1, d2: d2, chi: Math.hypot(d1, d2),
+                        angleDeg: ((0.5 * Math.atan2(d2, d1) * 180 / Math.PI) % 180 + 180) % 180, fwhmScale: k });
+      });
+      let hasAsymmetry = fs.every(function(f) { return f.measurement.hasAsymmetry; });
+      if (background === null) {
+         background = new Bitmap(w, h);
+         background.fill(0xFF101010);
+      }
+      let rms = Math.sqrt(dynamic.reduce(function(a, x) { return a + x.chi * x.chi; }, 0) / dynamic.length);
+      let analysis = {
+         key: "series:" + group.label,
+         targetViewId: format("Series static, %s (%d frame%s)", group.label, fs.length, fs.length === 1 ? "" : "s"),
+         debayer: fs[0].measurement.debayer,
+         w: w, h: h,
+         stars: pooled,
+         tracking: computeTrackingComponent(pooled, w, h),
+         hasAsymmetry: hasAsymmetry,
+         comaFit: hasAsymmetry ? fitComaField(pooled, w, h, false) : null,
+         comaFitCentroid: hasAsymmetry ? fitComaField(pooled, w, h, true) : null,
+         background: background,
+         layers: {},
+         optics: fs[0].measurement.optics,
+         series: { label: group.label, frames: fs.length, staticTracking: { chi1: t1, chi2: t2 },
+                   dynamic: dynamic, dynamicRms: rms, fwhmCenter: ref }
+      };
+      return { label: group.label, analysis: analysis };
+   });
+}
+
+// The separation of a group as text lines: the static tracking (with the
+// pooled model's value), the dynamic tracking per frame and its scatter.
+function formatStaticSeries(entry) {
+   let a = entry.analysis, s = a.series;
+   let num = function(v, digits) { return format("%." + digits + "f", v); };
+   let deg = function(c1, c2) { return Math.round(((0.5 * Math.atan2(c2, c1) * 180 / Math.PI) % 180 + 180) % 180) % 180; };
+   let lines = [];
+   lines.push("Series static, " + entry.label + ": " + s.frames + " frame(s), " + a.stars.length +
+      " stars pooled, FWHM scaled to the center " + num(s.fwhmCenter, 2) + " px.");
+   lines.push("   Static tracking (median over the frames): " +
+      num(Math.hypot(s.staticTracking.chi1, s.staticTracking.chi2), 3) + " along " +
+      deg(s.staticTracking.chi1, s.staticTracking.chi2) + "° - constant tracking or astigmatism on the axis " +
+      "(a single camera angle cannot tell them apart); pooled model: " + num(a.tracking.ellipticity, 3) +
+      (a.tracking.se !== null ? " ± " + num(a.tracking.se, 3) : "") + ".");
+   lines.push("   Dynamic tracking (frame to frame): rms " + num(s.dynamicRms, 3) + ", largest " +
+      num(Math.max.apply(null, s.dynamic.map(function(x) { return x.chi; })), 3) + ".");
+   let gd = a.optics && a.optics.guiding;
+   if (gd && gd.type !== GUIDING_UNKNOWN)
+      lines.push("   " + guidingCauses(gd.type));
+   return lines;
+}
+
+// Saves a bitmap of a series frame, replacing a file of an earlier run, and
+// lists the path in frame.outputFiles.
+function saveSeriesFrameBitmap(frame, bmp, path) {
+   if (File.exists(path))
+      File.remove(path);
+   if (bmp.save(path) === false)
+      throw new Error("Cannot write " + path);
+   frame.outputFiles.push(path);
+   Console.writeln("Saved: " + path);
+}
+
+// The path of a frame's output file: its directory and name plus `suffix`.
+function seriesFrameOutputPath(frame, suffix) {
+   return File.extractDrive(frame.path) + File.extractDirectory(frame.path) + "/" +
+      File.extractName(frame.path) + suffix;
+}
+
+// A 3x3 mosaic of the stretched image as AberrationInspector draws it: the
+// four corners, the four edge centers and the image center, each cropped
+// 1:1 to a square tile, separated by gray lines. Smaller images get
+// smaller tiles so that the crops do not overlap.
+const MOSAIC_TILE_SIZE = 512;      // px
+const MOSAIC_SEPARATOR = 4;        // px, width of the gray lines between the tiles
+const MOSAIC_SEPARATOR_COLOR = 0xFF808080;
+function renderAberrationMosaic(bmp) {
+   let t = Math.min(MOSAIC_TILE_SIZE, Math.floor(bmp.width / 3), Math.floor(bmp.height / 3));
+   let sep = MOSAIC_SEPARATOR;
+   let mosaic = new Bitmap(3 * t + 2 * sep, 3 * t + 2 * sep);
+   mosaic.fill(MOSAIC_SEPARATOR_COLOR);
+   let xs = [0, Math.floor((bmp.width - t) / 2), bmp.width - t];
+   let ys = [0, Math.floor((bmp.height - t) / 2), bmp.height - t];
+   for (let r = 0; r < 3; ++r)
+      for (let c = 0; c < 3; ++c)
+         mosaic.copy(c * (t + sep), r * (t + sep), bmp, xs[c], ys[r], xs[c] + t, ys[r] + t);
+   return mosaic;
+}
+
+// Saves the images Apply would open for a frame of the series next to its
+// file, named after it with a suffix, so that they sort right after it:
+//   <name>_Size.png, <name>_Shape.png, <name>_Coma.png, <name>_Tilt.png   the maps (maps:
+//                              { key: Bitmap } of MAP_VIEWS, drawn by the caller)
+//   <name>_Aberration3D.png    the 3D tilt plot, when enabled and possible
+// Existing files of an earlier run are replaced. The paths are listed in
+// frame.outputFiles.
+function saveSeriesFrameImages(frame, maps, analysis, optics, report, p) {
+   MAP_VIEWS.forEach(function(v) {
+      saveSeriesFrameBitmap(frame, maps[v.key], seriesFrameOutputPath(frame, v.fileSuffix));
+   });
+   if (p.show3DTiltPlot && optics.physical && report.tilt !== null)
+      saveSeriesFrameBitmap(frame, render3DTiltPlot(report.tilt, analysis.w, analysis.h, optics.pixelPitchUm,
+         optics.focalLengthMm, optics.apertureMm), seriesFrameOutputPath(frame, "_Aberration3D.png"));
+}
+
+// Saves the 3x3 mosaic of a series frame (renderAberrationMosaic(), from
+// the stretched background of its analysis) next to the frame as
+// <name>_Mosaic.png.
+function saveSeriesFrameMosaic(frame, analysis) {
+   saveSeriesFrameBitmap(frame, renderAberrationMosaic(analysis.background),
+      seriesFrameOutputPath(frame, "_Mosaic.png"));
+}
+
+// The comparison as text with console tags (Console and the Series page).
+function formatSeriesReport(result) {
+   const VERDICTS = {
+      changes: "<b>changes at the flip</b>",
+      stable: "stable",
+      unclear: "unclear (difference within the scatter)",
+      few: "too few frames on one side for a verdict"
+   };
+   let sides = result.sides;
+   let lines = [];
+   lines.push(format("<b>%d of %d frames measured</b> - ", result.measured, result.total) +
+      (sides.length > 0 ? sides.map(function(s) { return s + ": " + result.counts[s]; }).join(", ") : "no side known"));
+   if (result.stop)
+      lines.push(format("<b>Stopped after frame %d of %d</b>: %d frame%s not measured; pass 2 (Series static) " +
+         "was skipped. Run the series again to compare all frames.", result.stop.after, result.total,
+         result.total - result.stop.after, result.total - result.stop.after === 1 ? "" : "s"));
+   let changes = result.rows.filter(function(r) { return r.verdict === "changes"; });
+   if (sides.length === 2)
+      lines.push(changes.length === 0 ?
+         "<b>Nothing changes clearly at the flip</b> - the findings of a single frame hold for both sides." :
+         "<b>Changes at the flip:</b> " + changes.map(function(r) { return r.metric.label; }).join(", ") + ".");
+
+   result.rows.forEach(function(row) {
+      let m = row.metric;
+      let parts = [];
+      sides.forEach(function(s, k) {
+         let st = row.stats[k];
+         if (st)
+            parts.push(s + " " + m.show(st.median) + (isFinite(st.sd) ?
+               " (± " + (m.spread ? m.spread(st.sd) : m.vector ? format("%.0f%%", 100 * st.sd) :
+                  m.show(st.sd).replace(/^\+/, "")) + ")" : ""));
+      });
+      if (parts.length === 0)
+         return;
+      lines.push("");
+      let text = "<b>" + m.label + ":</b> " + parts.join("; ");
+      // For vectors, the size alone can stay while the direction turns.
+      if (m.vector && row.diff !== null)
+         text += "; " + (m.showDiff ? m.showDiff(row.stats[0].median, row.stats[1].median) :
+            "difference " + format("%.0f%%", 100 * row.diff));
+      if (row.verdict)
+         text += " → " + VERDICTS[row.verdict];
+      lines.push(text);
+      if (row.verdict === "changes") {
+         lines.push("   → " + m.changed);
+      } else if (row.verdict === "stable" && m.stable) {
+         let sizes = row.stats.map(function(st) {
+            return m.vector ? vectorNorm(st.median) : Math.abs(st.median);
+         });
+         if (Math.min.apply(null, sizes) >= m.stableMin)
+            lines.push("   → " + m.stable);
+      }
+      if (row.drift)
+         lines.push(format("   Drifts over the session: %s per hour over %.1f h (r = %.2f) - temperature, " +
+            "altitude or slow slip rather than the flip.", m.show(row.drift.perHour), row.drift.hours, row.drift.corr));
+      if (row.drift && row.verdict === "changes")
+         lines.push("   Caution: with that drift, part of the difference between the sides may be the drift - " +
+            "compare frames taken shortly before and after the flip.");
+   });
+
+   if (result.notes.length > 0) {
+      lines.push("");
+      result.notes.forEach(function(n) { lines.push("<i>Note:</i> " + n); });
+   }
+   return lines.join("<br>");
+}
+
+// One line per frame with its side and measured values.
+function exportSeriesCSV(frames, filePath) {
+   let f = new File;
+   f.createForWriting(filePath);
+   f.outTextLn("File,Side,SideSource,TimeUTC,HourAngle_h,Altitude_deg,FocusPos,Temp_C,Stars," +
+      "FWHMCenter_px,FWHMEdge_px,TiltRel,TiltDir_deg,GridCornerRatio,GridTiltRel,GridTiltSigma,GridTiltSoftCorner,EpsRad,TrackingEllipticity,TrackingAngle_deg," +
+      "ComaK,ComaX0_px,ComaY0_px,SIPMaxShift_px,SIPTiltEquiv_deg," + SIP_TERMS.join(",") + ",Error");
+   let num = function(v, digits) {
+      return (v === null || v === undefined || !isFinite(v)) ? "" : v.toFixed(digits);
+   };
+   frames.forEach(function(fr) {
+      let m = fr.metrics;
+      let s = m ? m.surface : null;
+      let tilt = m ? seriesMetric("tilt").get(m) : null;
+      f.outTextLn([
+         "\"" + fr.name.replace(/"/g, "\"\"") + "\"", fr.side, fr.sideSource,
+         fr.timeMs !== null ? new Date(fr.timeMs).toISOString() : "",
+         num(fr.haH, 3), num(fr.altDeg, 2), num(fr.focusPos, 0), num(fr.tempC, 2),
+         m ? m.n : "",
+         num(s ? s.fCenter : null, 3), num(s ? s.fEdge : null, 3),
+         num(tilt ? Math.hypot(tilt[0], tilt[1]) : null, 4), num(s ? s.tiltDirDeg : null, 1),
+         num(m && m.grid ? m.grid.cornerRatio : null, 3), num(m && m.grid ? m.grid.tiltRel : null, 4),
+         num(m && m.grid ? m.grid.tiltSigma : null, 2), m && m.grid && m.grid.tiltSoftCorner ? m.grid.tiltSoftCorner : "",
+         num(m && m.rings ? m.rings.eRad : null, 4),
+         num(m && m.tracking ? m.tracking.ellipticity : null, 4), num(m && m.tracking ? m.tracking.angleDeg : null, 1),
+         num(m && m.coma ? m.coma.k : null, 4), num(m && m.coma ? m.coma.x0 : null, 1),
+         num(m && m.coma ? m.coma.y0 : null, 1),
+         num(fr.sip ? sipMaxShift(sipCornerShifts(fr)) : null, 2), num(sipTiltEquivalentDeg(fr), 3),
+         SIP_TERMS.map(function(t) { return fr.sip ? fr.sip.terms[t].toExponential(6) : ""; }).join(","),
+         fr.error ? "\"" + fr.error.replace(/"/g, "\"\"") + "\"" : ""
+      ].join(","));
+   });
+   f.close();
+   Console.noteln("Series CSV exported to: " + filePath);
 }
 
 // -----------------------------------------------------------------------
@@ -3792,7 +7069,7 @@ class StarAberrationDialog extends Dialog {
       this.view = view;
 
 
-      this.windowTitle = TITLE + " " + VERSION;
+      this.windowTitle = TITLE;
 
       // Field labels share one width so that all edit fields line up;
       // check boxes are indented to the same column.
@@ -3809,20 +7086,54 @@ class StarAberrationDialog extends Dialog {
          label.setFixedWidth(d.labelWidth);
          return label;
       };
+      // All input fields start at the same position and number fields have
+      // the same width: a NumericEdit (pjsr/NumericControl.jsh) holds an
+      // empty label and 4 px of spacing before its edit field, so any other
+      // control (SpinBox, ComboBox, Edit) gets the same in front of it; the
+      // edit field of a NumericEdit and a SpinBox get NUMBER_FIELD_CHARS.
+      const NUMBER_FIELD_CHARS = "0000000000";
+      let alignedField = function(control) {
+         let numberWidth = d.font.width(NUMBER_FIELD_CHARS) + d.logicalPixelsToPhysical(8);
+         if (control.edit instanceof Edit && control.label instanceof Label) { // a NumericEdit
+            control.edit.setFixedWidth(numberWidth);
+            return control;
+         }
+         if (control instanceof SpinBox)
+            control.setFixedWidth(numberWidth + d.logicalPixelsToPhysical(16)); // + the arrows
+         let field = new Control(d);
+         field.sizer = new HorizontalSizer;
+         field.sizer.spacing = 4;
+         field.sizer.add(new Label(field));
+         field.sizer.add(control);
+         return field;
+      };
       let fieldRow = function(label, control) {
          let row = new HorizontalSizer;
          row.spacing = 4;
          row.add(label);
-         row.add(control);
+         row.add(alignedField(control));
          row.addStretch();
          return row;
       };
-      let checkRow = function(check) {
+      // A row without a field label whose controls start where the input
+      // fields of fieldRow() start: a blank of the label's width, then the
+      // same empty label and spacing as in front of every input field.
+      let indentRow = function(controls, stretchLast) {
          let row = new HorizontalSizer;
-         row.addUnscaledSpacing(d.labelWidth + d.logicalPixelsToPhysical(4));
-         row.add(check);
-         row.addStretch();
+         row.spacing = 4;
+         let blank = new Label(d);
+         blank.setFixedWidth(d.labelWidth);
+         row.add(blank);
+         row.add(new Label(d));
+         controls.forEach(function(c, i) {
+            row.add(c, (stretchLast && i === controls.length - 1) ? 100 : 0);
+         });
+         if (!stretchLast)
+            row.addStretch();
          return row;
+      };
+      let checkRow = function(check) {
+         return indentRow([check]);
       };
       let groupBox = function(title, items) {
          let group = new GroupBox(d);
@@ -3863,30 +7174,159 @@ class StarAberrationDialog extends Dialog {
             d.label.text = "No target image selected.";
       };
 
-      // Input view selectable: list of all open main images
+      // Target image: the open (visible) main images, and as the last entry
+      // the tips for the test frames, shown in the image area instead of an
+      // image (as without any image). A ViewList cannot take an entry of
+      // its own, so this is a combo box that a timer keeps in step with
+      // the open images (refreshTargets()).
+      const TIPS_ITEM = "Tips for the test frames";
       this.viewListLabel = fieldLabel("Target image:");
-      this.viewList = new ViewList(this);
-      this.viewList.getMainViews(); // main images only, no previews
-      if (view)
-         this.viewList.currentView = view;
-      this.viewList.onViewSelected = function(v) {
+      this.targetCombo = new ComboBox(this);
+      this.targetViews = [];
+      this.targetSignature = null;
+      this.openMainViews = function() {
+         return ImageWindow.windows.filter(function(w) { return !w.isNull && w.visible; })
+            .map(function(w) { return w.mainView; });
+      };
+      this.fillTargetCombo = function() {
+         let views = d.openMainViews();
+         d.targetViews = views;
+         d.targetSignature = views.map(function(v) { return v.id; }).join("|");
+         d.targetCombo.clear();
+         views.forEach(function(v) { d.targetCombo.addItem(v.id); });
+         d.targetCombo.addItem(TIPS_ITEM);
+         let i = -1;
+         if (d.view)
+            for (let k = 0; k < views.length && i < 0; ++k)
+               if (views[k].id === d.view.id)
+                  i = k;
+         d.targetCombo.currentItem = i >= 0 ? i : views.length;
+      };
+      this.selectTarget = function(v) {
          d.view = v;
          if (d.applyHeaderOptics)
             d.applyHeaderOptics();
+         if (d.updateCamera)
+            d.updateCamera();
          d.updateLabel();
          d.updateControls();
          d.updatePreview();
       };
+      this.targetCombo.onItemSelected = function(index) {
+         d.selectTarget(index < d.targetViews.length ? d.targetViews[index] : null);
+      };
+      // Images opened, closed or renamed: the list follows; a target that
+      // was closed is dropped (the tips are shown). Not while a computation
+      // runs - it opens and closes windows of its own.
+      this.refreshTargets = function() {
+         if (d.isBusy)
+            return;
+         let sig = d.openMainViews().map(function(v) { return v.id; }).join("|");
+         if (sig === d.targetSignature)
+            return;
+         let current = d.view ? d.view.id : null;
+         d.fillTargetCombo();
+         if (current !== null && d.targetCombo.currentItem === d.targetViews.length)
+            d.selectTarget(null);
+      };
+      this.targetTimer = new Timer;
+      this.targetTimer.interval = 1; // s
+      this.targetTimer.periodic = true;
+      this.targetTimer.onTimeout = function() { d.refreshTargets(); };
+      this.fillTargetCombo();
 
       let viewRow = new HorizontalSizer;
       viewRow.spacing = 4;
       viewRow.add(this.viewListLabel);
-      viewRow.add(this.viewList, 100);
+      viewRow.add(this.targetCombo, 100);
 
-      let infoRow = new HorizontalSizer;
-      infoRow.addUnscaledSpacing(this.labelWidth + this.logicalPixelsToPhysical(4));
-      infoRow.add(this.label, 100);
+      let infoRow = indentRow([this.label], true);
       this.updateLabel();
+
+      // The results of a Calculate as a file, and loaded again instead of a
+      // measurement (saveResults(), loadResults()). Loaded results are the
+      // kept analysis like those of a Calculate - with their own detection
+      // settings and the FITS keywords of their image - until the next
+      // Calculate or another target image.
+      this.saveResultsButton = new PushButton(this);
+      this.saveResultsButton.text = "Save results...";
+      this.saveResultsButton.toolTip =
+         "<p>Saves the stars measured by the last Calculate (or loaded results) as a file " +
+         "<i>name</i>" + RESULTS_EXTENSION + ", by default next to the image: positions, FWHM, shape and " +
+         "asymmetry of every star, the detection settings and the FITS header of the image - about 100 " +
+         "bytes per star. The maps, the evaluations and the assessment are computed from it again on " +
+         "loading; the current layer and optics settings are not part of it.</p>";
+      this.saveResultsButton.onClick = function() {
+         if (!d.analysis || !d.analysis.header) {
+            (new MessageBox("Click Calculate first: there are no results to save.", TITLE, StdIcon.Information,
+               StdButton.Ok)).execute();
+            return;
+         }
+         let sfd = new SaveFileDialog;
+         sfd.caption = "Save results";
+         sfd.overwritePrompt = true;
+         sfd.filters = [["Results files", "*.json"], ["All files", "*"]];
+         sfd.initialPath = d.analysis.file || resultsDefaultPath(d.analysis.header);
+         if (!sfd.execute())
+            return;
+         try {
+            saveResults(d.analysis, d.collectParameters(), sfd.fileName);
+         } catch (x) {
+            (new MessageBox("Saving the results failed: " + (x.message || String(x)), TITLE, StdIcon.Error,
+               StdButton.Ok)).execute();
+         }
+      };
+
+      this.loadResultsButton = new PushButton(this);
+      this.loadResultsButton.text = "Load results...";
+      this.loadResultsButton.toolTip =
+         "<p>Loads results saved with Save results and shows them as after a Calculate, without measuring " +
+         "the stars again: the maps, their evaluations, the assessment, Save and the AI review all work " +
+         "with them. Optics, mount and observation values come from the saved FITS header (or the fields " +
+         "above), the layers from the current settings.</p>" +
+         "<p>The background is the image when it is open (same view and file), else dark. The detection " +
+         "settings of the dialog do not apply to loaded results; the next Calculate measures the target " +
+         "image again.</p>";
+      this.loadResultsButton.onClick = function() {
+         let ofd = new OpenFileDialog;
+         ofd.caption = "Load results";
+         ofd.multipleSelections = false;
+         ofd.filters = [["Results files", "*" + RESULTS_EXTENSION, "*.json"], ["All files", "*"]];
+         if (!ofd.execute())
+            return;
+         let analysis;
+         try {
+            analysis = loadResults(ofd.fileName);
+         } catch (x) {
+            (new MessageBox(x.message || String(x), TITLE, StdIcon.Error, StdButton.Ok)).execute();
+            return;
+         }
+         Console.noteln(format("Results loaded (%d stars of %s, %d x %d px): %s", analysis.stars.length,
+            analysis.targetViewId, analysis.w, analysis.h, analysis.file));
+         d.analysis = analysis;
+         d.previewStale = false;
+         d.mapSource = 0;
+         d.mapSourceCombo.currentItem = 0;
+         d.updateTrackingInfo();
+         d.updateResultsInfo();
+         d.clearAiReview();
+         d.refreshPreview();
+         d.showMapPage();
+      };
+
+      this.resultsInfoLabel = new Label(this);
+      this.resultsInfoLabel.useRichText = true;
+      this.resultsInfoLabel.wordWrapping = true;
+      this.updateResultsInfo = function() {
+         let an = d.analysis;
+         d.resultsInfoLabel.text = (an && an.file) ?
+            format("<i>Showing loaded results: %s (%d stars)</i>", File.extractNameAndExtension(an.file),
+               an.stars.length) : "";
+         d.resultsInfoLabel.visible = d.resultsInfoLabel.text.length > 0;
+      };
+      this.updateResultsInfo();
+      let resultsRow = indentRow([this.loadResultsButton, this.saveResultsButton]);
+      let resultsInfoRow = indentRow([this.resultsInfoLabel], true);
 
       // Debayer (SuperPixel) as a preprocessing step
       this.debayerCheck = new CheckBox(this);
@@ -3896,8 +7336,9 @@ class StarAberrationDialog extends Dialog {
          "<p>Creates a debayered copy of the target image (SuperPixel method: direct " +
          "2x2 pixel grouping without interpolation, half resolution) and continues working " +
          "on this copy. The original image is left unchanged. Only enable this if the target " +
-         "image is still an unprocessed Bayer mosaic (not true RGB); it is disabled for color " +
-         "images.</p>";
+         "image is still an unprocessed Bayer mosaic (not true RGB).</p>" +
+         "<p>It also applies to the frames of the Series tab. It is disabled for a color target image " +
+         "unless the Series tab lists frames; color images are never debayered.</p>";
 
       // Bayer pattern (fallback, if "Auto" fails due to missing CFA metadata:
       // "Unable to acquire CFA pattern information")
@@ -3955,6 +7396,62 @@ class StarAberrationDialog extends Dialog {
          "blocking call with no visible intermediate progress - fewer candidates " +
          "directly shorten its runtime. 0 = fit all found candidates.</p>";
 
+      // Optional StarDetector parameters - the defaults reject strongly
+      // elongated and large stars, i.e. the aberrated stars at the field
+      // edge that matter most for tilt and field curvature.
+      this.sdCustomCheck = new CheckBox(this);
+      this.sdCustomCheck.text = "Custom StarDetector parameters";
+      this.sdCustomCheck.checked = parameters.sdCustom;
+      this.sdCustomCheck.toolTip =
+         "<p>Off: StarDetector runs with its own defaults (structure layers 5, sensitivity 0.5, " +
+         "peak response 0.5, max. distortion 0.6, no clustered sources). These reject strongly " +
+         "elongated and large stars - exactly the aberrated stars at the field edge, which then " +
+         "leave the corners of the FWHM grid empty or sparsely populated.</p>" +
+         "<p>On: the values below are used.</p>";
+
+      this.sdLayersLabel = fieldLabel("Structure layers:");
+      this.sdLayersSpin = new SpinBox(this);
+      this.sdLayersSpin.setRange(1, 8);
+      this.sdLayersSpin.value = parameters.sdStructureLayers;
+      this.sdLayersSpin.toolTip =
+         "<p>Number of dyadic wavelet layers: the largest detectable structure is about " +
+         "2^n pixels (5 = 32 px). Increase it for large, defocused or strongly aberrated " +
+         "stars. Default 5.</p>";
+
+      this.sdSensitivityLabel = fieldLabel("Sensitivity:");
+      this.sdSensitivitySpin = new NumericEdit(this);
+      this.sdSensitivitySpin.setRange(0, 1);
+      this.sdSensitivitySpin.setPrecision(2);
+      this.sdSensitivitySpin.setValue(parameters.sdSensitivity);
+      this.sdSensitivitySpin.toolTip =
+         "<p>0..1, higher = fainter stars are detected. Default 0.5.</p>";
+
+      this.sdPeakResponseLabel = fieldLabel("Peak response:");
+      this.sdPeakResponseSpin = new NumericEdit(this);
+      this.sdPeakResponseSpin.setRange(0, 1);
+      this.sdPeakResponseSpin.setPrecision(2);
+      this.sdPeakResponseSpin.setValue(parameters.sdPeakResponse);
+      this.sdPeakResponseSpin.toolTip =
+         "<p>0..1, higher = more tolerant of flat star profiles (bloated stars at the field " +
+         "edge); lower = only stars with a prominent peak. Default 0.5.</p>";
+
+      this.sdMaxDistortionLabel = fieldLabel("Max. distortion:");
+      this.sdMaxDistortionSpin = new NumericEdit(this);
+      this.sdMaxDistortionSpin.setRange(0, 1);
+      this.sdMaxDistortionSpin.setPrecision(2);
+      this.sdMaxDistortionSpin.setValue(parameters.sdMaxDistortion);
+      this.sdMaxDistortionSpin.toolTip =
+         "<p>0..1, higher = more elongated or irregular stars are accepted. Raise it (e.g. " +
+         "0.8) when the stars at the field edge are strongly elongated. Too high also lets " +
+         "galaxies and blends through. Default 0.6.</p>";
+
+      this.sdClusteredCheck = new CheckBox(this);
+      this.sdClusteredCheck.text = "Allow clustered sources";
+      this.sdClusteredCheck.checked = parameters.sdAllowClustered;
+      this.sdClusteredCheck.toolTip =
+         "<p>Detect non-separable double/multiple stars as single objects. Their centroids " +
+         "and shapes are unreliable, so this is off by default.</p>";
+
       // PSF function
       this.moffatCheck = new CheckBox(this);
       this.moffatCheck.text = "Moffat PSF instead of Gaussian";
@@ -3983,18 +7480,21 @@ class StarAberrationDialog extends Dialog {
 
       // Vector scale
       this.scaleLabel = fieldLabel("Vector scale:");
-      this.scaleSpin = new NumericEdit(this);
+      this.scaleSpin = new NumericControl(this);
       this.scaleSpin.setRange(0.1, 10);
+      this.scaleSpin.slider.setRange(0, 990); // steps of 0.01
+      this.scaleSpin.slider.setScaledMinWidth(200);
       this.scaleSpin.setValue(parameters.vectorScale);
       this.scaleSpin.setPrecision(2);
-      this.scaleSpin.toolTip = "<p>Length of the drawn vectors and arrows - purely visual.</p>";
+      this.scaleSpin.toolTip = "<p>Size of the star ellipses here and of the arrows on the Coma map - " +
+         "purely visual.</p>";
 
       // Stored as "hideEllipses"; shown as the enable switch of the layer.
       this.showEllipsesCheck = new CheckBox(this);
       this.showEllipsesCheck.text = "Show star ellipses";
       this.showEllipsesCheck.checked = !parameters.hideEllipses;
       this.showEllipsesCheck.toolTip = "<p>Draws the fitted ellipse of every star. Uncheck to look at the " +
-         "other layers alone, e.g. the per-star asymmetry arrows.</p>";
+         "streamlines or the orientation heatmap alone.</p>";
 
       // Tracking component (field-wide median elongation)
       // The measured tracking component of the kept analysis (see
@@ -4008,7 +7508,7 @@ class StarAberrationDialog extends Dialog {
       this.updateTrackingInfo = function() {
          let t = d.analysis ? d.analysis.tracking : null;
          if (!t) {
-            d.trackingInfoLabel.text = "<i>Measured with Preview.</i>";
+            d.trackingInfoLabel.text = "<i>Measured with Calculate.</i>";
             return;
          }
          d.trackingInfoLabel.text = format("Ellipticity <b>%.3f</b> (eccentricity %.2f), axis %.0f°", t.ellipticity,
@@ -4016,9 +7516,7 @@ class StarAberrationDialog extends Dialog {
             ((t.ellipticity < 0.03) ? "Negligible: tracking/guiding looks clean." :
                "Shared by all stars: tracking/guiding, wind or flexure.");
       };
-      let trackingInfoRow = new HorizontalSizer;
-      trackingInfoRow.addUnscaledSpacing(this.labelWidth + this.logicalPixelsToPhysical(4));
-      trackingInfoRow.add(this.trackingInfoLabel, 100);
+      let trackingInfoRow = indentRow([this.trackingInfoLabel], true);
 
       this.subtractTrackingCheck = new CheckBox(this);
       this.subtractTrackingCheck.text = "Subtract it from all stars";
@@ -4042,11 +7540,75 @@ class StarAberrationDialog extends Dialog {
          "curvature, a pattern that differs between the two sides = tilt; all field lines " +
          "parallel = tracking. Easier to spot than the noisy per-star vector map " +
          "alone. Correctly accounts for the fact that the PSF orientation is only " +
-         "defined mod 180° (double-angle averaging).</p>";
+         "defined mod 180° (double-angle averaging).</p>" +
+         "<p>White: the direction is significant there; gray: it is not (see the option below).</p>";
+
+      this.shapeSignificantOnlyCheck = new CheckBox(this);
+      this.shapeSignificantOnlyCheck.text = "Hide where the direction is not significant";
+      this.shapeSignificantOnlyCheck.checked = parameters.shapeSignificantOnly;
+      this.shapeSignificantOnlyCheck.toolTip =
+         "<p>The streamlines show only a direction, never its strength: on pure noise they still look " +
+         "orderly. They are therefore white where the smoothed elongation is at least 2.45 times its " +
+         "standard error (the local scatter of the stars over their effective number; pure noise exceeds " +
+         "that in 5% of the places) and gray elsewhere. With this option the gray parts are left " +
+         "out.</p>";
+
+      this.shapeShowCellsCheck = new CheckBox(this);
+      this.shapeShowCellsCheck.text = "Cell averages with uncertainty";
+      this.shapeShowCellsCheck.checked = parameters.shapeShowCells;
+      this.shapeShowCellsCheck.toolTip =
+         "<p>One bar per cell of the 11×11 grid along the mean axis of its stars (averaged in the doubled " +
+         "angle, since an axis has no direction), its length the mean elongation. The white fan shows the " +
+         "uncertainty of the axis (± standard error / (2 × elongation)). Bright with fan: significantly " +
+         "elongated (≥ 2.45σ); thin and gray: round within the noise; gray dot: fewer than 5 stars.</p>";
+
+      this.shapeShowModelCheck = new CheckBox(this);
+      this.shapeShowModelCheck.text = "Optics model streamlines";
+      this.shapeShowModelCheck.checked = parameters.shapeShowModel;
+      this.shapeShowModelCheck.toolTip =
+         "<p>Fits what optics can produce to all stars: a uniform term (tracking residue, astigmatism on " +
+         "the axis), linear terms (a decentered pattern, binodal astigmatism of a misaligned system) and a " +
+         "radial/tangential term growing with r² (field curvature, corrector spacing). Draws its streamlines " +
+         "in violet (muted where it is not significant); \"Model match per cell\" below shows where the stars " +
+         "agree with it. The Evaluation below gives " +
+         "how much of the pattern it explains and its residual chi²/dof (about 1 = explained down to the " +
+         "noise).</p>";
+
+      this.shapeModelSignificantOnlyCheck = new CheckBox(this);
+      this.shapeModelSignificantOnlyCheck.text = "Hide the model where it is not significant";
+      this.shapeModelSignificantOnlyCheck.checked = parameters.shapeModelSignificantOnly;
+      this.shapeModelSignificantOnlyCheck.toolTip =
+         "<p>The model lines are violet where the model's field is at least 2.45 times its standard error " +
+         "(from the uncertainty of the 7 fitted terms), and a muted gray-violet where it is not - near the " +
+         "points where its terms cancel, and wherever the stars do not pin it down. With this option the " +
+         "muted parts are left out.</p>";
+
+      this.shapeShowMatchCheck = new CheckBox(this);
+      this.shapeShowMatchCheck.text = "Model match per cell";
+      this.shapeShowMatchCheck.checked = parameters.shapeShowMatch;
+      this.shapeShowMatchCheck.toolTip =
+         "<p>Compares each cell with the optics model: the mean difference between the stars' shapes and what " +
+         "the model predicts there, in units of its standard error (scatter of the stars / √n).</p>" +
+         "<p><b>Magenta</b>: 3σ or more - the cell holds structure no optics of the model produce (bent or " +
+         "pinched optics, dew, vignetting by an off-axis guider or the focuser, nebulosity, halos, double " +
+         "stars - or a pattern of higher order than the model). About one magenta cell per frame is chance; " +
+         "the Evaluation gives the expected number.<br/><b>Green</b>: less than 3σ - the cell agrees with the " +
+         "model within its noise.<br/>No frame: fewer than 5 stars.</p>";
+
+      this.shapeShowDefectsCheck = new CheckBox(this);
+      this.shapeShowDefectsCheck.text = "Singular points";
+      this.shapeShowDefectsCheck.checked = parameters.shapeShowDefects;
+      this.shapeShowDefectsCheck.toolTip =
+         "<p>Marks the points where the smoothed axis field has no direction, with their index: optics " +
+         "produce at most one +1 (radial or tangential pattern around the axis) or two +½ (the same split " +
+         "by a uniform term, or binodal astigmatism). More points, and any −½, are noise in the smoothed " +
+         "field - a larger smoothing radius or more stars help.</p>";
 
       this.streamlineRadiusLabel = fieldLabel("Smoothing radius (%):");
-      this.streamlineRadiusSpin = new NumericEdit(this);
+      this.streamlineRadiusSpin = new NumericControl(this);
       this.streamlineRadiusSpin.setRange(2, 50);
+      this.streamlineRadiusSpin.slider.setRange(0, 96); // steps of 0.5
+      this.streamlineRadiusSpin.slider.setScaledMinWidth(200);
       this.streamlineRadiusSpin.setValue(parameters.streamlineRadiusPercent);
       this.streamlineRadiusSpin.setPrecision(1);
       this.streamlineRadiusSpin.toolTip =
@@ -4083,45 +7645,112 @@ class StarAberrationDialog extends Dialog {
 
       // ---- Tilt ----------------------------------------------------------
 
-      // Siril-style tilt overlay (quadrant polygon)
-      this.sirilTiltCheck = new CheckBox(this);
-      this.sirilTiltCheck.text = "Show Siril-style tilt overlay (quadrant polygon)";
-      this.sirilTiltCheck.checked = parameters.showSirilTilt;
-      this.sirilTiltCheck.toolTip =
-         "<p>Overlays a yellow quadrilateral on the image in addition to the vector map, " +
-         "recreated from Siril's \"Show tilt\" (ccd-inspector.c): one corner point per " +
-         "image quadrant, radius proportional to the deviation of that quadrant's mean FWHM " +
-         "from the average of all four. Complements our per-star vectors with Siril's " +
-         "compact, aggregated view.</p>";
+      // How the Tilt map reads (tooltip of its groups).
+      this.tiltHelp =
+         "<p>The yellow quadrilateral is recreated from Siril's \"Show tilt\" (ccd-inspector.c): one corner " +
+         "point per image quadrant, its distance from the center proportional to the deviation of that " +
+         "quadrant's mean FWHM from the average of all four. Coarser than the 11×11 grid of Star size, but " +
+         "each quadrant has a quarter of all stars. The light-blue tilt axis runs through the sensor center " +
+         "along the steepest rise of the plane through the four quadrants.</p>";
 
-      this.fwhmGridCheck = new CheckBox(this);
-      this.fwhmGridCheck.text = "11×11 FWHM grid instead of the quadrant polygon";
-      this.fwhmGridCheck.checked = parameters.showFwhmGrid;
-      this.fwhmGridCheck.toolTip =
-         "<p>Replaces the 4-quadrant polygon above with a finer 11×11 grid: the trimmed mean " +
-         "FWHM is computed and labeled per cell instead of per quadrant. Only active if " +
-         "\"Show Siril-style tilt overlay\" is also checked. Higher spatial resolution than " +
-         "the 4 quadrants, but each cell only gets a fraction of the star field, so " +
-         "individual cell values are noisier than the quadrant means - the tilt axis and the " +
-         "console summary still use the more robust 4-quadrant computation regardless of this " +
-         "setting.</p>";
+      this.fwhmGridDetailsCheck = new CheckBox(this);
+      this.fwhmGridDetailsCheck.text = "Uncertainty and star count";
+      this.fwhmGridDetailsCheck.checked = parameters.fwhmGridDetails;
+      this.fwhmGridDetailsCheck.toolTip =
+         "<p>Adds a smaller line to every cell: ± the 1σ uncertainty of its FWHM (its standard error, " +
+         "1.4826 × MAD / √n - not the scatter of the stars; in pixels, or in arcseconds when only those are " +
+         "shown) and <i>n</i> = number of stars. " +
+         "Two cells differ reliably only when their difference exceeds about 2-3 × √(σ₁² + σ₂²).</p>";
 
-      this.fwhmGridArcsecCheck = new CheckBox(this);
-      this.fwhmGridArcsecCheck.text = "FWHM grid in arcseconds instead of pixels";
-      this.fwhmGridArcsecCheck.checked = parameters.fwhmGridArcsec;
-      this.fwhmGridArcsecCheck.toolTip =
-         "<p>Shows the 11×11 grid values in arcseconds (″) instead of image pixels, using " +
-         "206.265 × pixel pitch [µm] / focal length [mm]. Needs pixel pitch and focal length " +
-         "on the General page (with SuperPixel debayering, twice the pitch is used automatically); falls " +
-         "back to pixels with a console warning otherwise. Only affects the grid display.</p>";
+      // How the grid reads (tooltip of the group).
+      this.fwhmGridHelp =
+         "<p>The 11×11 grid shows per cell its FWHM (25%-trimmed mean) in pixels and/or arcseconds and its " +
+         "ratio to the center (inner 3×3 cells): ×1.17 = 17% larger stars than in the center. The fill " +
+         "follows the ratio and its class: green ≤ 1.10 good (as sharp as the center, or sharper), yellow " +
+         "slight, orange clear (around 1.25), red ≥ 1.50 strong - only where the cell differs from the center " +
+         "by at least 2σ (or is good anyway); an unfilled cell cannot be told from the center.</p>" +
+         "<p>Hatched, value in (brackets): uncertain - fewer than 5 stars, or a standard error above 10% of " +
+         "the value.</p>" +
+         "<p>The Evaluation box gives the center FWHM, the corners (median ratio of the 2×2 corner blocks: field " +
+         "curvature / spacing) and the tilt (relative difference of the more unequal diagonal, with its " +
+         "significance: < 5% unremarkable, 5-10% slight, > 10% worth correcting). The console lists the " +
+         "details. Each cell has only a fraction of the stars: the tilt axis and the tilt angles use the " +
+         "4 quadrants.</p>";
+
+      // What each cell shows: one of the FWHM in pixels, the FWHM in
+      // arcseconds and the ratio to the center (p.fwhmCellValue).
+      this.fwhmPxRadio = new RadioButton(this);
+      this.fwhmPxRadio.text = "FWHM in pixels";
+      this.fwhmPxRadio.checked = parameters.fwhmCellValue === FWHM_CELL_PX;
+      this.fwhmPxRadio.toolTip = "<p>Each cell shows its FWHM in image pixels (3.15 px).</p>";
+      this.fwhmArcsecRadio = new RadioButton(this);
+      this.fwhmArcsecRadio.text = "FWHM in arcseconds";
+      this.fwhmArcsecRadio.checked = parameters.fwhmCellValue === FWHM_CELL_ARCSEC;
+      this.fwhmArcsecRadio.toolTip =
+         "<p>Each cell shows its FWHM in arcseconds (2.07\"), using 206.265 × pixel pitch [µm] / focal " +
+         "length [mm]. Needs pixel pitch and focal length (Setup › General; with SuperPixel debayering, " +
+         "twice the pitch is used automatically) - pixels otherwise.</p>";
+      this.fwhmRatioRadio = new RadioButton(this);
+      this.fwhmRatioRadio.text = "Ratio to the center";
+      this.fwhmRatioRadio.checked = parameters.fwhmCellValue === FWHM_CELL_RATIO;
+      this.fwhmRatioRadio.toolTip =
+         "<p>Each cell shows its FWHM relative to the center (inner 3×3 cells): ×1.17 = 17% larger stars " +
+         "than in the center - the value the fill and the assessment are based on.</p>";
+      if (!this.fwhmArcsecRadio.checked && !this.fwhmRatioRadio.checked)
+         this.fwhmPxRadio.checked = true;
+      this.fwhmCellValue = function() {
+         return d.fwhmArcsecRadio.checked ? FWHM_CELL_ARCSEC : d.fwhmRatioRadio.checked ? FWHM_CELL_RATIO :
+            FWHM_CELL_PX;
+      };
+
+      // The legend of the fill (drawn here instead of in the map).
+      this.fwhmLegend = new Control(this);
+      this.fwhmLegend.setFixedHeight(Math.round(this.font.height * 6.2));
+      this.fwhmLegend.onPaint = function() {
+         let g = new Graphics(this);
+         g.antialiasing = true;
+         let fh = this.font.height, asc = this.font.ascent;
+         let sky = 0x202020; // the map's dark background, under the half-transparent fill
+         let x = 2, y = 0;
+         let barW = Math.max(60, this.width - 4), barH = Math.round(fh * 1.6);
+         g.pen = new Pen(this.foregroundColor);
+         g.drawText(x, y + asc, "Fill: FWHM relative to the center (framed inner 3\u00D73 cells)");
+         y += Math.round(fh * 1.3);
+         let steps = 40;
+         for (let i = 0; i < steps; ++i) {
+            let ratio = 1 + (FWHM_FILL_RATIO_MAX - 1) * (i + 0.5) / steps;
+            g.fillRect(x + barW * i / steps, y, x + barW * (i + 1) / steps + 0.5, y + barH,
+               new Brush(opaqueOver(fwhmFillColor(ratio), sky)));
+         }
+         g.pen = new Pen(this.foregroundColor);
+         g.drawRect(x, y, x + barW, y + barH);
+         [1].concat(FWHM_RATIO_LIMITS).forEach(function(t) {
+            let tx = x + barW * (t - 1) / (FWHM_FILL_RATIO_MAX - 1);
+            g.drawLine(tx, y + barH, tx, y + barH + 3);
+            let tl = format("\u00D7%.2f", t) + (t >= FWHM_FILL_RATIO_MAX ? "+" : "");
+            g.drawText(Math.max(x, Math.min(tx - g.font.width(tl) / 2, x + barW - g.font.width(tl))),
+               y + barH + 3 + asc, tl);
+         });
+         y += barH + 3 + Math.round(fh * 1.3);
+         // Samples: unfilled and hatched.
+         let box = barH;
+         g.fillRect(x, y, x + box, y + box, new Brush(0xFF000000 | sky));
+         g.drawRect(x, y, x + box, y + box);
+         g.drawText(x + box + 6, y + asc - 1, "not significant");
+         let x2 = x + box + 6 + g.font.width("not significant") + fh;
+         g.fillRect(x2, y, x2 + box, y + box, new Brush(0xFF000000 | sky));
+         g.fillRect(x2, y, x2 + box, y + box, new Brush(FWHM_UNCERTAIN_HATCH, BrushStyle.BackwardDiagonalHatch));
+         g.drawRect(x2, y, x2 + box, y + box);
+         g.drawText(x2 + box + 6, y + asc - 1, "uncertain");
+         g.end();
+      };
 
       this.tiltAxisCheck = new CheckBox(this);
       this.tiltAxisCheck.text = "Show tilt axis";
       this.tiltAxisCheck.checked = parameters.showTiltAxis;
       this.tiltAxisCheck.toolTip =
          "<p>Draws the light-blue tilt axis through the sensor center, derived from the " +
-         "4-quadrant FWHM evaluation, with its angle/direction label. Only active if " +
-         "\"Show Siril-style tilt overlay\" is also checked.</p>";
+         "4-quadrant FWHM evaluation, with its angle/direction label.</p>";
 
       // ---- Optics (General page) -----------------------------------------
 
@@ -4134,11 +7763,75 @@ class StarAberrationDialog extends Dialog {
       this.opticsFromHeaderCheck.checked = parameters.opticsFromHeader;
       this.opticsFromHeaderCheck.toolTip =
          "<p>Uses XPIXSZ (pixel pitch, by convention including binning), FOCALLEN and APTDIA " +
-         "(or FOCALLEN/FOCRATIO) from the target image's FITS header. The fields below are " +
-         "filled in when a target image is selected; values found in the header take " +
-         "precedence at run time, the fields remain the fallback for missing keywords. Always " +
-         "the physical sensor pitch - the doubling after SuperPixel debayering is applied " +
-         "automatically.</p>";
+         "(or FOCALLEN/FOCRATIO) from the target image's FITS header (and from each frame's header in " +
+         "a series). The fields below then show these values, read-only; a value the header does not " +
+         "give is not set (0) - without an image, all three. Uncheck to enter your own values instead: " +
+         "they are saved and used for every image. Always the physical sensor pitch - the doubling after " +
+         "SuperPixel debayering is applied automatically.</p>";
+
+      // The camera, as the FITS header names it, in a read-only field like
+      // the other optics values - empty when the header names none or
+      // "Read the values from the FITS header" is unchecked.
+      this.cameraLabel = fieldLabel("Camera:");
+      this.cameraValue = new Edit(this);
+      this.cameraValue.readOnly = true;
+      this.cameraValue.toolTip = "<p>From the FITS header of the target image (INSTRUME, binning from " +
+         "XBINNING/YBINNING), when \"Read the values from the FITS header\" is checked. For information only.</p>";
+      this.updateCamera = function() {
+         let camera = (d.opticsFromHeaderCheck.checked && d.view && d.view.id.length > 0) ?
+            readCameraFromHeader(d.view) : "";
+         d.cameraValue.text = camera;
+      };
+
+      // The mount: estimated from the FITS header (read-only, with its source)
+      // like the optics values, or chosen and saved (manualMount).
+      this.mountLabel = fieldLabel("Mount:");
+      this.mountCombo = new ComboBox(this);
+      MOUNT_TYPES.forEach(function(t) { d.mountCombo.addItem(t); });
+      this.manualMount = Math.range(parameters.mountType, 0, MOUNT_TYPES.length - 1);
+      this.mountSourceLabel = new Label(this);
+      this.mountCombo.toolTip =
+         "<p>The mount, for the assessment: an alt-azimuth mount without a derotator turns the field during " +
+         "the exposure - the stars become arcs around the rotation center, a tangential pattern like field " +
+         "curvature; the assessment then gives its size at the corners (from EXPTIME, CENTALT, CENTAZ and " +
+         "SITELAT) and warns.</p>" +
+         "<p>With \"Read the values from the FITS header\" it is estimated (grayed, the source beside it): " +
+         "PIERSIDE East/West means a German equatorial mount; otherwise the mount driver's name in TELESCOP " +
+         "(EQMod, GS Server, iOptron CEM, AM5 ... equatorial; Alt-Az, AZ-GTi, Seestar, Dwarf ... alt-azimuth); " +
+         "else unknown. Uncheck it to choose the mount yourself.</p>";
+      this.mountCombo.onItemSelected = function(index) {
+         if (!d.opticsFromHeaderCheck.checked)
+            d.manualMount = index;
+         d.updateAssessment();
+      };
+
+      // Guiding: always the user's choice (the header says too little), with
+      // a guide camera in the header as the hint for "Unknown".
+      this.guidingLabel = fieldLabel("Guiding:");
+      this.guidingCombo = new ComboBox(this);
+      GUIDING_TYPES.forEach(function(t) { d.guidingCombo.addItem(t); });
+      this.guidingCombo.currentItem = Math.range(parameters.guidingType, 0, GUIDING_TYPES.length - 1);
+      this.guidingSourceLabel = new Label(this);
+      this.guidingCombo.toolTip =
+         "<p>How the exposures were guided - it decides what a common elongation of all stars means:</p>" +
+         "<p><b>Not guided</b>: the mount's tracking (periodic error of the worm, polar drift).<br/>" +
+         "<b>Guide scope</b>: differential flexure between guide scope and main optics or mirror flop when it " +
+         "is the same in every frame, the guiding quality when it changes.<br/>" +
+         "<b>Off-axis guider</b>: no differential flexure - the same in every frame points rather to " +
+         "astigmatism on the axis.</p>" +
+         "<p>No FITS keyword says this; it is saved, also with \"Read the values from the FITS header\". With " +
+         "<b>Unknown</b>, a guide camera in the header (GUIDECAM, written by the ASIAIR) counts as \"guided, " +
+         "method unknown\" - shown beside the field.</p>";
+      this.updateGuidingSource = function() {
+         let values = (d.view && d.view.id.length > 0) ? viewKeywordValues(d.view) : {};
+         let g = effectiveGuiding(d.guidingCombo.currentItem, values);
+         d.guidingSourceLabel.text = (d.guidingCombo.currentItem === GUIDING_UNKNOWN && g.type !== GUIDING_UNKNOWN) ?
+            GUIDING_TYPES[g.type] + ", from " + g.source : "";
+      };
+      this.guidingCombo.onItemSelected = function() {
+         d.updateGuidingSource();
+         d.updateAssessment();
+      };
 
       this.pixelPitchLabel = fieldLabel("Pixel pitch (µm):");
       this.pixelPitchSpin = new NumericEdit(this);
@@ -4149,14 +7842,18 @@ class StarAberrationDialog extends Dialog {
          "<p>Physical pixel size of the sensor in micrometers (e.g. 4.31 for a Canon EOS 550D). " +
          "0 = not specified, the tilt angle computation is then skipped. Always enter the " +
          "physical sensor pitch - with SuperPixel debayering the script automatically uses " +
-         "twice this value (one output pixel = 2x2 sensor pixels).</p>";
+         "twice this value (one output pixel = 2x2 sensor pixels).</p>" +
+         "<p>Grayed: \"Read the values from the FITS header\" is checked - the value comes from the header of " +
+         "the target image (XPIXSZ), 0 when it has none or there is no image. Uncheck it to enter your own " +
+         "value, which is saved.</p>";
 
       this.focalLengthLabel = fieldLabel("Focal length (mm):");
       this.focalLengthSpin = new NumericEdit(this);
       this.focalLengthSpin.setRange(0, 10000);
       this.focalLengthSpin.setValue(parameters.focalLengthMm);
       this.focalLengthSpin.setPrecision(0);
-      this.focalLengthSpin.toolTip = "<p>Focal length of the telescope in mm (e.g. 750 for a Skywatcher 150P).</p>";
+      this.focalLengthSpin.toolTip = "<p>Focal length of the telescope in mm (e.g. 750 for a Skywatcher 150P).</p>" +
+         "<p>Grayed: from the FITS header of the target image (FOCALLEN), 0 when it has none.</p>";
 
       this.apertureLabel = fieldLabel("Aperture (mm):");
       this.apertureSpin = new NumericEdit(this);
@@ -4165,7 +7862,8 @@ class StarAberrationDialog extends Dialog {
       this.apertureSpin.setPrecision(0);
       this.apertureSpin.toolTip =
          "<p>Aperture of the telescope in mm (e.g. 150 for a Skywatcher 150P). " +
-         "Together with the focal length, this gives the f-number (focal length/aperture).</p>";
+         "Together with the focal length, this gives the f-number (focal length/aperture).</p>" +
+         "<p>Grayed: from the FITS header of the target image (APTDIA, or FOCALLEN/FOCRATIO), 0 when it has none.</p>";
 
       // The optical system decides the wording of the assessment where the
       // direction of a correction depends on it (see assessImage()).
@@ -4175,28 +7873,67 @@ class StarAberrationDialog extends Dialog {
          this.opticsTypeCombo.addItem(OPTICS_TYPES[i]);
       this.opticsTypeCombo.currentItem = Math.range(parameters.opticsType, 0, OPTICS_TYPES.length - 1);
       this.opticsTypeCombo.toolTip =
-         "<p>The optical system, for the suggestions of the Assessment page. An uncorrected system " +
-         "(e.g. a bare Newtonian) shows coma and field curvature by design; with a coma corrector, " +
-         "field flattener or reducer, the same patterns point to its spacing. With Unknown, the " +
-         "suggestions name both cases.</p>";
+         "<p>The optical system, for the suggestions of the Assessment page. A bare Newtonian shows " +
+         "coma and field curvature by design; with a coma corrector, field flattener or reducer, the " +
+         "same patterns point to its spacing. A refractor has hardly any coma: without a flattener, " +
+         "field curvature and astigmatism at the edge are expected, and its lens is collimated at the " +
+         "factory. In a color or broadband frame, a refractor's lateral color elongates the edge stars " +
+         "radially like under-correction. With Unknown, the suggestions name both cases.</p>" +
+         "<p>SCT, Maksutov and RASA focus by moving the primary mirror (mirror flop). A classic SCT has " +
+         "coma and a curved field by design; a Maksutov or SCT at f/10-f/15 is seeing-limited with a deep " +
+         "focus zone, so small differences across the field are uncertain. An aplanatic SCT (EdgeHD), a " +
+         "RASA and an astrograph with built-in flattener are meant to be flat: curvature and coma point " +
+         "to the back focus. A RASA at f/2 reacts to a few micrometers of tilt.</p>";
 
-      // Fill the optics fields from the selected image's FITS header (only
-      // the values actually found; the others keep what the user entered).
+      // The optics fields have two modes, kept apart:
+      //  - "Read the values from the FITS header" checked: they show the
+      //    values of the target image's header, read-only (grayed); a value
+      //    the header does not give - or all three without an image - is 0,
+      //    not set. Nothing is saved from them.
+      //  - unchecked: they take the user's own values, which are saved
+      //    (manualOptics) and used for every image.
+      this.manualOptics = { pixelPitchUm: parameters.pixelPitchUm, focalLengthMm: parameters.focalLengthMm,
+                            apertureMm: parameters.apertureMm };
+      this.opticsFromHeaderFields = { pixelPitchUm: false, focalLengthMm: false, apertureMm: false };
+      this.opticsFields = [["pixelPitchUm", this.pixelPitchSpin], ["focalLengthMm", this.focalLengthSpin],
+                           ["apertureMm", this.apertureSpin]];
       this.applyHeaderOptics = function() {
-         if (!d.opticsFromHeaderCheck.checked || !d.view || d.view.id.length === 0)
-            return;
-         let hdr = readOpticsFromHeader(d.view);
-         if (hdr.pixelPitchUm > 0) d.pixelPitchSpin.setValue(hdr.pixelPitchUm);
-         if (hdr.focalLengthMm > 0) d.focalLengthSpin.setValue(hdr.focalLengthMm);
-         if (hdr.apertureMm > 0) d.apertureSpin.setValue(hdr.apertureMm);
+         let fromHeader = d.opticsFromHeaderCheck.checked;
+         let haveView = d.view && d.view.id.length > 0;
+         let hdr = (fromHeader && haveView) ? readOpticsFromHeader(d.view) : null;
+         if (fromHeader) {
+            let est = haveView ? estimateMount(viewKeywordValues(d.view)) : { type: MOUNT_UNKNOWN, source: "" };
+            d.mountCombo.currentItem = est.type;
+            d.mountSourceLabel.text = est.source ? "from " + est.source : (haveView ? "not in the header" : "");
+         } else {
+            d.mountCombo.currentItem = d.manualMount;
+            d.mountSourceLabel.text = "";
+         }
+         d.mountCombo.enabled = !fromHeader;
+         d.updateGuidingSource();
+         d.opticsFields.forEach(function(f) {
+            d.opticsFromHeaderFields[f[0]] = fromHeader;
+            f[1].setValue(fromHeader ? (hdr !== null && hdr[f[0]] > 0 ? hdr[f[0]] : 0) : d.manualOptics[f[0]]);
+            f[1].enabled = !fromHeader;
+         });
       };
+      // An entry of the user's (the fields are only editable then).
+      this.opticsFields.forEach(function(f) {
+         f[1].onValueUpdated = function(value) {
+            if (!d.opticsFromHeaderFields[f[0]])
+               d.manualOptics[f[0]] = value;
+            d.updateControls();
+            d.refreshPreview();
+         };
+      });
       this.opticsFromHeaderCheck.onCheck = function(checked) {
-         if (checked)
-            d.applyHeaderOptics();
+         d.applyHeaderOptics();
+         d.updateCamera();
          d.updateControls();
          d.refreshPreview();
       };
       this.applyHeaderOptics();
+      this.updateCamera();
 
       this.tiltPlot3DCheck = new CheckBox(this);
       this.tiltPlot3DCheck.text = "3D sensor tilt plot";
@@ -4204,8 +7941,9 @@ class StarAberrationDialog extends Dialog {
       this.tiltPlot3DCheck.toolTip =
          "<p>Opens a separate window with an isometric 2D graphic (PJSR has no true 3D): " +
          "a flat reference plane next to the tilted plane computed from the Δz values. " +
-         "Created by Apply, not by Preview. Disabled until pixel pitch, focal length and " +
-         "aperture are set.</p>";
+         "Created by Save (and per frame by a series). It needs pixel pitch, focal length and aperture - " +
+         "from the image's FITS header or the fields above: an image without them is skipped with a " +
+         "console note.</p>";
 
       // ---- Coma ----------------------------------------------------------
 
@@ -4233,8 +7971,10 @@ class StarAberrationDialog extends Dialog {
          "tilted corrector. Requires \"Measure PSF asymmetry\".</p>";
 
       this.comaStreamlineRadiusLabel = fieldLabel("Smoothing radius (%):");
-      this.comaStreamlineRadiusSpin = new NumericEdit(this);
+      this.comaStreamlineRadiusSpin = new NumericControl(this);
       this.comaStreamlineRadiusSpin.setRange(5, 60);
+      this.comaStreamlineRadiusSpin.slider.setRange(0, 110); // steps of 0.5
+      this.comaStreamlineRadiusSpin.slider.setScaledMinWidth(200);
       this.comaStreamlineRadiusSpin.setValue(parameters.comaStreamlineRadiusPercent);
       this.comaStreamlineRadiusSpin.setPrecision(1);
       this.comaStreamlineRadiusSpin.toolTip =
@@ -4289,33 +8029,37 @@ class StarAberrationDialog extends Dialog {
 
       // Export CSV
       this.exportCheck = new CheckBox(this);
-      this.exportCheck.text = "Export data table as CSV (system temp directory)";
+      this.exportCheck.text = "Export data table as CSV";
       this.exportCheck.checked = parameters.doExport;
-
-      // Debug
-      this.debugCheck = new CheckBox(this);
-      this.debugCheck.text = "Print raw data of the first PSF row to the console (debug)";
-      this.debugCheck.checked = parameters.debug;
+      this.exportCheck.toolTip =
+         "<p>Save: <i>name</i>_aberration.csv next to the original file (the temporary directory for an " +
+         "image that was never saved). Analyze series: StarAberrationSeries.csv in the directory of the " +
+         "frames. Existing files are replaced.</p>";
 
       // Options that only take effect together with another one are
       // disabled while that one is off (their values are kept).
       this.updateControls = function() {
-         // Only a single-channel image can be a Bayer mosaic.
-         d.debayerCheck.enabled = !d.isColorTarget();
+         // Only a single-channel image can be a Bayer mosaic. The frames of
+         // the Series tab are files of their own, so with frames in the list
+         // the option stays available whatever the target image is.
+         d.debayerCheck.enabled = !d.isColorTarget() || (d.seriesFrames !== undefined && d.seriesFrames.length > 0);
          let debayer = d.debayerCheck.enabled && d.debayerCheck.checked;
          d.bayerPatternLabel.enabled = debayer;
          d.bayerPatternCombo.enabled = debayer;
          d.closeWindowsCheck.enabled = debayer;
 
+         let sd = d.sdCustomCheck.checked;
+         [d.sdLayersLabel, d.sdLayersSpin, d.sdSensitivityLabel, d.sdSensitivitySpin,
+          d.sdPeakResponseLabel, d.sdPeakResponseSpin, d.sdMaxDistortionLabel,
+          d.sdMaxDistortionSpin, d.sdClusteredCheck].forEach(function(c) { c.enabled = sd; });
+
          d.streamlineRadiusLabel.enabled = d.streamlinesCheck.checked;
          d.streamlineRadiusSpin.enabled = d.streamlinesCheck.checked;
+         d.shapeSignificantOnlyCheck.enabled = d.streamlinesCheck.checked;
+         d.shapeModelSignificantOnlyCheck.enabled = d.shapeShowModelCheck.checked;
          d.orientationHeatmapDegreeLabel.enabled = d.orientationHeatmapCheck.checked;
          d.orientationHeatmapDegreeSpin.enabled = d.orientationHeatmapCheck.checked;
 
-         let tilt = d.sirilTiltCheck.checked;
-         d.fwhmGridCheck.enabled = tilt;
-         d.fwhmGridArcsecCheck.enabled = tilt && d.fwhmGridCheck.checked;
-         d.tiltAxisCheck.enabled = tilt;
 
          let asym = d.measureAsymmetryCheck.checked;
          let comaLines = asym && d.comaStreamlinesCheck.checked;
@@ -4331,10 +8075,9 @@ class StarAberrationDialog extends Dialog {
          d.starAsymMinSpin.enabled = starArrows;
          d.starAsymColorCheck.enabled = starArrows;
 
-         // The 3D plot needs all three optics values (filled in from the
-         // FITS header when that option is set).
-         d.tiltPlot3DCheck.enabled = d.pixelPitchSpin.value > 0 && d.focalLengthSpin.value > 0 &&
-            d.apertureSpin.value > 0;
+         // The 3D plot stays selectable whatever the optics fields show: with
+         // "Read the values from the FITS header" the values come per image,
+         // and an image without them skips the plot with a console note.
       };
 
       this.isColorTarget = function() {
@@ -4350,23 +8093,35 @@ class StarAberrationDialog extends Dialog {
             useMoffat: d.moffatCheck.checked,
             vectorScale: d.scaleSpin.value,
             doExport: d.exportCheck.checked,
-            debug: d.debugCheck.checked,
             debayer: d.debayerCheck.checked, // kept for mono images; analyzeView() skips it for color ones
             bayerPattern: d.bayerPatternItems[d.bayerPatternCombo.currentItem],
             closeIntermediateWindows: d.closeWindowsCheck.checked,
             madOutlierFactor: d.madSpin.value,
             maxCandidates: d.maxCandSpin.value,
-            showSirilTilt: d.sirilTiltCheck.checked,
+            sdCustom: d.sdCustomCheck.checked,
+            sdStructureLayers: d.sdLayersSpin.value,
+            sdSensitivity: d.sdSensitivitySpin.value,
+            sdPeakResponse: d.sdPeakResponseSpin.value,
+            sdMaxDistortion: d.sdMaxDistortionSpin.value,
+            sdAllowClustered: d.sdClusteredCheck.checked,
             showStreamlines: d.streamlinesCheck.checked,
+            shapeSignificantOnly: d.shapeSignificantOnlyCheck.checked,
+            shapeShowCells: d.shapeShowCellsCheck.checked,
+            shapeShowModel: d.shapeShowModelCheck.checked,
+            shapeModelSignificantOnly: d.shapeModelSignificantOnlyCheck.checked,
+            shapeShowMatch: d.shapeShowMatchCheck.checked,
+            shapeShowDefects: d.shapeShowDefectsCheck.checked,
             streamlineRadiusPercent: d.streamlineRadiusSpin.value,
-            pixelPitchUm: d.pixelPitchSpin.value,
-            focalLengthMm: d.focalLengthSpin.value,
-            apertureMm: d.apertureSpin.value,
+            // The user's own values (header values are read again per image,
+            // see resolveOptics()).
+            pixelPitchUm: d.manualOptics.pixelPitchUm,
+            focalLengthMm: d.manualOptics.focalLengthMm,
+            apertureMm: d.manualOptics.apertureMm,
             show3DTiltPlot: d.tiltPlot3DCheck.checked,
             showOrientationHeatmap: d.orientationHeatmapCheck.checked,
             orientationHeatmapDegree: d.orientationHeatmapDegreeSpin.value,
-            showFwhmGrid: d.fwhmGridCheck.checked,
-            fwhmGridArcsec: d.fwhmGridArcsecCheck.checked,
+            fwhmGridDetails: d.fwhmGridDetailsCheck.checked,
+            fwhmCellValue: d.fwhmCellValue(),
             opticsFromHeader: d.opticsFromHeaderCheck.checked,
             showStarAsymArrows: d.starAsymArrowsCheck.checked,
             starAsymMinSigma: d.starAsymMinSpin.value,
@@ -4379,7 +8134,16 @@ class StarAberrationDialog extends Dialog {
             comaStreamlineRadiusPercent: d.comaStreamlineRadiusSpin.value,
             comaStreamlineMinPercent: d.comaStreamlineMinSpin.value,
             showComaArrows: d.comaArrowsCheck.checked,
-            opticsType: d.opticsTypeCombo.currentItem
+            opticsType: d.opticsTypeCombo.currentItem,
+            mountType: d.manualMount,
+            guidingType: d.guidingCombo.currentItem,
+            aiSendMap: d.aiSendMapCheck.checked,
+            aiLanguage: d.aiLanguageEdit.text,
+            seriesShowMaps: d.seriesShowMapsCheck.checked,
+            aiDetail: d.aiDetailCombo.currentItem,
+            seriesSaveMaps: d.seriesSaveMapsCheck.checked,
+            seriesSaveMosaic: d.seriesSaveMosaicCheck.checked,
+            aiSaveLog: d.aiSaveLogCheck.checked
          };
       };
 
@@ -4391,14 +8155,35 @@ class StarAberrationDialog extends Dialog {
       };
       [this.debayerCheck, this.closeWindowsCheck, this.moffatCheck, this.showEllipsesCheck,
        this.subtractTrackingCheck, this.streamlinesCheck, this.orientationHeatmapCheck,
-       this.sirilTiltCheck, this.fwhmGridCheck, this.fwhmGridArcsecCheck, this.tiltAxisCheck,
+       this.fwhmGridDetailsCheck, this.tiltAxisCheck,
        this.tiltPlot3DCheck, this.measureAsymmetryCheck, this.comaStreamlinesCheck,
        this.comaArrowsCheck, this.starAsymArrowsCheck, this.starAsymColorCheck,
-       this.exportCheck, this.debugCheck].forEach(function(c) { c.onCheck = settingChanged; });
-      [this.thresholdSpin, this.radiusSpin, this.maxCandSpin, this.madSpin, this.scaleSpin,
-       this.streamlineRadiusSpin, this.orientationHeatmapDegreeSpin, this.pixelPitchSpin,
-       this.focalLengthSpin, this.apertureSpin, this.comaStreamlineRadiusSpin,
+       this.exportCheck, this.sdCustomCheck, this.shapeSignificantOnlyCheck, this.shapeShowCellsCheck,
+       this.shapeShowModelCheck, this.shapeModelSignificantOnlyCheck, this.shapeShowMatchCheck,
+       this.shapeShowDefectsCheck,
+       this.sdClusteredCheck].forEach(function(c) { c.onCheck = settingChanged; });
+      // A radio button reports both the one switched off and the one switched
+      // on: redraw once, for the new one.
+      [this.fwhmPxRadio, this.fwhmArcsecRadio, this.fwhmRatioRadio].forEach(function(c) {
+         c.onCheck = function(checked) { if (checked) settingChanged(); };
+      });
+      [this.thresholdSpin, this.radiusSpin, this.maxCandSpin, this.madSpin,
+       this.sdLayersSpin, this.sdSensitivitySpin, this.sdPeakResponseSpin, this.sdMaxDistortionSpin,
+       this.orientationHeatmapDegreeSpin,
        this.comaStreamlineMinSpin, this.starAsymMinSpin].forEach(function(c) { c.onValueUpdated = settingChanged; });
+      // A slider reports every step while it is dragged: redraw once it has
+      // rested for a moment, not for every step (the streamlines are
+      // computed anew for every radius).
+      this.sliderTimer = new Timer;
+      this.sliderTimer.interval = 0.3; // s
+      this.sliderTimer.singleShot = true;
+      this.sliderTimer.onTimeout = function() { settingChanged(); };
+      [this.scaleSpin, this.streamlineRadiusSpin, this.comaStreamlineRadiusSpin].forEach(function(c) {
+         c.onValueUpdated = function() {
+            d.sliderTimer.stop();
+            d.sliderTimer.start();
+         };
+      });
       this.bayerPatternCombo.onItemSelected = settingChanged;
       this.opticsTypeCombo.onItemSelected = settingChanged;
 
@@ -4439,28 +8224,54 @@ class StarAberrationDialog extends Dialog {
          return (d.analysis && d.analysis.key === analysisKey(d.view, p)) ? d.analysis : null;
       };
 
+      // The map shown in the preview: that of the selected map page, or the
+      // last one while another page is selected.
+      this.mapView = "size";
+
+      // The maps and their evaluations show the analysis of the chosen
+      // source (Maps tab): the target image (Calculate, index 0), or the
+      // static result of a series (pass 2, buildStaticSeries()).
+      this.seriesStatic = [];
+      this.mapSource = 0;
+      this.currentAnalysis = function() {
+         return d.mapSource === 0 ? d.analysis : (d.seriesStatic[d.mapSource - 1] || {}).analysis || null;
+      };
+      // A series analysis carries the optics of its frames; the target
+      // image's come from its header or the dialog, those of loaded results
+      // from their saved header or the dialog.
+      this.opticsFor = function(analysis, p) {
+         return analysis.optics ? analysis.optics :
+            resolveOptics(analysis.source || d.view, p, analysis.debayer, false);
+      };
+
       this.showMap = function(bmp) {
          d.previewStale = false;
-         d.setPreviewBitmap(bmp, "Preview of <i>" + d.analysis.targetViewId + "</i>");
+         d.setPreviewBitmap(bmp, "Preview of <i>" + d.currentAnalysis().targetViewId + "</i> - " +
+            mapViewByKey(d.mapView).label);
       };
 
       // Redraws the vector map in the preview from the kept analysis, or
       // marks it as outdated when the detection settings have changed.
       this.refreshPreview = function() {
-         if (!d.analysis)
+         let an = d.currentAnalysis();
+         if (!an)
             return;
          let p = d.collectParameters();
-         if (d.keptAnalysis(p) === null) {
+         // A series result was measured with the settings of its run, loaded
+         // results with those of their file; only the target image's
+         // analysis goes stale.
+         if (an === d.analysis && !an.source && d.keptAnalysis(p) === null) {
             if (!d.previewStale) {
                d.previewStale = true;
-               d.preview.setStatusMessage("<b>Detection settings changed</b> - click Preview to update the map");
+               d.preview.setStatusMessage("<b>Detection settings changed</b> - click Calculate to update the map");
             }
             return;
          }
-         DEBUG_DUMP_RAW = p.debug;
-         let optics = resolveOptics(d.view, p, d.analysis.debayer, false);
-         d.showMap(renderVectorMap(d.analysis, p, optics, false));
+         d.showMap(renderVectorMap(an, p, d.opticsFor(an, p), false, d.mapView));
          d.updateAssessment();
+         d.updateGridEvaluation();
+         d.updateShapeEvaluation();
+         d.updateTiltEvaluation();
       };
 
       // The Assessment page: the assessment of the kept analysis with the
@@ -4471,13 +8282,656 @@ class StarAberrationDialog extends Dialog {
       this.assessmentBox.setScaledMinSize(300, 200);
       this.updateAssessment = function() {
          if (!d.analysis) {
-            d.assessmentBox.text = "<i>Click Preview to assess the image.</i>";
+            d.assessmentBox.text = "<i>Click Calculate to assess the image.</i>";
             return;
          }
          let p = d.collectParameters();
-         let optics = resolveOptics(d.view, p, d.analysis.debayer, false);
+         let optics = d.opticsFor(d.analysis, p);
          let report = reportAnalysis(d.analysis, starsFor(d.analysis, p.subtractTracking), p, optics, SILENT_CONSOLE);
          d.assessmentBox.text = formatAssessment(assessImage(report.metrics, p.opticsType));
+      };
+
+      // The AI review on the same page: a second opinion from Claude on the
+      // measured values and the script assessment (see requestAiReview()).
+      // It is asked only on request, and cleared with every new analysis.
+      this.aiKeyLabel = fieldLabel("API key:");
+      this.aiKeyEdit = new Edit(this);
+      this.aiKeyEdit.passwordMode = true;
+      this.aiKeyEdit.setScaledMinWidth(160);
+      this.aiKeyEdit.toolTip =
+         "<p>Your Anthropic API key (console.anthropic.com). The environment variable ANTHROPIC_API_KEY takes " +
+         "precedence when it is set.</p>" +
+         "<p>A key entered here is stored unencrypted in PixInsight's settings, but never in a process icon. " +
+         "Clear the field to remove it.</p>";
+      this.aiKeyEdit.onEditCompleted = function() {
+         aiStoreApiKey(d.aiKeyEdit.text);
+         d.updateAiKeyInfo();
+      };
+      this.updateAiKeyInfo = function() {
+         let k = aiApiKey();
+         d.aiKeyEdit.enabled = !(k && k.source === "environment");
+         if (k && k.source === "environment") {
+            d.aiKeyEdit.text = "";
+            d.aiKeyEdit.toolTip = "<p>Using the environment variable ANTHROPIC_API_KEY.</p>";
+         } else if (k) {
+            d.aiKeyEdit.text = k.key;
+         }
+      };
+
+      this.aiLanguageLabel = fieldLabel("Answer language:");
+      this.aiLanguageEdit = new Edit(this);
+      this.aiLanguageEdit.text = parameters.aiLanguage;
+      this.aiLanguageEdit.setScaledMinWidth(160);
+      this.aiLanguageEdit.toolTip = "<p>The language of the AI review, e.g. English or Deutsch.</p>";
+
+      this.aiDetailLabel = fieldLabel("Explanation:");
+      this.aiDetailCombo = new ComboBox(this);
+      for (let i = 0; i < AI_DETAIL_LEVELS.length; ++i)
+         this.aiDetailCombo.addItem(AI_DETAIL_LEVELS[i]);
+      this.aiDetailCombo.currentItem = Math.range(parameters.aiDetail, 0, AI_DETAIL_LEVELS.length - 1);
+      this.aiDetailCombo.toolTip =
+         "<p><b>Step by step</b>: for up to 6 findings that need attention, the measured values and what " +
+         "they mean, what the stars look like, the derivation of the cause, at most two other causes, what " +
+         "to do and how to check it - each in at most two sentences, terms explained briefly (about 700 " +
+         "words).</p>" +
+         "<p><b>Short</b>: up to 5 findings, at most 25 words per field (about 300 words) - faster and " +
+         "cheaper.</p>";
+
+      this.aiSendMapCheck = new CheckBox(this);
+      this.aiSendMapCheck.text = "Attach the maps";
+      this.aiSendMapCheck.checked = parameters.aiSendMap;
+      this.aiSendMapCheck.toolTip =
+         "<p>Sends the maps Star size, Star shape and Coma with their current layers as images (at most " +
+         AI_MAP_MAX_SIDE + " px each), so " +
+         "that Claude can see the patterns as well as the numbers. Without it, only the measured values and the " +
+         "assessment are sent.</p>";
+
+      this.aiSaveLogCheck = new CheckBox(this);
+      this.aiSaveLogCheck.text = "Save requests and answers";
+      this.aiSaveLogCheck.checked = parameters.aiSaveLog;
+      this.aiSaveLogCheck.toolTip =
+         "<p>Saves every request and its answer as a text file StarAberrationAI_<i>date</i>_<i>time</i>.txt: " +
+         "a header with the date and the analyzed files, the request as sent (the maps only as " +
+         "placeholders) and the answer, readable and as JSON. Failed requests are saved with the error.</p>" +
+         "<p>The file goes next to the series frames, else next to the target image, else to the temporary " +
+         "directory. The API key is never written.</p>";
+
+      this.aiBox = new TextBox(this);
+      this.aiBox.readOnly = true;
+      this.aiBox.setScaledMinSize(300, 150);
+      // The AI review is shown on the left of the Assessment tab and of the
+      // Series tab: one text in two boxes (a control has one place only).
+      this.seriesAiBox = new TextBox(this);
+      this.seriesAiBox.readOnly = true;
+      this.seriesAiBox.setScaledMinSize(300, 150);
+      this.setAiText = function(text) {
+         d.aiBox.text = text;
+         d.seriesAiBox.text = text;
+      };
+      this.clearAiReview = function() {
+         d.setAiText("<i>Click Ask Claude for a second opinion on the assessment of a Calculate, on the " +
+            "comparison of the Series tab, or both.</i>");
+         d.setAiPending(null);
+      };
+      // The last answer when it was cut off at the token limit, with what is
+      // needed to continue it: { review, message, ctx }; else null.
+      this.aiPending = null;
+      this.setAiPending = function(pending) {
+         d.aiPending = pending;
+         if (d.aiContinueButton)
+            d.aiContinueButton.enabled = pending !== null;
+      };
+      this.clearAiReview();
+
+      this.aiButton = new PushButton(this);
+      this.aiButton.text = "Ask Claude";
+      this.aiButton.toolTip =
+         "<p>Sends the measured values of the kept analysis (Calculate), the script assessment and optionally the " +
+         "three maps, and the comparison of the Series tab if there is one, to Claude (" + AI_MODEL + ", " +
+         "Anthropic API) and shows its review on the AI review tab left: which explanation fits all values, where the rules are " +
+         "too strict or too lenient, and what to do in which order. Either a Calculate or a series is enough.</p>" +
+         "<p>Needs an API key and an internet connection; each request is billed to the key (typically a few " +
+         "cents) and can take a minute. No image data other than the attached maps leaves the computer.</p>";
+      // Asks Claude about what there is: the kept analysis of a Preview (if
+      // current) and the series comparison (if any), at least one of them.
+      this.askClaude = function() {
+         let haveSingle = d.analysis !== null && !d.previewStale;
+         let haveSeries = d.seriesResult !== null && d.seriesResult.measured > 0;
+         if (!haveSingle && !haveSeries) {
+            (new MessageBox("Click Calculate, or Analyze series on the Series tab, first: the review needs a " +
+               "current analysis.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
+            return false;
+         }
+         let k = aiApiKey();
+         if (k === null) {
+            (new MessageBox("Enter an Anthropic API key first (Assessment tab), or set the environment variable " +
+               "ANTHROPIC_API_KEY.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
+            return false;
+         }
+         let p = d.collectParameters();
+         parameters.assign(p);
+         parameters.SaveSettings();
+         d.setAiText("<i>Waiting for Claude's answer - this can take a minute ...</i>");
+         d.showAiReviewTab();
+         let ctx = { p: p, haveSingle: haveSingle, haveSeries: haveSeries, message: null };
+         d.setAiPending(null);
+         let review = d.runBusy(function() {
+            try {
+               let single = null, maps = null;
+               if (haveSingle) {
+                  let optics = d.opticsFor(d.analysis, p);
+                  let stars = starsFor(d.analysis, p.subtractTracking);
+                  let report = reportAnalysis(d.analysis, stars, p, optics, SILENT_CONSOLE);
+                  single = { analysis: d.analysis, stars: stars, metrics: report.metrics, optics: optics,
+                             assessment: assessImage(report.metrics, p.opticsType) };
+                  if (p.aiSendMap)
+                     maps = MAP_VIEWS.filter(function(v) { return v.ai; }).map(function(v) {
+                        return { label: v.label, bitmap: renderVectorMap(d.analysis, p, optics, false, v.key) };
+                     });
+               }
+               let series = haveSeries ? { frames: d.seriesFrames, result: d.seriesResult } : null;
+               ctx.message = buildAiMessage(p, single, series, maps);
+               return requestAiReview(k.key, ctx.message);
+            } catch (x) {
+               return { error: x.message || String(x) };
+            }
+         });
+         d.showAiReview(review, ctx);
+         return true;
+      };
+      // Continues an answer cut off at the token limit (see
+      // requestAiReview()); the joined answer replaces the cut-off one.
+      this.continueClaude = function() {
+         let pending = d.aiPending;
+         if (pending === null)
+            return false;
+         let k = aiApiKey();
+         if (k === null) {
+            (new MessageBox("Enter an Anthropic API key first (Assessment tab), or set the environment variable " +
+               "ANTHROPIC_API_KEY.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
+            return false;
+         }
+         d.setAiText("<i>Waiting for the rest of Claude's answer - this can take a minute ...</i>");
+         d.showAiReviewTab();
+         d.aiContinueButton.enabled = false;
+         let review = d.runBusy(function() {
+            try {
+               return requestAiReview(k.key, pending.message, pending.review);
+            } catch (x) {
+               return { error: x.message || String(x) };
+            }
+         });
+         if (review.error) {
+            // The cut-off answer stays, so that Continue can be tried again.
+            d.setAiText("<b>Continuing the AI review failed:</b> <raw>" + review.error + "</raw><br><br>" +
+               formatAiReview(pending.review));
+            Console.criticalln("Continuing the AI review failed: " + review.error);
+            d.aiContinueButton.enabled = true;
+            return true;
+         }
+         d.showAiReview(review, pending.ctx);
+         return true;
+      };
+      // Shows an answer (or error), saves it if wanted, and enables Continue
+      // when the answer was cut off. ctx: { p, haveSingle, haveSeries,
+      // message } of the request.
+      this.showAiReview = function(review, ctx) {
+         let p = ctx.p;
+         let log = { timeMs: Date.now(), files: [], settings: [], message: ctx.message,
+                     review: review.error ? null : review, error: review.error || null };
+
+         // The request and the answer as a text file (also when it failed,
+         // as long as a request was made).
+         if (p.aiSaveLog && log.message) {
+            let targetPath = "";
+            try {
+               targetPath = ctx.haveSingle ? d.view.window.filePath : "";
+            } catch (x) {
+            }
+            if (ctx.haveSingle)
+               log.files.push({ label: "Single frame (Calculate):",
+                                path: targetPath.length > 0 ? targetPath : d.view.id + " (not saved to a file)" });
+            if (ctx.haveSeries) {
+               log.files.push({ label: format("Series (%d frames, side, file):", d.seriesFrames.length), path: "" });
+               d.seriesFrames.forEach(function(f) {
+                  log.files.push({ label: "   " + (f.side + "     ").slice(0, 6), path: f.path +
+                     (f.metrics ? "" : "  (not measured" + (f.error ? ": " + f.error : "") + ")") });
+               });
+            }
+            log.settings.push("Settings: optics type " + OPTICS_TYPES[p.opticsType] + "; explanation " +
+               AI_DETAIL_LEVELS[p.aiDetail] + "; language " + p.aiLanguage + "; maps " +
+               (ctx.haveSingle && p.aiSendMap ? "attached" : "not attached"));
+            if (!review.error && review.parts > 1)
+               log.settings.push(format("Answer in %d parts: continued after the token limit was reached.",
+                  review.parts));
+            // Next to the series frames, else next to the target image, else
+            // in the temporary directory.
+            let dir = ctx.haveSeries ?
+               File.extractDrive(d.seriesFrames[0].path) + File.extractDirectory(d.seriesFrames[0].path) :
+               targetPath.length > 0 ? File.extractDrive(targetPath) + File.extractDirectory(targetPath) :
+               File.systemTempDirectory;
+            try {
+               let path = saveAiLog(dir, log);
+               Console.noteln("AI request and answer saved to: " + path);
+            } catch (x) {
+               Console.warningln("Cannot save the AI request and answer: " + (x.message || x));
+            }
+         }
+
+         if (review.error) {
+            d.setAiText("<b>The AI review failed:</b> <raw>" + review.error + "</raw>");
+            Console.criticalln("AI review failed: " + review.error);
+            return;
+         }
+         d.setAiText(formatAiReview(review));
+         Quiet.noteln("--- AI review (" + review.model + ") ---");
+         Quiet.writeln(formatAiReview(review));
+         d.setAiPending(review.truncated && review.rawText.trim().length > 0 ?
+            { review: review, message: ctx.message, ctx: ctx } : null);
+      };
+      this.aiButton.onClick = function() {
+         d.askClaude();
+      };
+
+      this.aiContinueButton = new PushButton(this);
+      this.aiContinueButton.text = "Continue";
+      this.aiContinueButton.enabled = false;
+      this.aiContinueButton.toolTip =
+         "<p>Only when Claude's answer was cut off at the token limit: asks Claude for the rest of the answer " +
+         "and shows the joined answer. Billed like a new request (the request and the answer so far are sent " +
+         "again).</p>";
+      this.aiContinueButton.onClick = function() {
+         d.continueClaude();
+      };
+
+      // ---- Series (Series page) ------------------------------------------
+
+      // Light frames before and after a meridian flip (see measureSeries()).
+      // The list shows each frame's side as soon as it is added (from the
+      // header); Analyze series measures them with the current settings and
+      // fills in the values. A side set by hand only changes the comparison,
+      // the frames are not measured again.
+      this.seriesFrames = [];
+      this.seriesResult = null;
+
+      const SERIES_COLUMNS = ["File", "Side", "From", "HA (h)", "Alt", "Focus", "Stars", "FWHM", "Tilt",
+                              "eps_rad", "Track", "Coma k", "SIP"];
+      this.seriesTree = new TreeBox(this);
+      this.seriesTree.numberOfColumns = SERIES_COLUMNS.length;
+      this.seriesTree.headerVisible = true;
+      this.seriesTree.rootDecoration = false;
+      this.seriesTree.multipleSelection = true;
+      this.seriesTree.alternateRowColor = true;
+      for (let i = 0; i < SERIES_COLUMNS.length; ++i)
+         this.seriesTree.setHeaderText(i, SERIES_COLUMNS[i]);
+      this.seriesTree.setScaledMinSize(300, 160);
+      this.seriesTree.toolTip =
+         "<p>The light frames of the series. <b>From</b> tells where the side comes from: the PIERSIDE keyword " +
+         "(N.I.N.A., ASCOM), a camera angle that turns by 180° at the flip (ROTATOR of the ASIAIR), the hour " +
+         "angle, or manual. Frames close after the meridian may have no known side.</p>" +
+         "<p>Use unregistered, uncropped frames: the image center must be the optical axis.</p>";
+
+      this.fillSeriesTree = function() {
+         // The selection survives the rebuild (a side button acts on it).
+         let selected = d.selectedSeriesFrames();
+         d.seriesTree.clear();
+         d.seriesFrames.forEach(function(f) {
+            let node = new TreeBoxNode(d.seriesTree);
+            node.selected = selected.indexOf(f) >= 0;
+            let m = f.metrics;
+            let tilt = m ? seriesMetric("tilt").get(m) : null;
+            let cells = [
+               f.name, f.side, f.sideSource,
+               f.haH !== null ? format("%+.2f", f.haH) : "",
+               f.altDeg !== null ? format("%.0f°", f.altDeg) : "",
+               f.focusPos !== null ? format("%.0f", f.focusPos) : "",
+               m ? format("%d", m.n) : (f.error || f.headerError ? "failed" : ""),
+               m && m.surface ? format("%.2f", m.surface.fCenter) : "",
+               tilt ? format("%.0f%% %s", 100 * Math.hypot(tilt[0], tilt[1]),
+                  directionName(Math.atan2(tilt[1], tilt[0]) * 180 / Math.PI)) : "",
+               m && m.rings && m.rings.eRad !== null ? format("%+.3f", m.rings.eRad) : "",
+               m && m.tracking ? format("%.3f", m.tracking.ellipticity) : "",
+               m && m.coma ? format("%+.3f", m.coma.k) : "",
+               f.sip ? format("%.1f px", sipMaxShift(sipCornerShifts(f))) : ""
+            ];
+            for (let i = 0; i < cells.length; ++i)
+               node.setText(i, cells[i]);
+            node.setToolTip(0, f.path);
+            if (f.error || f.headerError)
+               node.setToolTip(6, f.error || f.headerError);
+         });
+         if (typeof d.seriesTree.adjustColumnWidthToContents === "function")
+            for (let i = 0; i < SERIES_COLUMNS.length; ++i)
+               d.seriesTree.adjustColumnWidthToContents(i);
+      };
+
+      // A click on a measured frame shows its map (the reduced copy kept by
+      // Analyze series); the Preview's analysis and the AI review are not
+      // affected, a Preview or a layer change draws the target's map again.
+      this.seriesTree.onNodeClicked = function(node) {
+         // The same node, or else (should PJSR hand out a new wrapper per
+         // call) the first frame with the node's file name.
+         let f = null;
+         for (let i = 0; i < d.seriesTree.numberOfChildren && f === null; ++i)
+            if (d.seriesTree.child(i) === node)
+               f = d.seriesFrames[i];
+         if (f === null && node)
+            f = d.seriesFrames.filter(function(fr) { return fr.name === node.text(0); })[0] || null;
+         if (f && f.mapBitmap && d.seriesShown)
+            d.showSeriesTab(SERIES_TAB_MAP);
+         if (f && f.mapBitmap)
+            d.setPreviewBitmap(f.mapBitmap, "Series frame <i>" + f.name + "</i> - " +
+               mapViewByKey(f.mapView).label + " (reduced)");
+      };
+
+      this.seriesShowMapsCheck = new CheckBox(this);
+      this.seriesShowMapsCheck.text = "Show each frame's map";
+      this.seriesShowMapsCheck.checked = parameters.seriesShowMaps;
+      this.seriesShowMapsCheck.toolTip =
+         "<p>Draws the map of the selected tab (Star shape, Star size or Coma) of each frame in the preview as " +
+         "soon as it is measured, and keeps a reduced copy: clicking a frame in the list shows it again. This " +
+         "takes a few seconds more per frame.</p>" +
+         "<p>Only the display changes: the analysis of Calculate, the Assessment tab and the AI review stay as " +
+         "they are (the AI review never gets the maps of the series).</p>";
+
+      this.seriesSaveMapsCheck = new CheckBox(this);
+      this.seriesSaveMapsCheck.text = "Save maps next to the frames";
+      this.seriesSaveMapsCheck.checked = parameters.seriesSaveMaps;
+      this.seriesSaveMapsCheck.toolTip =
+         "<p>Saves for each frame the images Save opens, as PNG in the frame's directory, named after " +
+         "the frame so that they sort right after it:</p>" +
+         "<p><i>name</i>_Size.png, <i>name</i>_Shape.png, <i>name</i>_Coma.png, <i>name</i>_Tilt.png - the " +
+         "four maps with the layers of their tabs<br/>" +
+         "<i>name</i>_Aberration3D.png - the 3D sensor tilt plot, when it is enabled (Setup > General) and pixel " +
+         "pitch, focal length and aperture are known</p>" +
+         "<p>After pass 2 also SeriesStatic_<i>group</i>_Size.png ... _Tilt.png in the directory of the first " +
+         "frame - the static maps of all frames and of each side.</p>" +
+         "<p>Files of an earlier run are replaced.</p>";
+
+      this.seriesSaveMosaicCheck = new CheckBox(this);
+      this.seriesSaveMosaicCheck.text = "Save a 3x3 mosaic next to the frames";
+      this.seriesSaveMosaicCheck.checked = parameters.seriesSaveMosaic;
+      this.seriesSaveMosaicCheck.toolTip =
+         "<p>Saves for each frame a mosaic as AberrationInspector draws it: the four corners, the four edge " +
+         "centers and the image center, each cropped 1:1 to 512 x 512 px of the stretched image, separated by " +
+         "gray lines.</p>" +
+         "<p><i>name</i>_Mosaic.png - PNG, in the frame's directory</p>" +
+         "<p>With Debayer enabled, the tiles come from the half-size SuperPixel image. Files of an earlier run " +
+         "are replaced.</p>";
+
+      // The maps change the estimated run time in the hints.
+      [this.seriesShowMapsCheck, this.seriesSaveMapsCheck, this.seriesSaveMosaicCheck].forEach(function(c) {
+         c.onCheck = function() {
+            if (d.seriesHintsShown)
+               d.updateSeriesHints();
+         };
+      });
+
+      this.seriesBox = new TextBox(this);
+      this.seriesBox.readOnly = true;
+      this.seriesBox.setScaledMinSize(300, 150);
+      this.clearSeriesResult = function() {
+         d.seriesResult = null;
+         d.seriesStop = null;
+         d.setSeriesStatic([]);
+         d.seriesBox.text = d.seriesFrames.length === 0 ?
+            "<i>Add unregistered light frames from before and after a meridian flip.</i>" :
+            "<i>Click Analyze series to measure the frames and compare the sides.</i>";
+         if (d.syncLeftPane)
+            d.syncLeftPane();
+      };
+      this.seriesStop = null; // { after } when Stop ended the last run (formatSeriesReport())
+      this.showSeriesResult = function() {
+         d.seriesResult = compareSeries(d.seriesFrames);
+         d.seriesResult.stop = d.seriesStop;
+         d.seriesBox.text = formatSeriesReport(d.seriesResult);
+         if (d.syncLeftPane)
+            d.syncLeftPane();
+      };
+      // The sides depend on the whole list (camera angle groups), so they
+      // are assigned again whenever it changes.
+      this.seriesChanged = function(keepResult) {
+         assignSeriesSides(d.seriesFrames);
+         if (d.seriesHintsShown)
+            d.updateSeriesHints();
+         d.updateControls();
+         d.fillSeriesTree();
+         d.updateSideButtons();
+         if (keepResult && d.seriesResult) {
+            d.showSeriesResult();
+            // The sides changed: pool them anew.
+            if (d.seriesStatic.length > 0)
+               d.setSeriesStatic(buildStaticSeries(d.seriesFrames));
+         } else {
+            d.clearSeriesResult();
+         }
+      };
+      // Takes the static results of pass 2 into the source list of the maps.
+      this.setSeriesStatic = function(list) {
+         d.seriesStatic = list;
+         if (!d.mapSourceCombo)
+            return;
+         let wasSeries = d.mapSource > 0;
+         d.fillMapSources();
+         if (wasSeries)
+            d.selectMapSource(d.mapSource);
+      };
+      this.clearSeriesResult();
+
+      this.seriesAddButton = new PushButton(this);
+      this.seriesAddButton.text = "Add files...";
+      this.seriesAddButton.onClick = function() {
+         let ofd = new OpenFileDialog;
+         ofd.caption = "Select light frames";
+         ofd.multipleSelections = true;
+         ofd.filters = [["FITS and XISF files", "*.fit", "*.fits", "*.fts", "*.xisf"], ["All files", "*"]];
+         if (!ofd.execute())
+            return;
+         let known = {};
+         d.seriesFrames.forEach(function(f) { known[f.path] = true; });
+         ofd.filePaths.forEach(function(path) {
+            if (!known[path])
+               d.seriesFrames.push(readSeriesFrame(path));
+         });
+         d.seriesFrames.sort(function(a, b) {
+            if (a.timeMs === null || b.timeMs === null)
+               return (a.timeMs === null) - (b.timeMs === null) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+            return a.timeMs - b.timeMs;
+         });
+         d.seriesChanged(false);
+      };
+
+      this.selectedSeriesFrames = function() {
+         let out = [];
+         for (let i = 0; i < d.seriesTree.numberOfChildren; ++i)
+            if (d.seriesTree.child(i).selected)
+               out.push(d.seriesFrames[i]);
+         return out;
+      };
+
+      this.seriesRemoveButton = new PushButton(this);
+      this.seriesRemoveButton.text = "Remove";
+      this.seriesRemoveButton.toolTip = "<p>Removes the selected frames from the list.</p>";
+      this.seriesRemoveButton.onClick = function() {
+         let selected = d.selectedSeriesFrames();
+         d.seriesFrames = d.seriesFrames.filter(function(f) { return selected.indexOf(f) < 0; });
+         d.seriesChanged(false);
+      };
+
+      this.seriesClearButton = new PushButton(this);
+      this.seriesClearButton.text = "Clear";
+      this.seriesClearButton.onClick = function() {
+         d.seriesFrames = [];
+         d.seriesChanged(false);
+      };
+
+      // Sets the side of the selected frames by hand (null = automatic).
+      // Checkable tool buttons, so that the side of the selection shows:
+      // see updateSideButtons().
+      let sideButton = function(text, side, tip) {
+         let button = new ToolButton(d);
+         button.text = text;
+         button.toolTip = tip;
+         button.checkable = true;
+         button.onClick = function() {
+            d.selectedSeriesFrames().forEach(function(f) { f.manualSide = side; });
+            d.seriesChanged(true);
+         };
+         return button;
+      };
+      // Checks the button of the side the selected frames share: Auto for
+      // frames without a manual side - the default of every new frame, and
+      // what Auto shows with nothing selected; none for a mixed selection.
+      this.updateSideButtons = function() {
+         let selected = d.selectedSeriesFrames();
+         let shared = selected.length === 0 ? null : selected[0].manualSide;
+         let mixed = selected.some(function(f) { return f.manualSide !== shared; });
+         d.seriesWestButton.checked = !mixed && shared === SIDE_WEST;
+         d.seriesEastButton.checked = !mixed && shared === SIDE_EAST;
+         d.seriesAutoButton.checked = !mixed && shared === null;
+      };
+      this.seriesSideLabel = new Label(this);
+      this.seriesSideLabel.text = "Side:";
+      this.seriesSideLabel.toolTip = "<p>Sets the side of the selected frames.</p>";
+      this.seriesSideLabel.textAlignment = LABEL_ALIGNMENT;
+      this.seriesWestButton = sideButton("West", SIDE_WEST,
+         "<p>Before the flip: telescope west of the pier, pointing east (as N.I.N.A. writes PIERSIDE).</p>");
+      this.seriesEastButton = sideButton("East", SIDE_EAST,
+         "<p>After the flip: telescope east of the pier, pointing west.</p>");
+      this.seriesAutoButton = sideButton("Auto", null,
+         "<p>Takes the side from the header again (PIERSIDE, camera angle or hour angle).</p>");
+
+      this.seriesTree.onNodeSelectionUpdated = function() { d.updateSideButtons(); };
+      this.updateSideButtons();
+
+      this.seriesAnalyzeButton = new PushButton(this);
+      this.seriesAnalyzeButton.text = "Analyze series";
+      this.seriesAnalyzeButton.toolTip =
+         "<p>Measures every frame with the current settings (Setup > Star detection, debayer, tracking subtraction, " +
+         "optics) and compares the sides: tilt, FWHM, edge pattern, tracking, coma strength and coma-free " +
+         "point, each judged as stable or changing at the flip, plus drifts over the session.</p>" +
+         "<p>Each frame takes about as long as a Calculate. <b>Stop</b> ends the run after the current frame; " +
+         "the frames measured so far are compared, pass 2 is skipped. The CSV export (Setup > General) writes " +
+         "one line per frame.</p>" +
+         "<p><b>Pass 2</b> then pools the stars of all frames, and of each side, after taking out each frame's " +
+         "dynamic tracking (its own uniform term less the mean) and scaling its FWHM to the median center " +
+         "FWHM: the static optics with about √n smaller errors. The maps show it at once (Maps - Show: Series " +
+         "static); the report gives the static and the dynamic tracking. Calculate stays a single pass on the " +
+         "target image - to check the settings before a series.</p>";
+      this.seriesAnalyzeButton.onClick = function() {
+         if (d.seriesFrames.length === 0) {
+            (new MessageBox("Add some light frames first.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
+            return;
+         }
+         let p = d.collectParameters();
+         parameters.assign(p);
+         parameters.SaveSettings();
+         const SERIES_MAP_KEEP_SIDE = 1600; // longer side of the kept copy of each frame's map, px
+         let onFrame = (p.seriesShowMaps || p.seriesSaveMaps || p.seriesSaveMosaic) ?
+               function(f, analysis, optics, i, report) {
+            if (p.seriesSaveMosaic) {
+               try {
+                  saveSeriesFrameMosaic(f, analysis);
+               } catch (x) {
+                  Console.warningln("Series frame " + f.name + ": " + (x.message || x));
+               }
+            }
+            if (!p.seriesShowMaps && !p.seriesSaveMaps)
+               return;
+            // Saving needs all maps, showing only the one of the selected tab.
+            Progress.step("Drawing the maps", 0.85, 1);
+            let maps = {};
+            (p.seriesSaveMaps ? MAP_VIEWS : [mapViewByKey(d.mapView)]).forEach(function(v) {
+               maps[v.key] = renderVectorMap(analysis, p, optics, false, v.key);
+            });
+            let bmp = maps[d.mapView];
+            if (p.seriesSaveMaps) {
+               try {
+                  saveSeriesFrameImages(f, maps, analysis, optics, report, p);
+               } catch (x) {
+                  Console.warningln("Series frame " + f.name + ": " + (x.message || x));
+               }
+            }
+            if (p.seriesShowMaps) {
+               let k = Math.min(1, SERIES_MAP_KEEP_SIDE / Math.max(bmp.width, bmp.height));
+               f.mapBitmap = (k < 1) ?
+                  bmp.scaledTo(Math.max(1, Math.round(bmp.width * k)), Math.max(1, Math.round(bmp.height * k))) : bmp;
+               f.mapView = d.mapView;
+               d.setPreviewBitmap(bmp, format("Series frame %d of %d: <i>%s</i> - %s", i + 1, d.seriesFrames.length,
+                  f.name, mapViewByKey(d.mapView).label));
+            }
+            d.fillSeriesTree();
+            CoreApplication.processEvents();
+         } : null;
+         // Pass 1: measure every frame. The hints give way to the preview,
+         // which shows each frame's map.
+         let seriesT0 = Date.now();
+         Console.writeln(format("Analyze series: %d frame(s)", d.seriesFrames.length));
+         d.seriesRunning = true;
+         d.syncLeftPane();
+         d.showSeriesTab(SERIES_TAB_MAP);
+         let run = d.runBusy(function() {
+            return measureSeries(d.seriesFrames, p, function() { return d.stopRequested; }, onFrame);
+         }, true);
+         d.seriesRunning = false;
+         // The time per frame of this run, for the estimate of the next one.
+         let measuredFrames = d.seriesFrames.filter(function(f) { return f.metrics !== null || f.error; }).length;
+         if (measuredFrames > 0)
+            d.frameTiming = { seconds: (Date.now() - seriesT0) / 1000 / measuredFrames, source: "series",
+                              maps: onFrame !== null };
+         d.seriesChanged(false);
+         d.seriesStop = run && run.stopped ? { after: run.after } : null;
+         d.showSeriesResult();
+         d.showSeriesTab(SERIES_TAB_REPORT);
+         d.clearAiReview();
+
+         // Pass 2: pool the frames - the static optics, the dynamic tracking.
+         // Skipped after a Stop: the pooled maps would leave frames out.
+         let staticList = d.seriesStop ? null : d.runBusy(function() {
+            Progress.step("Pass 2: pooling the frames", 0, 1);
+            let list = buildStaticSeries(d.seriesFrames);
+            if (list.length > 0 && p.seriesSaveMaps) {
+               let dir = File.extractDrive(d.seriesFrames[0].path) + File.extractDirectory(d.seriesFrames[0].path);
+               list.forEach(function(e) {
+                  MAP_VIEWS.forEach(function(v) {
+                     let path = dir + "/SeriesStatic_" + e.label.replace(/[^A-Za-z0-9]+/g, "") + v.fileSuffix;
+                     try {
+                        let bmp = renderVectorMap(e.analysis, p, e.analysis.optics, false, v.key);
+                        if (File.exists(path))
+                           File.remove(path);
+                        if (bmp.save(path) === false)
+                           throw new Error("Cannot write " + path);
+                        Console.writeln("Saved: " + path);
+                     } catch (x) {
+                        Console.warningln("Series static: " + (x.message || x));
+                     }
+                  });
+               });
+            }
+            return list;
+         });
+         if (staticList && staticList.length > 0) {
+            d.setSeriesStatic(staticList);
+            d.selectMapSource(1); // the static result of all frames: the Map tab shows it
+            d.seriesBox.text += "<br><br><b>Series static</b> (pass 2): see Maps - Show: Series static. " +
+               staticList.map(function(e) { return formatStaticSeries(e).join("<br>"); }).join("<br>");
+         }
+         Console.writeln(format("Series done in %.1f s.", (Date.now() - seriesT0) / 1000));
+         if (p.doExport) // in the directory of the (first) frame
+            exportSeriesCSV(d.seriesFrames, File.extractDrive(d.seriesFrames[0].path) +
+               File.extractDirectory(d.seriesFrames[0].path) + "/StarAberrationSeries.csv");
+      };
+
+      // The AI review of the series (with the Preview's analysis, if any);
+      // the answer appears on the Assessment page, which is shown for it.
+      this.seriesAiButton = new PushButton(this);
+      this.seriesAiButton.text = "Ask Claude";
+      this.seriesAiButton.toolTip =
+         "<p>Sends the series (values per frame and the comparison of the sides) to Claude and shows its review " +
+         "on the AI review tab on the left (as on the Assessment tab). A current analysis of Calculate is sent " +
+         "along. API key, answer language and costs: see the Assessment tab.</p>";
+      this.seriesAiButton.onClick = function() {
+         d.askClaude(); // the answer appears on the AI review tab on the left
       };
 
       this.checkTarget = function() {
@@ -4488,36 +8942,58 @@ class StarAberrationDialog extends Dialog {
       };
 
       this.previewButton = new PushButton(this);
-      this.previewButton.text = "Preview";
+      this.previewButton.text = "Calculate";
       this.previewButton.toolTip =
-         "<p>Runs the analysis with the current settings and shows the vector map in the " +
-         "preview, without opening a window, exporting the CSV file or drawing the 3D plot. " +
+         "<p>Runs the analysis with the current settings and shows a map in the preview - that of the " +
+         "selected Maps tab (Size, Shape, Coma, Tilt) - without opening a window, exporting the CSV file " +
+         "or drawing the 3D plot. Switching between these tabs switches the map at once. " +
          "The PSF asymmetry is always measured, so that the coma layers can be switched on " +
          "later.</p>" +
          "<p>After that, the layers and their settings can be changed without measuring the " +
          "stars again: the preview is redrawn at once. Only a change of the detection " +
-         "settings or the target image needs a new Preview.</p>";
+         "settings or the target image needs a new Calculate.</p>";
       this.previewButton.onClick = function() {
          if (!d.checkTarget())
             return;
          let p = d.collectParameters();
-         let result = d.runBusy(function() { return processView(d.view, p, true, d.keptAnalysis(p), d.viewBitmap); });
+         let result = d.runBusy(function() {
+            return processView(d.view, p, true, d.keptAnalysis(p), d.viewBitmap, d.mapView);
+         });
          if (result) {
             d.analysis = result.analysis;
+            if (result.measureSeconds !== null)
+               d.frameTiming = { seconds: result.measureSeconds, source: "calculate" };
+            d.mapSource = 0;
+            d.mapSourceCombo.currentItem = 0;
             d.updateTrackingInfo();
+            d.updateResultsInfo();
             d.showMap(result.bitmap);
             d.assessmentBox.text = formatAssessment(result.assessment);
+            d.updateGridEvaluation();
+            d.updateShapeEvaluation();
+            d.updateTiltEvaluation();
+            d.clearAiReview();
+            d.showMapPage();
          }
       };
 
       this.applyButton = new PushButton(this);
-      this.applyButton.text = "Apply";
-      this.applyButton.toolTip = "<p>Opens the vector map in a new window. The star measurement " +
-         "of the preview is reused when its detection settings are still current.</p>";
+      this.applyButton.text = "Save";
+      this.applyButton.toolTip = "<p>Opens the four maps in new windows: Star size, Star shape, Coma and Tilt " +
+         "(AberrationSize_…, AberrationShape_…, AberrationComa_…, AberrationTilt_…), with the 3D plot and the " +
+         "CSV export when " +
+         "enabled, and closes the dialog. The star measurement of Calculate is reused when its detection " +
+         "settings are still current.</p>";
       this.applyButton.onClick = function() {
+         let p = d.collectParameters();
+         // Loaded results: their maps, without a target image.
+         if (d.analysis && d.analysis.source) {
+            let loaded = d.analysis;
+            d.done(d.runBusy(function() { return processView(loaded.source, p, false, loaded, null); }) ? 1 : 0);
+            return;
+         }
          if (!d.checkTarget())
             return;
-         let p = d.collectParameters();
          let result = d.runBusy(function() { return processView(d.view, p, false, d.keptAnalysis(p), d.viewBitmap); });
          d.done(result ? 1 : 0);
       };
@@ -4525,6 +9001,12 @@ class StarAberrationDialog extends Dialog {
       this.cancelButton = new PushButton(this);
       this.cancelButton.text = "Cancel";
       this.cancelButton.onClick = function() {
+         // While a series runs, the button reads Stop (see runBusy()).
+         if (d.busyStoppable) {
+            d.stopRequested = true;
+            d.cancelButton.enabled = false;
+            return;
+         }
          d.done(0);
       };
 
@@ -4563,17 +9045,33 @@ class StarAberrationDialog extends Dialog {
 
       // Runs a computation with the progress bar shown. The parameters and
       // buttons are disabled meanwhile: processing events would otherwise
-      // let a second Preview start in the middle of the first.
-      this.runBusy = function(task) {
+      // let a second Preview start in the middle of the first. With
+      // stoppable, the Cancel button stays enabled as Stop and sets
+      // stopRequested, which the task has to check itself.
+      this.busyStoppable = false;
+      this.isBusy = false;
+      this.stopRequested = false;
+      this.runBusy = function(task, stoppable) {
          let controls = [d.parameters_TabBox, d.previewButton, d.applyButton, d.cancelButton,
                          d.newInstanceButton, d.preview];
+         if (stoppable)
+            controls.splice(controls.indexOf(d.cancelButton), 1);
          controls.forEach(function(c) { c.enabled = false; });
+         d.busyStoppable = !!stoppable;
+         d.isBusy = true;
+         d.stopRequested = false;
+         if (stoppable)
+            d.cancelButton.text = "Stop";
          Progress.listener = d.progressListener;
          try {
             return task();
          } finally {
             Progress.finish();
             Progress.listener = null;
+            d.busyStoppable = false;
+            d.isBusy = false;
+            d.cancelButton.text = "Cancel";
+            d.cancelButton.enabled = true;
             controls.forEach(function(c) { c.enabled = true; });
          }
       };
@@ -4695,12 +9193,17 @@ class StarAberrationDialog extends Dialog {
       // Shows a bitmap in the preview. A bitmap of the same size replaces
       // the one shown without changing zoom and position (switching layers,
       // the map of the image shown); another size is fitted into the view.
+      // Without a bitmap, the tips for the test frames take its place.
       this.setPreviewBitmap = function(bmp, status) {
          if (bmp === null) {
             d.previewFull = d.previewFitSource = null;
             d.preview.clear();
-            d.preview.forceRedraw();
+            d.showTips(true);
          } else {
+            let wasTips = d.tipsShown;
+            d.showTips(false);
+            if (wasTips)
+               d.previewFull = null; // the view had no room meanwhile: fit anew
             let sameSize = d.previewFull !== null &&
                d.previewFull.width === bmp.width && d.previewFull.height === bmp.height;
             d.previewFull = bmp;
@@ -4718,8 +9221,17 @@ class StarAberrationDialog extends Dialog {
       // Shows the target image; a kept analysis belongs to the previous one.
       this.updatePreview = function() {
          d.analysis = null;
+         d.updateResultsInfo();
+         // A new target image: the maps show it again (not a series result).
+         d.mapSource = 0;
+         if (d.mapSourceCombo)
+            d.mapSourceCombo.currentItem = 0;
          d.updateTrackingInfo();
          d.updateAssessment();
+         d.updateGridEvaluation();
+         d.updateShapeEvaluation();
+         d.updateTiltEvaluation();
+         d.clearAiReview();
          d.previewStale = false;
          let bmp = null;
          d.viewBitmap = null;
@@ -4741,52 +9253,287 @@ class StarAberrationDialog extends Dialog {
       this.tipsLabel = new Label(this);
       this.tipsLabel.wordWrapping = true;
       this.tipsLabel.useRichText = true;
+      // One heading per topic with short bullet points.
+      let tipsSection = function(title, items) {
+         return "<p style='margin-top:10px; margin-bottom:2px;'><b>" + title + "</b></p>" +
+            "<ul style='margin-top:0px; margin-left:-20px;'>" +
+            items.map(function(t) { return "<li>" + t + "</li>"; }).join("") + "</ul>";
+      };
       this.tipsLabel.text =
-         "<ul style='margin-left:-20px;'>" +
-         "<li><b>Exposure:</b> single subframes of about 10-60 s: long enough for many stars with " +
-         "good signal, short enough that seeing and tracking errors do not dominate. No saturated " +
-         "stars (they are skipped).</li>" +
-         "<li><b>Focus</b> carefully on the image center (Bahtinov mask or FWHM) and let the " +
-         "optics reach thermal equilibrium first.</li>" +
-         "<li><b>Star field:</b> rich and even up to the corners, above 45° altitude; avoid bright " +
-         "nebulae and the Milky Way's dust lanes.</li>" +
-         "<li><b>Unprocessed:</b> linear, not cropped, rotated, registered, drizzled or " +
-         "deconvolved - the image center must stay the optical axis. Raw CFA frames: enable " +
-         "Debayer.</li>" +
-         "<li><b>Filter:</b> luminance or a mono camera's broadband filter; with a color camera, " +
-         "the combined channels.</li>" +
-         "<li><b>Compare</b> several frames, and after every adjustment; a stack blurs tracking " +
-         "effects but also mixes frames with different guiding.</li>" +
-         "</ul>";
+         "<h3>Tips for the test frames</h3>" +
+         tipsSection("Exposure", [
+            "Single subframes of about 10-60 s",
+            "Long enough for many stars with good signal",
+            "Short enough that seeing and tracking errors do not dominate",
+            "No saturated stars - they are skipped"]) +
+         tipsSection("Focus", [
+            "Focus carefully on the image center (Bahtinov mask or FWHM)",
+            "Let the optics reach thermal equilibrium first"]) +
+         tipsSection("Star field", [
+            "Rich and even up to the corners",
+            "Above 45° altitude",
+            "Avoid bright nebulae and the Milky Way's dust lanes"]) +
+         tipsSection("Unprocessed", [
+            "Linear data",
+            "Not cropped, rotated, registered, drizzled or deconvolved - the image center must stay " +
+            "the optical axis",
+            "Raw CFA frames: enable Debayer"]) +
+         tipsSection("Filter", [
+            "Luminance, or a mono camera's broadband filter",
+            "Color camera: the combined channels"]) +
+         tipsSection("Compare", [
+            "Several frames, and after every adjustment",
+            "A stack blurs tracking effects, but also mixes frames with different guiding"]);
 
-      // Five pages: what all layers share (General), the star measurement
-      // (Detection), the layers of the map, and the assessment. Each layer
-      // starts with the check box that enables it - on top of its group box,
-      // or of the page for the coma layers - which in turn enables its
-      // settings (updateControls).
+      // The tips take the place of the image view while no image is shown
+      // (no target image, or the tips entry of the target list): see
+      // showTips().
+      this.tipsPane = new Control(this);
+      this.tipsPane.sizer = new VerticalSizer;
+      this.tipsPane.sizer.margin = 16;
+      this.tipsPane.sizer.add(this.tipsLabel);
+      this.tipsPane.sizer.addStretch();
+      this.tipsPane.hide();
+
+      // On the Series tab before a run, the left side shows how to use the
+      // series analysis, with the frames listed so far and an estimate of
+      // the run time (updateSeriesHints()).
+      this.frameTiming = null; // { seconds per frame, source: "calculate" | "series", maps }
+      this.seriesRunning = false;
+      this.seriesHintsLabel = new Label(this);
+      this.seriesHintsLabel.useRichText = true;
+      this.seriesHintsLabel.wordWrapping = true;
+      // The files a run writes with the current settings - the frames
+      // themselves are never changed.
+      let seriesFilesWritten = function(frames, p) {
+         let dir = frames.length > 0 ? "<i>" + File.extractDrive(frames[0].path) +
+            File.extractDirectory(frames[0].path) + "</i>" : "the directory of the first frame";
+         let items = [];
+         items.push(p.doExport ?
+            "<b>StarAberrationSeries.csv</b> - one line per frame, in " + dir :
+            "No CSV table - <i>Export data table as CSV</i> is off (Setup › General)");
+         if (p.seriesSaveMaps) {
+            items.push("Next to each frame: <b><i>name</i>_Size.png, _Shape.png, _Coma.png, _Tilt.png</b>" +
+               (p.show3DTiltPlot ? " and <b>_Aberration3D.png</b> (with pixel pitch, focal length and aperture)" :
+                  ""));
+            items.push("After pass 2, in " + dir + ": <b>SeriesStatic_all_Size.png ... _Tilt.png</b>, and the " +
+               "same per side (e.g. SeriesStatic_West_...)");
+         } else {
+            items.push("No map images - <i>Save maps next to the frames</i> is off");
+         }
+         items.push(p.seriesSaveMosaic ? "Next to each frame: <b><i>name</i>_Mosaic.png</b>" :
+            "No mosaics - <i>Save a 3x3 mosaic next to the frames</i> is off");
+         if (p.aiSaveLog)
+            items.push("Ask Claude: <b>StarAberrationAI_<i>date</i>_<i>time</i>.txt</b> in " + dir +
+               " (Assessment tab)");
+         items.push("Files of an earlier run are replaced; the frames themselves are never changed");
+         return tipsSection("Files written", items);
+      };
+      this.updateSeriesHints = function() {
+         let p = d.collectParameters();
+         d.seriesHintsLabel.text = "<h3>Series analysis: before you start</h3>" +
+            seriesHintsStatus(d.seriesFrames, d.frameTiming, p) +
+            seriesFilesWritten(d.seriesFrames, p) +
+            tipsSection("How many frames", [
+               "At least <b>3 per side</b> of the flip - with fewer, the sides are not compared",
+               "Better <b>5-10 per side</b>: the uncertainty shrinks with √n (4 frames: half, 9: a third, " +
+               "16: a quarter of a single frame's)",
+               "Beyond about 15 per side, more frames gain little"]) +
+            tipsSection("Before and after the meridian flip", [
+               "Frames from <b>both sides</b>: after the flip gravity pulls on the optical train from the " +
+               "other side",
+               "What changes with the side is mechanical - sag, play, mirror flop, focuser, a flexing guide " +
+               "scope; what stays is fixed in the optics - sensor tilt, spacing, collimation",
+               "Best the last frames before and the first after the flip: similar altitude and temperature, " +
+               "so the flip is the only change",
+               "Without a flip, the series still shows the static optics and the drift over the session"]) +
+            tipsSection("The frames", [
+               "Unregistered, uncropped light frames of one night and one optical train - the image center " +
+               "must be the optical axis",
+               "Same filter and exposure; leave out frames with clouds, wind gusts or bad guiding",
+               "Check the settings first with Calculate on one frame: are there enough stars up to the corners?",
+               "The side comes from PIERSIDE (N.I.N.A., ASCOM), the camera angle (ASIAIR) or the hour angle: " +
+               "check the Side column, and set it with West / East where it is ?"]);
+      };
+      this.seriesHintsPane = new Control(this);
+      this.seriesHintsPane.sizer = new VerticalSizer;
+      this.seriesHintsPane.sizer.margin = 16;
+      this.seriesHintsPane.sizer.add(this.seriesHintsLabel);
+      this.seriesHintsPane.sizer.addStretch();
+      this.seriesHintsPane.hide();
+
+      // On the Assessment tab, the left side shows the two assessments as
+      // tabs instead of a map: that of the script (assessImage()) and the
+      // AI review; the tab on the right keeps the settings of the AI review.
+      let textPage = function(box) {
+         let page = new Control(d);
+         page.sizer = new VerticalSizer;
+         page.sizer.margin = 4;
+         page.sizer.add(box, 100);
+         return page;
+      };
+      this.assessmentPane = new TabBox(this);
+      this.assessmentPane.addPage(textPage(this.assessmentBox), "Script assessment");
+      this.assessmentPane.addPage(textPage(this.aiBox), "AI review");
+      this.assessmentPane.hide();
+
+      // The map: the preview, or the tips in its place without an image
+      // (showTips()). On the Series tab after a run it moves into the Map
+      // tab of seriesPane, else it fills the left side (placeMapHost()).
+      this.mapHost = new Control(this);
+      this.mapHost.sizer = new VerticalSizer;
+      this.mapHost.sizer.add(this.preview, 100);
+      this.mapHost.sizer.add(this.tipsPane, 100);
+
+      // On the Series tab once a run has started: the map of the series
+      // (each frame's, or the static result), the report of the script and
+      // the AI review as tabs.
+      this.seriesMapPage = new Control(this);
+      this.seriesMapPage.sizer = new VerticalSizer;
+      this.seriesMapPage.sizer.margin = 4;
+      this.seriesPane = new TabBox(this);
+      this.seriesPane.addPage(this.seriesMapPage, "Map");
+      this.seriesPane.addPage(textPage(this.seriesBox), "Series report");
+      this.seriesPane.addPage(textPage(this.seriesAiBox), "AI review");
+      this.seriesPane.hide();
+      this.seriesPane.onPageSelected = function(index) {
+         if (index === 0 && d.previewFull && d.previewFitting)
+            d.fitPreview();
+      };
+      const SERIES_TAB_MAP = 0, SERIES_TAB_REPORT = 1, SERIES_TAB_AI = 2;
+      this.showSeriesTab = function(index) { d.seriesPane.currentPageIndex = index; };
+      this.showAiReviewTab = function() {
+         d.assessmentPane.currentPageIndex = 1;
+         d.seriesPane.currentPageIndex = SERIES_TAB_AI;
+      };
+
+      this.previewPane = new Control(this);
+      this.previewPane.sizer = new VerticalSizer;
+      this.previewPane.sizer.add(this.mapHost, 100);
+      this.previewPane.sizer.add(this.assessmentPane, 100);
+      this.previewPane.sizer.add(this.seriesHintsPane, 100);
+      this.previewPane.sizer.add(this.seriesPane, 100);
+
+      // Moves the map between the left side ("pane") and the Map tab of the
+      // Series tab ("series"): out of one sizer, into the other.
+      this.mapHostIn = "pane";
+      this.placeMapHost = function(where) {
+         if (where === d.mapHostIn)
+            return;
+         let from = d.mapHostIn === "series" ? d.seriesMapPage : d.previewPane;
+         let to = where === "series" ? d.seriesMapPage : d.previewPane;
+         from.sizer.remove(d.mapHost);
+         d.mapHost.parent = to;
+         to.sizer.add(d.mapHost, 100);
+         d.mapHostIn = where;
+      };
+
+      // What the left side shows: the assessments (Assessment tab), the
+      // series hints (Series tab before a run), the series tabs (Series tab
+      // from a run on), else the map. Own flags: `visible` is false for
+      // every child before the dialog is shown.
+      this.tipsShown = false;
+      this.assessmentShown = false;
+      this.seriesHintsShown = false;
+      this.seriesShown = false;
+      this.leftPane = "map";
+      this.updateLeftPane = function() {
+         let pane = d.assessmentShown ? "assessment" : d.seriesHintsShown ? "seriesHints" :
+            d.seriesShown ? "series" : "map";
+         if (pane === d.leftPane)
+            return;
+         d.leftPane = pane;
+         d.placeMapHost(pane === "series" ? "series" : "pane");
+         [[d.mapHost, "map"], [d.assessmentPane, "assessment"], [d.seriesHintsPane, "seriesHints"],
+          [d.seriesPane, "series"]].forEach(function(c) {
+            if (c[1] === pane || (c[0] === d.mapHost && pane === "series"))
+               c[0].show();
+            else
+               c[0].hide();
+         });
+         // A map set while the preview was hidden is fitted to the view now.
+         if ((pane === "map" || pane === "series") && d.previewFull && d.previewFitting)
+            d.fitPreview();
+      };
+      // The tips take the place of the preview inside the map.
+      this.showTips = function(tips) {
+         if (tips === d.tipsShown)
+            return;
+         d.tipsShown = tips;
+         if (tips) {
+            d.preview.hide();
+            d.tipsPane.show();
+         } else {
+            d.tipsPane.hide();
+            d.preview.show();
+         }
+      };
+
+      // Four tabs with sub-tabs: Setup (General: target, debayer, optics,
+      // output; Detection: the star measurement), Maps (one sub-tab per map
+      // of MAP_VIEWS), Assessment and Series. Each layer starts with the
+      // check box that enables it, the first row of its group box, which in
+      // turn enables its settings (updateControls). Check boxes and texts
+      // without a label start where the input fields start (indentRow()).
+      // The camera name can be long: its field takes the width of the row.
+      // It sits behind an empty label with the same spacing as the edit
+      // field inside a NumericEdit (pjsr/NumericControl.jsh), so that it
+      // starts where the number fields above start.
+      let cameraField = new Control(this);
+      cameraField.sizer = new HorizontalSizer;
+      cameraField.sizer.spacing = 4;
+      cameraField.sizer.add(new Label(cameraField));
+      cameraField.sizer.add(this.cameraValue, 100);
+      // The mount, aligned like the other fields, its source beside it.
+      let mountRow = new HorizontalSizer;
+      mountRow.spacing = 4;
+      mountRow.add(this.mountLabel);
+      mountRow.add(alignedField(this.mountCombo));
+      mountRow.addSpacing(6);
+      mountRow.add(this.mountSourceLabel);
+      mountRow.addStretch();
+      let guidingRow = new HorizontalSizer;
+      guidingRow.spacing = 4;
+      guidingRow.add(this.guidingLabel);
+      guidingRow.add(alignedField(this.guidingCombo));
+      guidingRow.addSpacing(6);
+      guidingRow.add(this.guidingSourceLabel);
+      guidingRow.addStretch();
+      let cameraRow = new HorizontalSizer;
+      cameraRow.spacing = 4;
+      cameraRow.add(this.cameraLabel);
+      cameraRow.add(cameraField, 100);
+
       this.general_Control = page(null, [
-         groupBox("Target", [viewRow, infoRow]),
+         groupBox("Target", [viewRow, infoRow, resultsRow, resultsInfoRow]),
          groupBox("Debayer", [
             checkRow(this.debayerCheck),
             fieldRow(this.bayerPatternLabel, this.bayerPatternCombo),
             checkRow(this.closeWindowsCheck)]),
-         groupBox("Optics", [
+         groupBox("Optics, camera and mount", [
             fieldRow(this.opticsTypeLabel, this.opticsTypeCombo),
             checkRow(this.opticsFromHeaderCheck),
             fieldRow(this.pixelPitchLabel, this.pixelPitchSpin),
             fieldRow(this.focalLengthLabel, this.focalLengthSpin),
             fieldRow(this.apertureLabel, this.apertureSpin),
-            checkRow(this.tiltPlot3DCheck)]),
+            cameraRow,
+            mountRow,
+            guidingRow]),
          groupBox("Output", [
-            checkRow(this.exportCheck),
-            checkRow(this.debugCheck)]),
-         groupBox("Tips for the test frame", [this.tipsLabel])
+            checkRow(this.tiltPlot3DCheck),
+            checkRow(this.exportCheck)])
       ]);
 
       this.detection_Control = page(null, [
          groupBox("Star detection", [
             fieldRow(this.thresholdLabel, this.thresholdSpin),
-            fieldRow(this.maxCandLabel, this.maxCandSpin)]),
+            fieldRow(this.maxCandLabel, this.maxCandSpin),
+            checkRow(this.sdCustomCheck),
+            fieldRow(this.sdLayersLabel, this.sdLayersSpin),
+            fieldRow(this.sdSensitivityLabel, this.sdSensitivitySpin),
+            fieldRow(this.sdPeakResponseLabel, this.sdPeakResponseSpin),
+            fieldRow(this.sdMaxDistortionLabel, this.sdMaxDistortionSpin),
+            checkRow(this.sdClusteredCheck)]),
          groupBox("PSF fit", [
             checkRow(this.moffatCheck),
             fieldRow(this.radiusLabel, this.radiusSpin),
@@ -4796,25 +9543,122 @@ class StarAberrationDialog extends Dialog {
             checkRow(this.subtractTrackingCheck)])
       ]);
 
-      this.vectorMap_Control = page(null, [
+      // One page per map (MAP_VIEWS): selecting it shows its map in the
+      // preview (parameters_TabBox.onPageSelected).
+      // Rich text of evaluation lines ("Topic: text"; lines starting with
+      // spaces indented under the line above), as on both evaluation boxes.
+      let evaluationHtml = function(lines) {
+         return lines.map(function(line) {
+            let sub = /^\s/.test(line);
+            line = line.trim();
+            let k = line.indexOf(":");
+            return "<p style='margin-top:0px; margin-bottom:" + (sub ? "1px; margin-left:16px;" : "4px;") + "'>" +
+               (k > 0 ? "<b>" + line.slice(0, k + 1) + "</b>" + line.slice(k + 1) : line) + "</p>";
+         }).join("");
+      };
+      this.evaluationHtml = evaluationHtml;
+
+      // The evaluation of the star shapes, for the kept analysis with the
+      // current settings: updateShapeEvaluation().
+      this.shapeEvalLabel = new Label(this);
+      this.shapeEvalLabel.wordWrapping = true;
+      this.shapeEvalLabel.useRichText = true;
+      this.updateShapeEvaluation = function() {
+         let an = d.currentAnalysis();
+         if (!an) {
+            d.shapeEvalLabel.text = "<i>Click Calculate to evaluate the image.</i>";
+            return;
+         }
+         let p = d.collectParameters();
+         let lines = an.series ? formatStaticSeries(d.seriesStatic[d.mapSource - 1]) : [];
+         d.shapeEvalLabel.text = evaluationHtml(lines.concat(formatShapeEvaluation(shapeEvaluationFor(an, p),
+            an.tracking, p.subtractTracking)));
+      };
+      this.updateShapeEvaluation();
+
+      this.shape_Control = page(null, [
          groupBox("Star ellipses", [
-            this.showEllipsesCheck,
-            fieldRow(this.scaleLabel, this.scaleSpin)]),
+            checkRow(this.showEllipsesCheck),
+            fieldRow(this.scaleLabel, this.scaleSpin),
+            checkRow(this.shapeShowCellsCheck)]),
          groupBox("Streamlines", [
-            this.streamlinesCheck,
-            fieldRow(this.streamlineRadiusLabel, this.streamlineRadiusSpin)]),
+            checkRow(this.streamlinesCheck),
+            fieldRow(this.streamlineRadiusLabel, this.streamlineRadiusSpin),
+            checkRow(this.shapeSignificantOnlyCheck)]),
+         groupBox("Optics model", [
+            checkRow(this.shapeShowModelCheck),
+            checkRow(this.shapeModelSignificantOnlyCheck),
+            checkRow(this.shapeShowMatchCheck),
+            checkRow(this.shapeShowDefectsCheck)]),
          groupBox("Orientation heatmap", [
-            this.orientationHeatmapCheck,
+            checkRow(this.orientationHeatmapCheck),
             fieldRow(this.orientationHeatmapDegreeLabel, this.orientationHeatmapDegreeSpin)]),
-         groupBox("Tilt overlay", [
-            this.sirilTiltCheck,
-            checkRow(this.fwhmGridCheck),
-            checkRow(this.fwhmGridArcsecCheck),
-            checkRow(this.tiltAxisCheck)])
+         groupBox("Evaluation", [this.shapeEvalLabel])
       ]);
 
-      this.coma_Control = page(this.measureAsymmetryCheck, [
+      // The evaluation of the FWHM grid (formerly the legend in the map),
+      // for the kept analysis with the current settings: updateGridEvaluation().
+      this.gridEvalLabel = new Label(this);
+      this.gridEvalLabel.wordWrapping = true;
+      this.gridEvalLabel.useRichText = true;
+      this.updateGridEvaluation = function() {
+         let an = d.currentAnalysis();
+         if (!an) {
+            d.gridEvalLabel.text = "<i>Click Calculate to evaluate the image.</i>";
+            return;
+         }
+         let p = d.collectParameters();
+         let optics = d.opticsFor(an, p);
+         let ev = evaluateFwhmGrid(starsFor(an, p.subtractTracking), an.w, an.h, FWHM_GRID_SIZE);
+         let u = fwhmDisplayUnit(p, optics);
+         d.gridEvalLabel.text = d.evaluationHtml(formatFwhmGridEvaluation(ev, u.scale, u.unit));
+      };
+      this.updateGridEvaluation();
+      let evalGroup = groupBox("Evaluation", [this.gridEvalLabel]);
+      evalGroup.toolTip = this.fwhmGridHelp;
+
+      let fwhmGroup = groupBox("FWHM grid: each cell shows", [
+         checkRow(this.fwhmPxRadio),
+         checkRow(this.fwhmArcsecRadio),
+         checkRow(this.fwhmRatioRadio),
+         checkRow(this.fwhmGridDetailsCheck)]);
+      fwhmGroup.toolTip = this.fwhmGridHelp;
+      let legendGroup = groupBox("Legend", [this.fwhmLegend]);
+      legendGroup.toolTip = this.fwhmGridHelp;
+      this.size_Control = page(null, [
+         legendGroup,
+         fwhmGroup,
+         evalGroup
+      ]);
+
+      // The Tilt page: the tilt axis and the evaluation of the quadrants.
+      this.tiltEvalLabel = new Label(this);
+      this.tiltEvalLabel.wordWrapping = true;
+      this.tiltEvalLabel.useRichText = true;
+      this.updateTiltEvaluation = function() {
+         let an = d.currentAnalysis();
+         if (!an) {
+            d.tiltEvalLabel.text = "<i>Click Calculate to evaluate the image.</i>";
+            return;
+         }
+         let p = d.collectParameters();
+         let optics = d.opticsFor(an, p);
+         let tilt = computeSirilTilt(starsFor(an, p.subtractTracking), an.w, an.h);
+         let axis = tilt !== null ? computeTiltAxis(tilt, an.w, an.h, optics.pixelPitchUm,
+            optics.focalLengthMm, optics.apertureMm) : null;
+         let u = fwhmDisplayUnit(p, optics);
+         d.tiltEvalLabel.text = d.evaluationHtml(formatTiltEvaluation(tilt, axis, u.scale, u.unit));
+      };
+      this.updateTiltEvaluation();
+      let tiltAxisGroup = groupBox("Tilt axis", [checkRow(this.tiltAxisCheck)]);
+      tiltAxisGroup.toolTip = this.tiltHelp;
+      let tiltEvalGroup = groupBox("Evaluation", [this.tiltEvalLabel]);
+      tiltEvalGroup.toolTip = this.tiltHelp;
+      this.tilt_Control = page(null, [tiltAxisGroup, tiltEvalGroup]);
+
+      this.coma_Control = page(null, [
          groupBox("Coma field", [
+            checkRow(this.measureAsymmetryCheck),
             checkRow(this.comaStreamlinesCheck),
             fieldRow(this.comaStreamlineRadiusLabel, this.comaStreamlineRadiusSpin),
             fieldRow(this.comaStreamlineMinLabel, this.comaStreamlineMinSpin),
@@ -4825,18 +9669,171 @@ class StarAberrationDialog extends Dialog {
             checkRow(this.starAsymColorCheck)])
       ]);
 
-      // The assessment fills its page.
+      // The settings of the AI review; the assessments themselves are shown
+      // on the left (assessmentPane).
       this.assessment_Control = new Control(this);
       this.assessment_Control.sizer = new VerticalSizer;
       this.assessment_Control.sizer.margin = 6;
-      this.assessment_Control.sizer.add(this.assessmentBox, 100);
+      this.assessment_Control.sizer.spacing = 6;
+      let aiButtonRow = indentRow([this.aiButton, this.aiContinueButton]);
+      this.assessment_Control.sizer.add(groupBox("AI review (Claude)", [
+         fieldRow(this.aiKeyLabel, this.aiKeyEdit),
+         fieldRow(this.aiLanguageLabel, this.aiLanguageEdit),
+         fieldRow(this.aiDetailLabel, this.aiDetailCombo),
+         checkRow(this.aiSendMapCheck),
+         checkRow(this.aiSaveLogCheck),
+         aiButtonRow]));
+      this.assessment_Control.sizer.addStretch();
+      this.updateAiKeyInfo();
+
+      // A page holding a tab box of sub-pages.
+      let subTabs = function(tabBox, pages) {
+         pages.forEach(function(pg) { tabBox.addPage(pg[0], pg[1]); });
+         let control = new Control(d);
+         control.sizer = new VerticalSizer;
+         control.sizer.margin = 4;
+         control.sizer.add(tabBox, 100);
+         return control;
+      };
+      this.setup_TabBox = new TabBox(this);
+      this.setup_Control = subTabs(this.setup_TabBox, [
+         [this.general_Control, "General"], [this.detection_Control, "Star detection"]]);
+      // The map sub-tabs in the order of MAP_VIEWS.
+      this.maps_TabBox = new TabBox(this);
+      [[this.size_Control, "Size"], [this.shape_Control, "Shape"], [this.coma_Control, "Coma"],
+       [this.tilt_Control, "Tilt"]].forEach(function(pg) { d.maps_TabBox.addPage(pg[0], pg[1]); });
+
+      // What the maps show: the target image (Calculate - to check the
+      // settings before a batch) or the static result of the last series
+      // run (pass 2), for all frames or one side of the flip.
+      this.mapSourceLabel = fieldLabel("Show:");
+      this.mapSourceCombo = new ComboBox(this);
+      this.mapSourceCombo.toolTip =
+         "<p><b>Target image (Calculate)</b>: the image measured by Calculate - to check the settings on one " +
+         "frame before running a series.</p>" +
+         "<p><b>Series static</b>: after Analyze series, the stars of all frames (or of one side of the flip) " +
+         "pooled. Each frame loses its dynamic tracking (its own uniform term less the mean of the group) and " +
+         "its FWHM is scaled to the median center FWHM, so the seeing drops out: what remains is fixed to the " +
+         "sensor - the optics, plus any constant tracking, which a single camera angle cannot tell from " +
+         "astigmatism on the axis. With n frames the standard errors are about √n smaller. The background " +
+         "is dark: the pooled stars belong to no single frame.</p>";
+      this.fillMapSources = function() {
+         d.mapSourceCombo.clear();
+         d.mapSourceCombo.addItem("Target image (Calculate)");
+         d.seriesStatic.forEach(function(e) {
+            d.mapSourceCombo.addItem("Series static: " + e.label + " (" + e.analysis.series.frames + " frames)");
+         });
+         d.mapSource = Math.min(d.mapSource, d.seriesStatic.length);
+         d.mapSourceCombo.currentItem = d.mapSource;
+      };
+      this.selectMapSource = function(index) {
+         d.mapSource = index;
+         d.mapSourceCombo.currentItem = index;
+         if (d.currentAnalysis())
+            d.refreshPreview();
+         else
+            d.setPreviewBitmap(d.viewBitmap, d.view && d.view.id.length > 0 ? "<i>" + d.view.id + "</i>" :
+               "No target image selected");
+         d.updateGridEvaluation();
+         d.updateShapeEvaluation();
+         d.updateTiltEvaluation();
+      };
+      this.mapSourceCombo.onItemSelected = function(index) { d.selectMapSource(index); };
+      this.fillMapSources();
+
+      this.maps_Control = new Control(this);
+      this.maps_Control.sizer = new VerticalSizer;
+      this.maps_Control.sizer.margin = 4;
+      this.maps_Control.sizer.spacing = 4;
+      let mapSourceRow = new HorizontalSizer;
+      mapSourceRow.spacing = 4;
+      mapSourceRow.add(this.mapSourceLabel);
+      mapSourceRow.add(this.mapSourceCombo, 100);
+      this.maps_Control.sizer.add(mapSourceRow);
+      this.maps_Control.sizer.add(this.maps_TabBox, 100);
 
       this.parameters_TabBox = new TabBox(this);
-      this.parameters_TabBox.addPage(this.general_Control, "General");
-      this.parameters_TabBox.addPage(this.detection_Control, "Detection");
-      this.parameters_TabBox.addPage(this.vectorMap_Control, "Elongation / FWHM");
-      this.parameters_TabBox.addPage(this.coma_Control, "Coma");
+      this.parameters_TabBox.addPage(this.setup_Control, "Setup");
+      this.parameters_TabBox.addPage(this.maps_Control, "Maps");
+      // The series: the file list, its buttons and the comparison.
+      let seriesFileRow = new HorizontalSizer;
+      seriesFileRow.spacing = 4;
+      seriesFileRow.add(this.seriesAddButton);
+      seriesFileRow.add(this.seriesRemoveButton);
+      seriesFileRow.add(this.seriesClearButton);
+      seriesFileRow.addStretch();
+      let seriesSideRow = new HorizontalSizer;
+      seriesSideRow.spacing = 4;
+      seriesSideRow.add(this.seriesSideLabel);
+      seriesSideRow.add(this.seriesWestButton);
+      seriesSideRow.add(this.seriesEastButton);
+      seriesSideRow.add(this.seriesAutoButton);
+      seriesSideRow.addStretch();
+      let seriesRunRow = new HorizontalSizer;
+      seriesRunRow.spacing = 4;
+      seriesRunRow.add(this.seriesAnalyzeButton);
+      seriesRunRow.add(this.seriesAiButton);
+      seriesRunRow.addStretch();
+      let seriesMapRow = new VerticalSizer;
+      seriesMapRow.spacing = 4;
+      seriesMapRow.add(this.seriesShowMapsCheck);
+      seriesMapRow.add(this.seriesSaveMapsCheck);
+      seriesMapRow.add(this.seriesSaveMosaicCheck);
+      this.series_Control = new Control(this);
+      this.series_Control.sizer = new VerticalSizer;
+      this.series_Control.sizer.margin = 6;
+      this.series_Control.sizer.spacing = 6;
+      this.series_Control.sizer.add(this.seriesTree, 100);
+      this.series_Control.sizer.add(seriesFileRow);
+      this.series_Control.sizer.add(seriesSideRow);
+      this.series_Control.sizer.add(seriesMapRow);
+      this.series_Control.sizer.add(seriesRunRow);
+
       this.parameters_TabBox.addPage(this.assessment_Control, "Assessment");
+      this.parameters_TabBox.addPage(this.series_Control, "Series");
+
+      // Selecting a map sub-tab (or the Maps tab) shows its map in the
+      // preview (redrawn from the kept analysis; nothing to do before the
+      // first Preview).
+      this.selectMapPage = function() {
+         let view = MAP_VIEWS[d.maps_TabBox.currentPageIndex];
+         if (!view || view.key === d.mapView)
+            return;
+         d.mapView = view.key;
+         d.refreshPreview();
+      };
+      this.maps_TabBox.currentPageIndex = MAP_VIEWS.indexOf(mapViewByKey(this.mapView));
+      // After a computation: the parameters jump to the page of the map the
+      // preview shows (Maps, its sub-tab), with its settings and evaluation.
+      this.showMapPage = function() {
+         let mapsIndex = -1;
+         for (let i = 0; i < d.parameters_TabBox.numberOfPages; ++i)
+            if (d.parameters_TabBox.pageControlByIndex(i) === d.maps_Control)
+               mapsIndex = i;
+         if (mapsIndex >= 0)
+            d.parameters_TabBox.currentPageIndex = mapsIndex;
+         d.syncLeftPane();
+         d.maps_TabBox.currentPageIndex = MAP_VIEWS.indexOf(mapViewByKey(d.mapView));
+      };
+      this.maps_TabBox.onPageSelected = function() { d.selectMapPage(); };
+      // The left side follows the tab: the assessments on the Assessment tab,
+      // the map (or the tips) on all others. Also called after the tab is
+      // changed by the script, in case that does not raise the event.
+      this.syncLeftPane = function() {
+         let page = d.parameters_TabBox.pageControlByIndex(d.parameters_TabBox.currentPageIndex);
+         d.assessmentShown = page === d.assessment_Control;
+         let series = page === d.series_Control;
+         d.seriesHintsShown = series && d.seriesResult === null && !d.seriesRunning;
+         d.seriesShown = series && !d.seriesHintsShown;
+         if (d.seriesHintsShown)
+            d.updateSeriesHints();
+         d.updateLeftPane();
+      };
+      this.parameters_TabBox.onPageSelected = function(index) {
+         if (d.parameters_TabBox.pageControlByIndex(index) === d.maps_Control)
+            d.selectMapPage();
+         d.syncLeftPane();
+      };
 
       // The signature of the script, as in AperturePhotometry.
       this.information_Label = new Label(this);
@@ -4852,8 +9849,8 @@ class StarAberrationDialog extends Dialog {
       // Preview and parameters side by side, with a splitter between them
       // whose position is remembered.
       this.content_Sizer = new HorizontalSizer;
-      this.content_Sizer.add(this.preview, 100);
-      this.panel_Splitter = new HorizontalSplitter(this, this.content_Sizer, this.preview, this.parameters_TabBox);
+      this.content_Sizer.add(this.previewPane, 100);
+      this.panel_Splitter = new HorizontalSplitter(this, this.content_Sizer, this.previewPane, this.parameters_TabBox);
       this.panel_Splitter.settingsKey = SETTINGS_MODULE + "/panelFraction";
       this.content_Sizer.add(this.panel_Splitter);
       this.content_Sizer.add(this.parameters_TabBox);
@@ -4875,7 +9872,7 @@ class StarAberrationDialog extends Dialog {
       this.ensureLayoutUpdated();
       this.adjustToContents();
       this.setMinSize();
-      this.panel_Splitter.minFirstSize = this.preview.width;
+      this.panel_Splitter.minFirstSize = this.previewPane.width;
       this.panel_Splitter.minSecondSize = this.parameters_TabBox.width;
       this.preview.setVariableSize();
       this.resize(this.logicalPixelsToPhysical(1150), this.logicalPixelsToPhysical(720));
@@ -4888,6 +9885,10 @@ class StarAberrationDialog extends Dialog {
       // The view has its final size only once the dialog is shown.
       this.onShow = function() {
          d.fitPreview();
+         d.targetTimer.start();
+      };
+      this.onHide = function() {
+         d.targetTimer.stop();
       };
    }
 }
@@ -4896,6 +9897,7 @@ class StarAberrationDialog extends Dialog {
 function main() {
    Console.show();
    Console.writeln("=== " + TITLE + " v" + VERSION + " ===");
+   Console.writeln("Script file: " + #__FILE__); // which copy PixInsight loaded (installed vs. repository)
 
    // Adopt parameters previously saved via "New Instance" or recorded on
    // a process icon (if any).
@@ -4909,15 +9911,12 @@ function main() {
    }
 
    // The target image can be freely chosen in the dialog via the
-   // ViewList - here it is enough for at least one image window to be open.
+   // ViewList. Without an open image, the dialog opens without a target:
+   // the Series tab works on files, Preview and Apply ask for a target.
    let windows = ImageWindow.windows;
-   if (windows.length === 0) {
-      (new MessageBox("No open image window found.", TITLE, StdIcon.Error, StdButton.Ok)).execute();
-      return;
-   }
-
    let activeWindow = ImageWindow.activeWindow;
-   let initialView = (activeWindow !== null) ? activeWindow.currentView : windows[0].mainView;
+   let initialView = (activeWindow !== null && !activeWindow.isNull) ? activeWindow.currentView :
+      (windows.length > 0) ? windows[0].mainView : null;
 
    let dialog = new StarAberrationDialog(initialView);
    dialog.execute();

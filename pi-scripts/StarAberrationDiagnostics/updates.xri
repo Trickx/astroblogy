@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="StarAberrationDiagnostics20260929v0090.tar.gz" sha1="914ac14ff27a2a44ea70b8d56ef33abb8abb7168" type="script" releaseDate="20260929">
+      <package fileName="StarAberrationDiagnostics20261005v00100.tar.gz" sha1="9e4540bd9ff3e5d5ffa83f288d832b2aba006d87" type="script" releaseDate="20261005">
          <title>
-         StarAberrationDiagnostics 0.9.0
+         StarAberrationDiagnostics 0.10.0
          </title>
          <description>
             <p>
@@ -30,4 +30,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-29T17:42:47.271Z" encoding="Base64">AXx5Zcd71iFlpnJipAtSV0r/UgvG/49UItp3DYvoJYD6utYV8/OaJ5NxVcQYCRykIIaVe/NdfDqTC5eT6ykiAw==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-10-05T11:24:47.624Z" encoding="Base64">p6dhrKCP8XIKjdWH0gR+7JqeynoQu2r0zvKOKRLaWU3Jw9Ng+RG7edsA+JO/RkkhaTehObQY9tPhczojiGF0BA==</Signature>
