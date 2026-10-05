@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Histogram - PixInsight Update Repository</title>
+  <title>Histogram - discontinued</title>
   <style>
     :root {
       --bg: #0f1720;
@@ -45,40 +45,32 @@
       word-break: break-all;
     }
     .ok { color: var(--ok); font-weight: 600; }
-    img { display: block; max-width: 100%; height: auto; border: 1px solid #2a3b4f; border-radius: 10px; }
+    a { color: var(--accent); }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
       <h1>Histogram</h1>
-      <p>PixInsight update repository for the <strong>Histogram</strong> script.</p>
-      <p>Displays a non-destructive histogram and statistics view for the active image,
-         with separate RGB curves, grayscale support, logarithmic axes, zoom and range
-         controls, percentiles, and clipping statistics.</p>
-      <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
+      <p>PixInsig  <main class="wrap">
+    <section class="card">
+      <h1>Histogram</h1>
+      <p>The PJSR script <strong>Histogram</strong> has been discontinued, and its PixInsight update
+         repository is offline.</p>
+      <p>Its successor is <a href="/pi-scripts/HistogramViewer/">HistogramViewer</a>, the same tool as a
+         native PixInsight module: faster, and it follows the active image.</p>
     </section>
 
     <section class="card">
-      <h2>Repository URL for PixInsight</h2>
-      <p><code>https://tricx.de/pi-scripts/Histogram/</code></p>
-    </section>
-
-    <section class="card">
-      <h2>Installation in PixInsight</h2>
+      <h2>If you added this repository in PixInsight</h2>
+      <p>PixInsight reports an error for <code>https://tricx.de/pi-scripts/Histogram/</code> when it checks
+         for updates. Remove the entry:</p>
       <ol>
         <li>Resources &gt; Updates &gt; Manage Repositories</li>
-        <li>Add repository: <code>https://tricx.de/pi-scripts/Histogram/</code></li>
-        <li>Run Check for Updates</li>
-        <li>Run via Script &gt; Tricx &gt; Histogram</li>
+        <li>Select <code>https://tricx.de/pi-scripts/Histogram/</code> and remove it</li>
       </ol>
-    </section>
-
-    <section class="card">
-      <h2>Screenshot</h2>
-      <p>Logarithmic histogram view:</p>
-      <img src="Histogram.png" alt="Histogram script logarithmic view" />
+      <p>The installed script keeps working. To remove it as well, delete the folder
+         <code>src/scripts/Tricx/Histogram/</code> in the PixInsight installation directory and run
+         Script &gt; Feature Scripts &gt; Regenerate.</p>
     </section>
   </main>
-</body>
-</html>

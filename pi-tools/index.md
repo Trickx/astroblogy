@@ -136,19 +136,10 @@ permalink: /pi-tools/
   <article class="pi-tool-entry">
     <div>
       <h2><a href="{{ '/pi-scripts/HistogramViewer/' | relative_url }}">HistogramViewer</a></h2>
-      <p>A native PixInsight histogram and statistics viewer that follows the active image. It offers RGB and grayscale views, logarithmic axes, zoom and range controls, percentiles and clipping statistics. A native PCL port of Seti Astro's original histogram tool.</p>
+      <p>A native PixInsight histogram and statistics viewer that follows the active image. It offers RGB and grayscale views, logarithmic axes, zoom and range controls, percentiles and clipping statistics. A native PCL port of Seti Astro's original histogram tool; it replaces the earlier PJSR script Histogram.</p>
       <a class="pi-tool-link" href="{{ '/pi-scripts/HistogramViewer/' | relative_url }}">Repository and installation</a>
     </div>
     <img src="{{ '/pi-scripts/HistogramViewer/Histogram.png' | relative_url }}" alt="HistogramViewer window" loading="lazy">
-  </article>
-
-  <article class="pi-tool-entry">
-    <div>
-      <h2><a href="{{ '/pi-scripts/Histogram/' | relative_url }}">Histogram</a></h2>
-      <p>Shows the histogram and statistics of the active image without modifying it, with channel curves, logarithmic axes, zoom and range controls, percentiles and clipping statistics. This is the same tool as a PJSR script, with the limitations that come with it; for the best performance, use the native PCL version above.</p>
-      <a class="pi-tool-link" href="{{ '/pi-scripts/Histogram/' | relative_url }}">Repository and installation</a>
-    </div>
-    <img src="{{ '/pi-scripts/Histogram/Histogram.png' | relative_url }}" alt="Histogram script logarithmic view" loading="lazy">
   </article>
 
   <article class="pi-tool-entry">
