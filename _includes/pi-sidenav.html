@@ -1,0 +1,88 @@
+{%- comment -%}
+  Style and behavior of the side navigation of the handbook and the dialog
+  reference (pi-handbook-nav.html, pi-dialog-nav.html): fixed beside the text
+  where the window is wide enough. Links to anchors on the page (#...) are
+  marked while their section is being read, and their sub-list opens.
+{%- endcomment -%}
+<style>
+  .side-nav { display: none; }
+  .nav-toggle { display: none; }
+  @media (min-width: 1240px) {
+    .page { display: grid; grid-template-columns: 250px minmax(0, 920px); gap: 24px; justify-content: center; padding: 0 16px; }
+    .page > .wrap { margin: 32px 0; padding: 0; max-width: none; }
+    .page > .side-nav {
+      display: block;
+      position: sticky;
+      top: 32px;
+      align-self: start;
+      margin-top: 32px;
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+  }
+  @media (max-width: 1239px) {
+    .nav-toggle {
+      display: block; background: var(--panel); border: 1px solid #233244; border-radius: 12px;
+      padding: 10px 14px; margin-bottom: 16px;
+    }
+    .nav-toggle summary { cursor: pointer; color: var(--text); font-weight: 600; }
+    .nav-toggle .side-nav { display: block; margin-top: 8px; }
+  }
+  .side-nav { font-size: 0.86rem; line-height: 1.35; }
+  .side-nav .nav-title { display: block; color: var(--text); font-weight: 600; margin: 0 0 10px 10px; }
+  .side-nav ol { list-style: none; margin: 0; padding: 0; }
+  .side-nav a { display: block; padding: 4px 8px 4px 10px; border-left: 2px solid transparent; color: var(--muted); }
+  .side-nav a:hover { color: var(--text); text-decoration: none; }
+  .side-nav a.active, .side-nav a.current { color: var(--accent); border-left-color: var(--accent); }
+  .side-nav .no { display: inline-block; width: 1.9em; margin-left: -1.9em; }
+  .side-nav ol.numbered > li > a { padding-left: calc(10px + 1.9em); }
+  .side-nav ol ol { display: none; margin: 2px 0 6px 0; }
+  .side-nav li.open > ol, .side-nav li.spy-open > ol { display: block; }
+  .side-nav ol ol a { padding-left: 32px; font-size: 0.82rem; }
+  .side-nav ol.grp-items { display: block; }
+  .side-nav ol.grp-items a { padding-left: 22px; font-size: 0.86rem; }
+  .side-nav ol.grp-items ol a { padding-left: 40px; font-size: 0.82rem; }
+  .side-nav .grp { display: block; color: var(--text); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em;
+                   padding: 10px 10px 2px; }
+  .side-nav .intro { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #233244; }
+  .side-nav .ext { margin-top: 10px; padding-top: 8px; border-top: 1px solid #233244; }
+</style>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".page > .side-nav").forEach(function (nav) {
+      var links = Array.prototype.slice.call(nav.querySelectorAll("a[href^='#']"));
+      var targets = links.map(function (a) { return document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1))); });
+      var current, pending = false;
+      function update() {
+        pending = false;
+        var best = null;
+        for (var i = 0; i < targets.length; i++) {
+          var t = targets[i];
+          if (t && t.getBoundingClientRect().top <= 120) best = i;
+        }
+        if (best === current) return;
+        current = best;
+        links.forEach(function (a) { a.classList.remove("active"); });
+        nav.querySelectorAll("li.spy-open").forEach(function (li) { li.classList.remove("spy-open"); });
+        if (best === null) return;
+        var a = links[best];
+        a.classList.add("active");
+        for (var li = a.parentElement; li && li !== nav; li = li.parentElement) {
+          if (li.tagName === "LI") {
+            li.classList.add("spy-open");
+            var first = li.firstElementChild;
+            if (first && first.tagName === "A" && first.getAttribute("href").charAt(0) === "#") first.classList.add("active");
+          }
+        }
+        var top = a.offsetTop, bottom = top + a.offsetHeight;
+        if (top < nav.scrollTop || bottom > nav.scrollTop + nav.clientHeight) {
+          nav.scrollTop = top - nav.clientHeight / 3;
+        }
+      }
+      window.addEventListener("scroll", function () {
+        if (!pending) { pending = true; window.requestAnimationFrame(update); }
+      }, { passive: true });
+      update();
+    });
+  });
+</script>

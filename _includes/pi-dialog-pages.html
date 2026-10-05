@@ -1,0 +1,17 @@
+{%- comment -%}
+  Sets `dialog_pages` (the pages of the page's collection - the dialog
+  reference or the examples - in the language of the page, sorted by `order`),
+  `ui` (the interface texts, _data/pi_dialog.yml), `part_title` and
+  `part_desc` (the name and description of that collection) and `sad_url`
+  (the handbook page in that language).
+{%- endcomment -%}
+{%- assign dialog_pages = site[page.collection] | where: "lang", page.lang | sort: "order" -%}
+{%- assign ui = site.data.pi_dialog[page.lang] -%}
+{%- if page.collection == "sad_examples" -%}
+{%- assign part_title = ui.examples -%}
+{%- assign part_desc = ui.examples_desc -%}
+{%- else -%}
+{%- assign part_title = ui.reference -%}
+{%- assign part_desc = ui.desc -%}
+{%- endif -%}
+{%- capture sad_url %}/pi-scripts/StarAberrationDiagnostics/{% if page.lang == 'de' %}de/{% endif %}{% endcapture -%}

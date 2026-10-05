@@ -14,6 +14,15 @@ collections:
   blogs:
     output: true
     permalink: /blog/:slug/
+  # Chapters of the StarAberrationDiagnostics handbook, assembled by _layouts/pi_handbook.html
+  sad_handbook:
+    output: false
+  # Dialog reference of StarAberrationDiagnostics, one page per dialog page (_layouts/pi_dialog.html)
+  sad_dialog:
+    output: true
+  # Worked examples of StarAberrationDiagnostics, one page per example (_layouts/pi_dialog.html)
+  sad_examples:
+    output: true
 
 defaults:
   - scope:
@@ -29,12 +38,41 @@ defaults:
       layout: blog_post
       body_class: blog-page
   - scope:
+      path: "_sad_dialog/en"
+    values:
+      layout: pi_dialog
+      lang: en
+      permalink: /pi-scripts/StarAberrationDiagnostics/dialog/:name/
+  - scope:
+      path: "_sad_dialog/de"
+    values:
+      layout: pi_dialog
+      lang: de
+      permalink: /pi-scripts/StarAberrationDiagnostics/de/dialog/:name/
+  - scope:
+      path: "_sad_examples/en"
+    values:
+      layout: pi_dialog
+      lang: en
+      permalink: /pi-scripts/StarAberrationDiagnostics/examples/:name/
+  - scope:
+      path: "_sad_examples/de"
+    values:
+      layout: pi_dialog
+      lang: de
+      permalink: /pi-scripts/StarAberrationDiagnostics/de/examples/:name/
+  - scope:
       path: ""
     values:
       layout: default
 
 exclude:
   - README.md
+  - _sad_handbook/CLAUDE.md
+  - _sad_dialog/CLAUDE.md
+  - pi-scripts/StarAberrationDiagnostics/dialog-src
   - Gemfile.lock
+  - pi-scripts/StarAberrationDiagnostics/CLAUDE.md
+  - pi-scripts/StarAberrationDiagnostics/handbook-src
   - pi-scripts/StarAberrationDiagnostics/koma-src
   - pi-scripts/StarAberrationDiagnostics/newton-src

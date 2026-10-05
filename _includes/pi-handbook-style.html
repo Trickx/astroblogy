@@ -1,0 +1,126 @@
+  <style>
+    :root {
+      --bg: #0f1720;
+      --panel: #172230;
+      --text: #e7edf5;
+      --muted: #a8b6c8;
+      --accent: #64c7ff;
+      --ok: #82e0aa;
+      --warn: #ffab5e;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1f2e42 0%, var(--bg) 60%);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #233244;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 12px 0;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    h3 { font-size: 1.02rem; color: var(--text); margin-top: 22px; }
+    p, li, td, th, figcaption { color: var(--muted); }
+    strong, b { color: var(--text); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #d8e7f7;
+      word-break: break-all;
+    }
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #2a3b4f;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+    ul, ol { margin: 8px 0 0 20px; padding-left: 4px; }
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .title img {
+      width: 72px;
+      height: 72px;
+      border: none;
+      border-radius: 0;
+      flex: none;
+    }
+    /* Handbook */
+    .chapter-no { color: var(--muted); font-weight: normal; margin-right: 6px; }
+    figure { margin: 16px 0; }
+    figure svg { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; }
+    figure img { width: 100%; max-width: 680px; margin: 0 auto; border: none; border-radius: 0; }
+    figcaption { font-size: 0.9rem; margin-top: 6px; }
+    .eq {
+      background: #0c141d;
+      border: 1px solid #2a3b4f;
+      border-left: 3px solid var(--warn);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 12px 0;
+      color: var(--text);
+      font-family: "Cambria Math", "STIX Two Math", Georgia, serif;
+      font-size: 1.05rem;
+      overflow-x: auto;
+    }
+    .eq div + div { margin-top: 4px; }
+    .eq .c { color: var(--muted); font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 0.88rem; }
+    .note {
+      border-left: 3px solid var(--accent);
+      padding: 6px 12px;
+      margin: 12px 0;
+      background: rgba(100, 199, 255, 0.06);
+      border-radius: 0 6px 6px 0;
+    }
+    .note p { margin: 4px 0; }
+    .tbl { overflow-x: auto; margin: 12px 0; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+    th, td { border-bottom: 1px solid #2a3b4f; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { color: var(--text); font-weight: 600; }
+    .toc ol { columns: 2; column-gap: 32px; }
+    .toc li { break-inside: avoid; }
+    @media (max-width: 640px) { .toc ol { columns: 1; } }
+    .steps li { margin-bottom: 4px; }
+    .see { font-size: 0.9rem; border-top: 1px solid #2a3b4f; padding-top: 10px; margin-top: 16px; }
+    i.v { font-family: "Cambria Math", Georgia, serif; }
+    /* Language switch */
+    .lang {
+      margin-left: auto;
+      align-self: flex-start;
+      display: flex;
+      border: 1px solid #2a3b4f;
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .lang a, .lang span { padding: 3px 9px; }
+    .lang span { background: #233244; color: var(--text); }
+    .lang a:hover { background: rgba(100, 199, 255, 0.12); text-decoration: none; }
+  </style>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="{{ page.lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ page.title }}</title>
+  <meta name="description" content="{{ page.description }}" />
+{%- for alt in page.alternates %}
+  <link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}" />
+{%- endfor %}
+{% include pi-handbook-style.html %}</head>
+<body>
+{%- include pi-handbook-chapters.html %}
+<div class="page">
+{% include pi-handbook-nav.html %}
+  <main class="wrap">
+{{ content }}
+{%- comment -%}
+  One card per chapter: the files in _sad_handbook/<page.handbook>/, sorted by
+  `order`; the file name is the anchor of the chapter. The ids of the
+  subheadings get the chapter anchor as prefix, so they stay unique. Below a
+  chapter: the pages of the dialog reference that name it in `handbook`.
+{%- endcomment -%}
+{%- for ch in chapters %}
+{%- capture h3_prefix %}<h3 id="{{ ch.slug }}-{% endcapture %}
+<section class="card" id="{{ ch.slug }}"><h2><span class="chapter-no">{{ forloop.index0 }}.</span>{{ ch.title }}</h2>
+{{ ch.content | replace: '<h3 id="', h3_prefix }}
+{%- assign dialog_links = site.sad_dialog | where: "lang", page.lang | where_exp: "d", "d.handbook contains ch.slug" | sort: "order" -%}
+{%- if dialog_links.size > 0 %}
+<p class="see">{{ site.data.pi_dialog[page.lang].in_dialog }}:
+{%- for d in dialog_links %} <a href="{{ d.url }}">{{ d.title }}</a>{% unless forloop.last %},{% endunless %}{% endfor %}</p>
+{%- endif %}</section>
+{%- endfor %}
+  </main>
+</div>
+</body>
+</html>

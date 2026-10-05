@@ -82,6 +82,7 @@
     .chapter-no { color: var(--muted); font-weight: normal; margin-right: 6px; }
     figure { margin: 16px 0; }
     figure svg { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; }
+    figure img { width: 100%; max-width: 680px; margin: 0 auto; border: none; border-radius: 0; }
     figcaption { font-size: 0.9rem; margin-top: 6px; }
     .eq {
       background: #0c141d;
@@ -113,6 +114,7 @@
     .toc li { break-inside: avoid; }
     @media (max-width: 640px) { .toc ol { columns: 1; } }
     .steps li { margin-bottom: 4px; }
+    .see { font-size: 0.9rem; border-top: 1px solid #2a3b4f; padding-top: 10px; margin-top: 16px; }
     i.v { font-family: "Cambria Math", Georgia, serif; }
     /* Language switch */
     .lang {
@@ -274,8 +276,8 @@ beim Transport, beim Auf- und Abbauen, durch Temperaturwechsel, bei manchen soga
       mit 1/N² wächst und das Beugungsscheibchen mit N. Ein f/4-Newton ist damit etwa achtmal so empfindlich wie ein
       f/8.</li>
   <li><b>Was das Script sieht:</b> Den komafreien Punkt P<sub>0</sub> und seinen Abstand zur Bildmitte
-      (<a href="./#coma">Handbuch, Kapitel 8</a>). Ab 15 % der halben Diagonale schlägt es eine Kollimation vor. Die
-      Bildfeldverkippung erscheint als ganz normale Verkippung (<a href="./#tilt">Kapitel 6</a>); das Script kann sie
+      (<a href="./#coma">Handbuch, Kapitel 9</a>). Ab 15 % der halben Diagonale schlägt es eine Kollimation vor. Die
+      Bildfeldverkippung erscheint als ganz normale Verkippung (<a href="./#tilt">Kapitel 7</a>); das Script kann sie
       nicht von einem schief sitzenden Sensor unterscheiden.</li>
   <li><b>Reihenfolge:</b> Liegt P<sub>0</sub> deutlich neben der Mitte und meldet das Script zugleich eine
       Verkippung, <b>zuerst kollimieren</b> und neu messen. Sonst gleicht man am Tilt-Adapter einen verkippten Spiegel
@@ -297,8 +299,8 @@ gegen die Bildebene: Eine Bildseite ist scharf, die gegenüberliegende weich.</p
   <li><b>Typisch für den Newton:</b> Weil der Auszug quer zum Tubus sitzt, wirkt die Schwerkraft je nach
       Himmelsrichtung anders - die Verkippung kann sich beim Schwenken und beim Meridian-Flip ändern.</li>
   <li><b>Was das Script sieht:</b> Den FWHM-Verlauf über das Bildfeld, Kippachse und Kippwinkel
-      (<a href="./#tilt">Handbuch, Kapitel 6</a>). Ob sich die Verkippung beim Flip ändert, zeigt die Serienanalyse
-      (<a href="./#series">Kapitel 10</a>): Wechselt sie mit der Seite, ist sie mechanisch; bleibt sie, sitzt sie fest im
+      (<a href="./#tilt">Handbuch, Kapitel 7</a>). Ob sich die Verkippung beim Flip ändert, zeigt die Serienanalyse
+      (<a href="./#series">Kapitel 11</a>): Wechselt sie mit der Seite, ist sie mechanisch; bleibt sie, sitzt sie fest im
       optischen Zug.</li>
   <li><b>Abhilfe:</b> Zuerst die Mechanik - Auszug spielfrei einstellen, Klemmung anziehen, Schraubadapter statt
       Klemmungen, ein Verstärkungsring im Tubus. Erst wenn die Verkippung auf beiden Seiten des Flips gleich bleibt,
@@ -314,8 +316,8 @@ in die Länge gezogen werden.</p>
 <ul>
   <li><b>Typische Ursachen:</b> Filter im Strahlengang (sie verlängern den Weg um etwa ein Drittel ihrer Dicke),
       vergessene oder doppelte Distanzringe, der falsche Wert aus der Anleitung.</li>
-  <li><b>Was das Script sieht:</b> Das radiale/tangentiale Muster am Rand (<a href="./#spacing">Handbuch, Kapitel 7</a>)
-      und die Koma k (<a href="./#coma">Kapitel 8</a>). Wie Unter- und Überkorrektur aussehen, zeigt der Simulator auf
+  <li><b>Was das Script sieht:</b> Das radiale/tangentiale Muster am Rand (<a href="./#spacing">Handbuch, Kapitel 8</a>)
+      und die Koma k (<a href="./#coma">Kapitel 9</a>). Wie Unter- und Überkorrektur aussehen, zeigt der Simulator auf
       der <a href="koma.html#corrector">Koma-Seite</a>.</li>
   <li><b>Bildfeldwölbung:</b> Ein reiner Komakorrektor ebnet das Feld nicht unbedingt; bei großen Sensoren bleibt ein
       gleichmäßig weicher Rand, den die FWHM²-Fläche als Wölbung ausweist.</li>
@@ -336,7 +338,7 @@ Schon geringe Kräfte verbiegen sie messbar.</p>
       dreht - und zwar <b>überall im Bildfeld gleich</b>, auch in der Mitte.</li>
   <li><b>Was das Script sieht:</b> Eine Verspannung ist kein Feldfehler und erzeugt deshalb kein Muster über das Bild.
       Astigmatismus kann aber, wenn der Fokus nicht genau sitzt, eine gemeinsame Elongation aller Sterne erzeugen - wie
-      ein Nachführfehler (<a href="./#tracking">Handbuch, Kapitel 4</a>). Ändert sich deren Richtung um 90°, wenn man
+      ein Nachführfehler (<a href="./#tracking">Handbuch, Kapitel 5</a>). Ändert sich deren Richtung um 90°, wenn man
       ein wenig vor und hinter den Fokus geht, ist es die Optik und nicht die Montierung.</li>
 </ul>
 </section>
@@ -350,7 +352,7 @@ Fangspiegel mit Spiel in der Halterung.</p>
   <li><b>Was im Bild passiert:</b> Die Kollimation ist auf beiden Seiten des Flips verschieden: Der komafreie Punkt
       springt, oft auch die Verkippung.</li>
   <li><b>Was das Script sieht:</b> Die Serienanalyse vergleicht den komafreien Punkt, die Verkippung und die
-      Plate-Solve-Verzeichnung beider Seiten (<a href="./#series">Handbuch, Kapitel 10</a> und
+      Plate-Solve-Verzeichnung beider Seiten (<a href="./#series">Handbuch, Kapitel 11</a> und
       <a href="./#sip">11</a>). Springen sie beim Flip, bewegt sich etwas im optischen Zug.</li>
   <li><b>Abhilfe:</b> Seitliche Spiegelauflage prüfen (Schlinge oder Auflagepunkte), Klammern bis knapp an den Spiegel,
       bei manchen Fassungen eine Spiegelarretierung. Den Fangspiegelhalter und den Korrektor auf Spiel prüfen.</li>
@@ -383,8 +385,8 @@ dehnt sich kaum aus, ganz verschwindet die Drift aber auch dort nicht, weil der 
 Die Werte sind deshalb Größenordnungen.</p>
 <ul>
   <li><b>Was das Script sieht:</b> Eine defokussierte Aufnahme an einer zu weichen Bildmitte (Defokus-Verdacht,
-      <a href="./#tilt">Handbuch, Kapitel 6</a>), und in einer Serie eine FWHM, die mit der Zeit driftet
-      (<a href="./#series">Kapitel 10</a>).</li>
+      <a href="./#tilt">Handbuch, Kapitel 7</a>), und in einer Serie eine FWHM, die mit der Zeit driftet
+      (<a href="./#series">Kapitel 11</a>).</li>
   <li><b>Abhilfe:</b> Autofokus nach Temperatur (z. B. alle 1 - 2 °C) oder nach Zeit, ein elektrischer Fokussierer, ein
       Carbontubus.</li>
 </ul>
@@ -414,11 +416,11 @@ Asymmetriemessung aus, und Spikes, Halos und Vignettierung verändern den PSF-Fi
 <section class="card" id="overview"><h2><span class="chapter-no">11.</span>Übersicht</h2>
 <div class="tbl"><table>
 <tr><th>Fehler</th><th>So sieht er aus</th><th>Im Script</th><th>Erste Maßnahme</th></tr>
-<tr><td><a href="koma.html">Koma</a></td><td>Fächer zum Rand hin, wächst linear</td><td>k, P<sub>0</sub> (Kap. 8)</td><td>Komakorrektor</td></tr>
+<tr><td><a href="koma.html">Koma</a></td><td>Fächer zum Rand hin, wächst linear</td><td>k, P<sub>0</sub> (Kap. 9)</td><td>Komakorrektor</td></tr>
 <tr><td>Dejustage</td><td>Koma einseitig stärker, auch in der Mitte; oft eine Seite weicher</td><td>P<sub>0</sub> außerhalb der Mitte, evtl. Verkippung</td><td>kollimieren, vor der Verkippung</td></tr>
-<tr><td>Verkippung</td><td>eine Seite scharf, die andere weich</td><td>Kippachse, -winkel (Kap. 6)</td><td>Mechanik, dann Tilt-Adapter</td></tr>
-<tr><td>Korrektorabstand</td><td>Restkoma, radiale oder tangentiale Sterne am Rand</td><td>eps_rad (Kap. 7), k</td><td>Abstand in 0,5-mm-Schritten</td></tr>
-<tr><td>Bildfeldwölbung</td><td>Rand rundum weich</td><td>FWHM²-Fläche (Kap. 6)</td><td>Flattener, kleinerer Sensor</td></tr>
+<tr><td>Verkippung</td><td>eine Seite scharf, die andere weich</td><td>Kippachse, -winkel (Kap. 7)</td><td>Mechanik, dann Tilt-Adapter</td></tr>
+<tr><td>Korrektorabstand</td><td>Restkoma, radiale oder tangentiale Sterne am Rand</td><td>eps_rad (Kap. 8), k</td><td>Abstand in 0,5-mm-Schritten</td></tr>
+<tr><td>Bildfeldwölbung</td><td>Rand rundum weich</td><td>FWHM²-Fläche (Kap. 7)</td><td>Flattener, kleinerer Sensor</td></tr>
 <tr><td>Hauptspiegel geklemmt</td><td>dreieckige Sterne</td><td>-</td><td>Klammern lösen</td></tr>
 <tr><td>Fangspiegel verspannt</td><td>Kreuz/Oval, dreht beim Fokussieren um 90°</td><td>evtl. gemeinsame Elongation</td><td>Halterung entspannen</td></tr>
 <tr><td>Mirror Flop</td><td>Kollimation ändert sich beim Flip</td><td>Serie: P<sub>0</sub>, Verkippung, SIP</td><td>Spiegelauflage prüfen</td></tr>
@@ -427,7 +429,7 @@ Asymmetriemessung aus, und Spikes, Halos und Vignettierung verändern den PSF-Fi
 <tr><td>Spinne verbogen</td><td>doppelte Spikes</td><td>-</td><td>Streben ausrichten</td></tr>
 <tr><td>Auszug ragt hinein</td><td>zusätzlicher Spike</td><td>-</td><td>Auszug weiter ausfahren</td></tr>
 </table></div>
-<p>Die Reihenfolge, in der man die Fehler angeht, folgt dem <a href="./#assessment">Handbuch, Kapitel 9</a>: erst
+<p>Die Reihenfolge, in der man die Fehler angeht, folgt dem <a href="./#assessment">Handbuch, Kapitel 10</a>: erst
 Fokus, dann Nachführung, Verkippung, Kollimation, Abstand - weil sich die Fehler gegenseitig überdecken. Ausnahme:
 Bei deutlich verschobenem komafreiem Punkt zuerst kollimieren, weil die Dejustage selbst eine Verkippung erzeugt
 (<a href="#collimation">Kapitel 4</a>).</p>

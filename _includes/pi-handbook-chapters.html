@@ -1,0 +1,6 @@
+{%- comment -%}
+  Sets `chapters` to the handbook chapters of the page, sorted by `order`:
+  the files in _sad_handbook/<page.handbook>/.
+{%- endcomment -%}
+{%- assign handbook_dir = "_sad_handbook/" | append: page.handbook | append: "/" -%}
+{%- assign chapters = site.sad_handbook | where_exp: "c", "c.relative_path contains handbook_dir" | sort: "order" -%}

@@ -1,0 +1,26 @@
+{%- comment -%}
+  Side navigation of a handbook page: the chapters, and the subheadings of the
+  chapter being read. Shown only where the window is wide enough; the inline
+  table of contents stays for narrow screens. Expects `chapters` from
+  pi-handbook-chapters.html.
+{%- endcomment -%}
+{% include pi-sidenav.html %}
+<nav class="side-nav" aria-label="{% if page.lang == 'de' %}Inhalt{% else %}Contents{% endif %}">
+{% include pi-sidenav-head.html %}
+  <ol class="numbered">
+{%- for ch in chapters %}
+    <li><a href="#{{ ch.slug }}"><span class="no">{{ forloop.index0 }}.</span>{{ ch.title }}</a>
+{%- assign parts = ch.content | split: '<h3 id="' -%}
+{%- if parts.size > 1 %}
+      <ol>
+{%- for part in parts offset: 1 -%}
+{%- assign h3_id = part | split: '"' | first -%}
+{%- assign h3_title = part | split: '">' | slice: 1, 9 | join: '">' | split: '</h3>' | first %}
+        <li><a href="#{{ ch.slug }}-{{ h3_id }}">{{ h3_title }}</a></li>
+{%- endfor %}
+      </ol>
+{%- endif %}
+    </li>
+{%- endfor %}
+  </ol>
+</nav>

@@ -1,10 +1,10 @@
 """Builds de/newton.html from newton.template.html: the layout of a Newtonian
 with the places where errors arise, the view through a collimation eyepiece
 and the table of the thermal focus drift. The page style is taken from the
-handbook (de/index.html); the star gallery is computed in the browser.
+handbook (_includes/pi-handbook-style.html); the star gallery is computed in the browser.
 
 Usage, from pi-scripts/StarAberrationDiagnostics:
-   python3 newton-src/gen.py newton-src/newton.template.html de/index.html de/newton.html
+   python3 newton-src/gen.py newton-src/newton.template.html ../../_includes/pi-handbook-style.html de/newton.html
 
 Edit the text in newton.template.html, never in de/newton.html."""
 import math, re, sys

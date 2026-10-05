@@ -1,0 +1,12 @@
+{%- comment -%}
+  Head of both side navigations: the script name (to the top of the handbook
+  page), then the handbook, the dialog reference and the examples.
+{%- endcomment -%}
+{%- assign head_ui = site.data.pi_dialog[page.lang] -%}
+{%- capture head_url %}/pi-scripts/StarAberrationDiagnostics/{% if page.lang == 'de' %}de/{% endif %}{% endcapture %}
+  <a class="nav-title" href="{{ head_url }}">StarAberrationDiagnostics</a>
+  <ol class="intro">
+    <li><a href="{{ head_url }}#handbook">{{ head_ui.handbook }}</a></li>
+    <li><a href="{{ head_url }}dialog/">{{ head_ui.reference }}</a></li>
+    <li><a href="{{ head_url }}examples/">{{ head_ui.examples }}</a></li>
+  </ol>

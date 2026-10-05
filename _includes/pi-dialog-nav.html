@@ -1,0 +1,39 @@
+{%- comment -%}
+  The menu tree of the dialog reference or of the examples: the pages, grouped
+  by `section` (the tab of the dialog), and the groups of the current page. Expects the
+  variables of pi-dialog-pages.html.
+{%- endcomment -%}
+<nav class="side-nav" aria-label="{{ part_title }}">
+{% include pi-sidenav-head.html %}
+  <ol>
+{%- assign open_section = nil -%}
+{%- for p in dialog_pages -%}
+{%- if p.section != open_section -%}
+{%- if open_section %}
+    </ol></li>
+{%- endif -%}
+{%- if p.section %}
+    <li><span class="grp">{{ p.section }}</span><ol class="grp-items">
+{%- endif -%}
+{%- assign open_section = p.section -%}
+{%- endif -%}
+{%- if p.url == page.url %}
+    <li class="open"><a class="current" href="{{ p.url }}">{{ p.menu }}</a>
+      <ol>
+{%- assign groups = content | split: '<h2 id="' -%}
+{%- for g in groups offset: 1 -%}
+{%- assign g_id = g | split: '"' | first -%}
+{%- assign g_title = g | split: '">' | slice: 1, 9 | join: '">' | split: '</h2>' | first %}
+        <li><a href="#{{ g_id }}">{{ g_title }}</a></li>
+{%- endfor %}
+      </ol>
+    </li>
+{%- else %}
+    <li><a href="{{ p.url }}">{{ p.menu }}</a></li>
+{%- endif -%}
+{%- endfor -%}
+{%- if open_section %}
+    </ol></li>
+{%- endif %}
+  </ol>
+</nav>

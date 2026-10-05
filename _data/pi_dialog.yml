@@ -1,0 +1,28 @@
+# Interface texts of the dialog reference (_layouts/pi_dialog.html) and of its
+# links from the handbook, per language.
+en:
+  reference: Dialog reference
+  examples: Examples
+  examples_desc: "StarAberrationDiagnostics example: %s."
+  handbook: Handbook
+  install: Installation
+  menu: Menu
+  pending: Screenshot pending
+  alt: "The %s page of the dialog"
+  desc: "StarAberrationDiagnostics dialog reference: %s."
+  langnav: Language
+  other: Deutsche Version
+  in_dialog: In the dialog
+de:
+  reference: Dialog-Referenz
+  examples: Beispiele
+  examples_desc: "StarAberrationDiagnostics Beispiel: %s."
+  handbook: Handbuch
+  install: Installation
+  menu: Menü
+  pending: Screenshot fehlt noch
+  alt: "Die Seite %s des Dialogs"
+  desc: "StarAberrationDiagnostics Dialog-Referenz: %s."
+  langnav: Sprache
+  other: English version
+  in_dialog: Im Dialog

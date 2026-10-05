@@ -1,9 +1,9 @@
 """Builds de/koma.html from koma.template.html: exact ray traces on a parabola,
 the comatic circles, the Seidel spot diagrams and the table of coma lengths.
-The page style is taken from the handbook (de/index.html).
+The page style is taken from the handbook (_includes/pi-handbook-style.html).
 
 Usage, from pi-scripts/StarAberrationDiagnostics:
-   python3 koma-src/gen.py koma-src/koma.template.html de/index.html de/koma.html
+   python3 koma-src/gen.py koma-src/koma.template.html ../../_includes/pi-handbook-style.html de/koma.html
 
 Edit the text in koma.template.html, never in de/koma.html."""
 import math, re, sys

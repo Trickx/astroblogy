@@ -82,6 +82,7 @@
     .chapter-no { color: var(--muted); font-weight: normal; margin-right: 6px; }
     figure { margin: 16px 0; }
     figure svg { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; }
+    figure img { width: 100%; max-width: 680px; margin: 0 auto; border: none; border-radius: 0; }
     figcaption { font-size: 0.9rem; margin-top: 6px; }
     .eq {
       background: #0c141d;
@@ -113,6 +114,7 @@
     .toc li { break-inside: avoid; }
     @media (max-width: 640px) { .toc ol { columns: 1; } }
     .steps li { margin-bottom: 4px; }
+    .see { font-size: 0.9rem; border-top: 1px solid #2a3b4f; padding-top: 10px; margin-top: 16px; }
     i.v { font-family: "Cambria Math", Georgia, serif; }
     /* Language switch */
     .lang {
@@ -151,7 +153,7 @@
 <body>
   <main class="wrap">
     <section class="card">
-      <p class="back"><a href="./#coma">← Handbuch StarAberrationDiagnostics, Kapitel 8: Koma und Kollimation</a></p>
+      <p class="back"><a href="./#coma">← Handbuch StarAberrationDiagnostics, Kapitel 9: Koma und Kollimation</a></p>
       <h1>Koma - wie sie entsteht</h1>
       <p>Warum Sterne am Bildrand zu kleinen Kometen werden, wie stark das ist, was ein Korrektor damit macht und
       wie eine Dejustage das Bild verschiebt. Die Abbildungen sind aus der Optik berechnet, nicht gezeichnet.</p>
@@ -239,7 +241,7 @@ Vorzeichen</b> und ebenfalls linear in h. Im richtigen Abstand zum Sensor heben 
 Feld. Im falschen Abstand bleibt ein Rest, der wieder linear mit h wächst:</p>
 <ul>
   <li><b>Unterkorrigiert</b> - der Spiegel überwiegt: Die Fächer zeigen wie ohne Korrektor von der Mitte weg, nur
-      kürzer. Nach der Faustregel aus <a href="./#spacing">Kapitel 7 des Handbuchs</a> ist der Abstand Korrektor-Sensor dann zu klein.</li>
+      kürzer. Nach der Faustregel aus <a href="./#spacing">Kapitel 8 des Handbuchs</a> ist der Abstand Korrektor-Sensor dann zu klein.</li>
   <li><b>Überkorrigiert</b> - der Korrektor überwiegt: Die Fächer zeigen zur Bildmitte hin. Der Abstand ist dann
       eher zu groß.</li>
 </ul>
@@ -254,10 +256,10 @@ Feldkoma, die linear mit dem Ort wächst, ergibt sich</p>
 <div class="eq"><div>Koma(P) = k · (P − P<sub>0</sub>) / R</div><div><span class="c">P Position auf dem Sensor, R halbe Diagonale, k Stärke und Vorzeichen der Feldkoma, P<sub>0</sub> komafreier Punkt</span></div></div>
 <p>Der konstante Anteil verschiebt also nur den Punkt, an dem die Koma verschwindet: von der Bildmitte zu
 <i class="v">P<sub>0</sub></i>. Ohne Korrektor ist <i class="v">P<sub>0</sub></i> die optische Achse - liegt sie
-neben der Bildmitte, ist das Teleskop dejustiert (<a href="./#coma">Handbuch, Kapitel 8</a>; wie man einen Newton kollimiert, steht unter <a href="newton.html#collimation">Typische Fehler eines Newton-Teleskops</a>). Ist die Feldkoma gut korrigiert (k ≈ 0), bleibt dagegen nur der
+neben der Bildmitte, ist das Teleskop dejustiert (<a href="./#coma">Handbuch, Kapitel 9</a>; wie man einen Newton kollimiert, steht unter <a href="newton.html#collimation">Typische Fehler eines Newton-Teleskops</a>). Ist die Feldkoma gut korrigiert (k ≈ 0), bleibt dagegen nur der
 konstante Anteil: Alle Sterne haben dann einen Fächer in dieselbe Richtung. Das kann auf den ersten Blick wie ein
 Nachführfehler aussehen, ist aber <b>einseitig</b> (Kern und Schweif), während die Nachführung Sterne
-<b>symmetrisch</b> in die Länge zieht (<a href="./#tracking">Handbuch, Kapitel 4</a>).</p>
+<b>symmetrisch</b> in die Länge zieht (<a href="./#tracking">Handbuch, Kapitel 5</a>).</p>
 </section>
 
 <section class="card" id="simulator"><h2><span class="chapter-no">7.</span>Simulator</h2>
@@ -297,7 +299,7 @@ Bildfeldwölbung und Fokusfehler sind weggelassen - echte Sterne sind entspreche
 Pixeln jedes Sterns das <b>dritte Moment</b> m<sub>3</sub>, das das Licht im Fächer stark gewichtet und in dessen
 Richtung zeigt. An die Vektoren aller Sterne passt es genau das Modell aus Kapitel 6 an und erhält
 <b>k</b> (Stärke und Vorzeichen: unter- oder überkorrigiert) und den <b>komafreien Punkt P<sub>0</sub></b>
-(Kollimation). Die Einzelheiten stehen im <a href="./#coma">Handbuch, Kapitel 8</a>.</p>
+(Kollimation). Die Einzelheiten stehen im <a href="./#coma">Handbuch, Kapitel 9</a>.</p>
 </section>
 <section class="card" id="seidel"><h2><span class="chapter-no">9.</span>Exkurs: Ordnungen und die Seidel'schen Fehler</h2>
 <p>Die „dritte Ordnung“ in den Kapiteln 3 und 7 stammt aus der klassischen Fehlertheorie. Man entwickelt den
@@ -318,7 +320,7 @@ eines Terms ist die Summe der Exponenten.</p>
 <tr><td>ρ³</td><td>sphärische Aberration</td><td>überall gleich, auch in der Bildmitte; Fokus „schwammig“</td></tr>
 <tr><td>h·ρ²</td><td><b>Koma</b></td><td>wächst linear zum Rand, einseitiger Fächer</td></tr>
 <tr><td>h²·ρ</td><td>Astigmatismus</td><td>wächst quadratisch zum Rand, Sterne zu Strichen, die sich beim Fokussieren um 90° drehen</td></tr>
-<tr><td>h²·ρ</td><td>Bildfeldwölbung</td><td>scharfe Mitte, gleichmäßig weicher Rand (<a href="./#tilt">Handbuch, Kapitel 6</a>)</td></tr>
+<tr><td>h²·ρ</td><td>Bildfeldwölbung</td><td>scharfe Mitte, gleichmäßig weicher Rand (<a href="./#tilt">Handbuch, Kapitel 7</a>)</td></tr>
 <tr><td>h³</td><td>Verzeichnung</td><td>Sterne scharf, aber an der falschen Stelle (kissen- oder tonnenförmig)</td></tr>
 </table></div>
 <p>Ein Parabolspiegel ist frei von sphärischer Aberration; von den übrigen dominiert bei ihm die Koma, weil sie als
@@ -330,7 +332,7 @@ der Wellenfront, die eine Potenz höher ist. Dieselbe Koma heißt dort „Term 4
 <p><b>Wenn die Symmetrie bricht:</b> Ein verkippter oder dezentrierter Spiegel erlaubt Terme, die sonst verboten
 wären - etwa eine über das Feld <b>konstante Koma</b> (Kapitel 6) oder eine <b>quadratische Verzeichnung</b>. Genau
 diese quadratischen SIP-Terme vergleicht StarAberrationDiagnostics beim Meridian-Flip
-(<a href="./#sip">Handbuch, Kapitel 11</a>).</p></div>
+(<a href="./#sip">Handbuch, Kapitel 12</a>).</p></div>
 </section>
 
   </main>
