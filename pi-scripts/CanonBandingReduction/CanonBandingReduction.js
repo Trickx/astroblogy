@@ -483,14 +483,48 @@ function BandingEngine() {
    /// do the actual work on target view
    this.doit=function(targetView){
       this.doResult();
+      // Parameters must be set before endProcess() so that the processing
+      // history entry of this view stores the applied settings.
+      this.exportParameters();
       // Tell the core application that we are going to change this view.
       // Without doing this, we'd have just read-only access to the view's image.
-      targetView.beginProcess();
+      // Keywords and view properties are included in the undo data because
+      // writeHistory() modifies them within the same transaction.
+      targetView.beginProcess( UndoFlag.PixelData | UndoFlag.Keywords | UndoFlag.ViewProperties );
       targetView.image.resetSelections();
       targetView.image.assign( this.resultImage );
+      this.writeHistory( targetView );
       // end transaction
       targetView.endProcess();
     };   //function doit
+
+   /// record script name, version, time and settings in the image metadata.
+   ///
+   /// The Script entry that PixInsight adds to the processing history carries
+   /// neither name nor timestamp, so we append a line to the XISF property
+   /// Processing:History and add FITS HISTORY keywords. Only main views are
+   /// handled, since previews have no keywords and are not saved to files.
+   this.writeHistory=function(targetView){
+      if ( !targetView.isMainView )
+         return;
+      // XISF TimePoint format, without milliseconds
+      var timestamp = (new Date()).toISOString().replace( /\.\d+Z$/, "Z" );
+      var settings = "amount=" + this.dAmount
+                   + " highlightProtect=" + this.bDoHighlightProtect
+                   + " sigma=" + this.dSigma;
+
+      var history = targetView.propertyValue( "Processing:History" );
+      history = ( typeof history == "string" && history.length > 0 ) ? history + "\n" : "";
+      history += timestamp + " " + TITLE + " " + VERSION + ": " + settings;
+      targetView.setPropertyValue( "Processing:History", history, PropertyType.String,
+                                   PropertyAttribute.Storable | PropertyAttribute.Permanent );
+
+      var window = targetView.window;
+      var keywords = window.keywords;
+      keywords.push( new FITSKeyword( "HISTORY", "", timestamp + " " + TITLE + " " + VERSION ) );
+      keywords.push( new FITSKeyword( "HISTORY", "", TITLE + ": " + settings ) );
+      window.keywords = keywords;
+   };   //function writeHistory
 }  //class BandingEngine
 
 /// @class embedded preview for dialog.
@@ -723,6 +757,7 @@ constructor(bandingEngine,targetView)
    this.terminate=false;   // true if no further generate is required
    this.abort=false; // true if there is a new job
    this.busy=false;  // true if a generate is running
+   this.applyPending=false;   // true if Apply was pressed while a generate was running
 
    this.lastCallTime=Date.now(); // saves the time for last progress report, used in statusFunction()
 
@@ -745,7 +780,7 @@ constructor(bandingEngine,targetView)
       if (view.fullId==this.dialog.targetView.fullId) return;
       this.dialog.targetView=view;
       this.dialog.bandingEngine.setTargetImage(view.image);
-      this.dialog.generatePreview();
+      this.dialog.schedulePreview();
    }; //onViewSelected()
 
    // amount slider
@@ -763,7 +798,7 @@ constructor(bandingEngine,targetView)
          Console.writeln("processing in slider, amount=",value);
       }
       this.dialog.bandingEngine.setAmount(value);
-      this.dialog.generatePreview();
+      this.dialog.schedulePreview();
       if ( DEBUGGING_MODE_ON ){
          Console.writeln("processing in slider, amount=",value, "done");
       }
@@ -778,7 +813,7 @@ constructor(bandingEngine,targetView)
    this.highlightProtectCheckbox.onCheck = function(checked){
       this.dialog.sigmaControl.enabled=checked;
       this.dialog.bandingEngine.setHighlightProtect(checked,this.dialog.bandingEngine.dSigma);
-      this.dialog.generatePreview();
+      this.dialog.schedulePreview();
    }; //onCheck()
 
    this.sigmaControl=new NumericControl(this);
@@ -795,7 +830,7 @@ constructor(bandingEngine,targetView)
    this.sigmaControl.onValueUpdated = function( value ) {
       this.dialog.bandingEngine.setHighlightProtect(this.dialog.bandingEngine.bDoHighlightProtect,
                                        1.0/value);
-      this.dialog.generatePreview();
+      this.dialog.schedulePreview();
       return;
    }; //function onValueUpdated();
 
@@ -808,7 +843,7 @@ constructor(bandingEngine,targetView)
    this.stf_Button.onClick=function(){
       this.dialog.previewWithSTF=!this.dialog.previewWithSTF;
       this.dialog.updateSTFButton();
-      this.dialog.generatePreview();
+      this.dialog.schedulePreview();
    }  //onClick()
    this.updateSTFButton=function(){
       this.stf_Button.checked=this.previewWithSTF;
@@ -869,9 +904,15 @@ constructor(bandingEngine,targetView)
       if ( DEBUGGING_MODE_ON ){
          Console.writeln("ok_Button.onClick()");
       }  // if debugging
-         // ok selected
-        this.dialog.bandingEngine.doit(this.dialog.targetView);
-        this.dialog.ok();
+      // This handler may be called from processEvents() inside a running
+      // generatePreview(). Applying and closing from there is unreliable, so
+      // abort the preview and let generatePreview() apply when it returns.
+      if ( this.dialog.busy ){
+         this.dialog.applyPending = true;
+         this.dialog.abort = true;
+         return;
+      }
+      this.dialog.apply();
    };
 
    this.cancel_Button = new PushButton (this);
@@ -882,6 +923,9 @@ constructor(bandingEngine,targetView)
       if ( DEBUGGING_MODE_ON ){
          Console.writeln("cancel_Button.onClick()");
       }  // if debugging
+      this.dialog.previewTimer.stop();
+      this.dialog.terminate=true;
+      this.dialog.abort=true;   // stop a running generate, if any
       this.dialog.cancel();
    };
 
@@ -942,14 +986,51 @@ constructor(bandingEngine,targetView)
          }
          this.previewControl.doUpdateImage(image,stf);
       }
-      while ( this.abort && !this.terminate );
+      while ( this.abort && !this.terminate && !this.applyPending );
       // at this point, the processing has not been aborted, or the whole process
-      // is terminating
+      // is terminating, or Apply has been pressed during the computation
       this.busy=false;
       if ( DEBUGGING_MODE_ON ){
          Console.writeln("generatePreview(): Finished for Amount=",this.bandingEngine.dAmount);
       }
+      if ( this.applyPending ){
+         this.applyPending = false;
+         this.abort = false;   // otherwise doit() would abort its own computation
+         this.apply();
+      }
    }  //function generatePreview()
+
+   // Event handlers must not compute the preview directly. A value change in an
+   // edit field is reported when the field loses focus, i.e. while the mouse
+   // press on another control (such as Apply) is being delivered. Computing the
+   // preview there processes the matching mouse release before the button has
+   // seen the press, so the click is lost. The timer defers the computation
+   // until the event has been fully delivered, and merges quick successive changes.
+   this.previewTimer=new Timer;
+   this.previewTimer.singleShot=true;
+   this.previewTimer.interval=0.05;   // seconds
+   this.previewTimer.onTimeout=function(){
+      my.generatePreview();
+   };
+
+   /// request a preview update from an event handler
+   this.schedulePreview=function(){
+      if ( this.busy ){
+         // the running generate will pick up the new settings
+         this.abort = true;
+         return;
+      }
+      this.previewTimer.start();
+   }  //function schedulePreview()
+
+   /// apply current settings to the target view and close the dialog
+   this.apply=function(){
+      this.previewTimer.stop();
+      this.terminate=true;
+      this.setInfoLabel("Applying to " + this.targetView.fullId);
+      this.bandingEngine.doit(this.targetView);
+      this.ok();
+   }  //function apply()
 
    // tell generatePreview to terminate processing()
    this.terminateGeneratePreview=function() {

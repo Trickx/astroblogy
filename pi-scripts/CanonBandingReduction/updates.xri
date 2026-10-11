@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="CanonBandingReduction20260924v0101.tar.gz" sha1="abcb43e0caf4984eb98208b1134339a5b3c4ea83" type="script" releaseDate="20260924">
+      <package fileName="CanonBandingReduction20261011v0102.tar.gz" sha1="7b0e7f24829cae368f29bcaf13221add2e380449" type="script" releaseDate="20261011">
          <title>
-         CanonBandingReduction 0.10.1
+         CanonBandingReduction 0.10.2
          </title>
          <remove>
             src/scripts/CanonBandingReduction/CanonBandingReduction.js
@@ -25,6 +25,9 @@
                Installs the CanonBandingReduction PixInsight feature script, which reduces the horizontal banding of Canon DSLR images with live preview and highlight protection.
             </p>
             <p>
+               Changes in 0.10.2: applied settings are stored in the processing history of the image, and name, version, time and settings are recorded in the XISF property Processing:History and in FITS HISTORY keywords. Apply now closes the dialog with a single click.
+            </p>
+            <p>
                Installed files:
                <br/>src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.js
                <br/>src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.svg
@@ -34,4 +37,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:57:20.783Z" encoding="Base64">mbnEnE0JcVrMKlf+lLUeZV8UdbR21D0j6KygWnzb7JURmaLgjU2DLaqt86AAF12ZB30Nh2o5J79c9W4u6bzFDg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-10-11T07:24:28.046Z" encoding="Base64">uYjeJcm/98C/IfHZZCp/viH+mtzKJ/I6MhDeUyuHVfX0NUViYBDoLbXHONZAAYa81AItMRVIee1mc77jrtI0Cw==</Signature>
