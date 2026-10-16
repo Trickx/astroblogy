@@ -2,9 +2,7 @@
 title: "The dialog"
 menu: "Overview"
 order: 10
-shot: [SAD_Setup_General.png]
 handbook: [stars, limits]
-permalink: /pi-scripts/StarAberrationDiagnostics/dialog/
 ---
 StarAberrationDiagnostics measures the shape of every star across the field and turns it into maps and an assessment of the optics.
 This reference walks through the dialog page by page and explains every setting; how the computations behind it work is explained in the [handbook](/pi-scripts/StarAberrationDiagnostics/#handbook).
@@ -13,18 +11,18 @@ The dialog has two halves.
 On the **left** is the preview: the tips for the test frames while no image is chosen, the target image before the first **Calculate**, then the map of the selected Maps tab; on the Assessment and the Series tab, their own results instead (assessments, series hints and report).
 On the **right** are the settings in four tabs:
 
-- [Setup](setup-general/) - the target image, debayering, optics and output ([General](setup-general/)), and the star detection and PSF fit ([Star detection](setup-star-detection/)).
-- [Maps](maps-size/) - one sub-tab per map: [Size](maps-size/), [Shape](maps-shape/), [Coma](maps-coma/) and [Tilt](maps-tilt/), each with its layers and its evaluation.
-- [Assessment](assessment/) - the verdicts with suggested corrections, and the optional AI review.
-- [Series](series/) - several frames, e.g. before and after the meridian flip, compared.
+- [Setup](#setup-general) - the target image, debayering, optics and output ([General](#setup-general)), and the star detection and PSF fit ([Star detection](#setup-star-detection)).
+- [Maps](#maps) - one sub-tab per map: [Size](#maps-size), [Shape](#maps-shape), [Coma](#maps-coma) and [Tilt](#maps-tilt), each with its layers and its evaluation.
+- [Assessment](#assessment) - the verdicts with suggested corrections, and the optional AI review.
+- [Series](#series) - several frames, e.g. before and after the meridian flip, compared.
 
 ### Typical workflow
 
 1. Open a single, unregistered and uncropped light frame and select it as the target image.
-2. Check the optics on [Setup › General](setup-general/) (or let them be read from the FITS header).
+2. Check the optics on [Setup › General](#setup-general) (or let them be read from the FITS header).
 3. Click **Calculate**.
    The preview shows the map of the selected Maps tab; switching tabs and layers redraws it at once, without measuring the stars again.
-4. Read the [Assessment](assessment/) and work through the corrections in the order given.
+4. Read the [Assessment](#assessment) and work through the corrections in the order given.
 5. **Save** opens the maps as image windows (plus CSV and 3D plot, when enabled) and closes the dialog.
 {: .steps}
 

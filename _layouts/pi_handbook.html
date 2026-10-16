@@ -28,7 +28,7 @@
 {%- assign dialog_links = site.sad_dialog | where: "lang", page.lang | where_exp: "d", "d.handbook contains ch.slug" | sort: "order" -%}
 {%- if dialog_links.size > 0 %}
 <p class="see">{{ site.data.pi_dialog[page.lang].in_dialog }}:
-{%- for d in dialog_links %} <a href="{{ d.url }}">{{ d.title }}</a>{% unless forloop.last %},{% endunless %}{% endfor %}</p>
+{%- for d in dialog_links %} <a href="{{ d.url | split: '/' | pop | join: '/' }}/#{{ d.slug }}">{{ d.title }}</a>{% unless forloop.last %},{% endunless %}{% endfor %}</p>
 {%- endif %}</section>
 {%- endfor %}
   </main>

@@ -8,21 +8,6 @@ handbook: [tilt]
 ---
 The tilt map in the style of Siril\'s *Show tilt*: the mean FWHM of the four quadrants as a quadrilateral, and the tilt axis.
 
-## Above all map tabs
-
-### Show
-{: #mapSourceCombo .list}
-
-- Target image (Calculate)
-- Series static: *group* (*n* frames)
-
-**Target image (Calculate)**: the image measured by Calculate - to check the settings on one frame before running a series.
-
-**Series static**: after Analyze series, the stars of all frames (or of one side of the flip) pooled.
-Each frame loses its dynamic tracking (its own uniform term less the mean of the group) and its FWHM is scaled to the median center FWHM, so the seeing drops out: what remains is fixed to the sensor - the optics, plus any constant tracking, which a single camera angle cannot tell from astigmatism on the axis.
-With n frames the standard errors are about √n smaller.
-The background is dark: the pooled stars belong to no single frame.
-
 ## Tilt axis
 
 ### Show tilt axis

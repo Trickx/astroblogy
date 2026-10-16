@@ -3,26 +3,26 @@
 en:
   reference: Dialog reference
   examples: Examples
-  examples_desc: "StarAberrationDiagnostics example: %s."
+  examples_desc: "StarAberrationDiagnostics examples: real nights analyzed, and how to read the result in the maps."
   handbook: Handbook
   install: Installation
   menu: Menu
   pending: Screenshot pending
   alt: "The %s page of the dialog"
-  desc: "StarAberrationDiagnostics dialog reference: %s."
+  desc: "StarAberrationDiagnostics dialog reference: every page and every setting of the dialog explained."
   langnav: Language
   other: Deutsche Version
   in_dialog: In the dialog
 de:
   reference: Dialog-Referenz
   examples: Beispiele
-  examples_desc: "StarAberrationDiagnostics Beispiel: %s."
+  examples_desc: "StarAberrationDiagnostics Beispiele: ausgewertete Aufnahmen echter Nächte und wie man das Ergebnis in den Karten liest."
   handbook: Handbuch
   install: Installation
   menu: Menü
   pending: Screenshot fehlt noch
   alt: "Die Seite %s des Dialogs"
-  desc: "StarAberrationDiagnostics Dialog-Referenz: %s."
+  desc: "StarAberrationDiagnostics Dialog-Referenz: jede Seite und jede Einstellung des Dialogs erklärt."
   langnav: Sprache
   other: English version
   in_dialog: Im Dialog

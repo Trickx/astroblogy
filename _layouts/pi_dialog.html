@@ -6,38 +6,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ page.title }} - StarAberrationDiagnostics</title>
-  <meta name="description" content="{{ part_desc | replace: '%s', page.title }}" />
+  <title>{{ part_title }} - StarAberrationDiagnostics</title>
+  <meta name="description" content="{{ part_desc }}" />
   <link rel="alternate" hreflang="en" href="{{ site.url }}{{ en_url }}" />
   <link rel="alternate" hreflang="de" href="{{ site.url }}{{ de_url }}" />
 {% include pi-handbook-style.html %}
   <style>
     .head { display: flex; align-items: flex-start; gap: 16px; }
     .head .lang { flex: none; }
-    .crumb { font-size: 0.88rem; color: var(--muted); margin-bottom: 6px; }
+    /* The first card of each file: its title, introduction and handbook links */
+    .card.part { border-top: 3px solid var(--accent); margin-top: 40px; }
+    .card.part h2 { font-size: 1.45rem; color: var(--text); }
+    .card h2, .card h3, .card h4 { scroll-margin-top: 16px; }
+    .card[id] { scroll-margin-top: 16px; }
     .shot a { display: block; }
     .shot img { width: 100%; }
     .shot-missing { border: 2px dashed #2a3b4f; border-radius: 10px; padding: 48px 16px; text-align: center; color: var(--muted); }
+    /* A group (##) of a file is an h3 here, a setting (###) an h4 */
+    .card > h3:first-child { font-size: 1.2rem; color: var(--accent); margin-top: 0; }
+    .card h4 { font-size: 0.98rem; color: var(--text); margin: 22px 0 8px; }
+    .card h3 + h4 { margin-top: 0; }
     /* One setting: a heading with the control id and its kind as class */
-    .card h2 + h3 { margin-top: 0; }
-    .card h3[class] { border-top: 1px solid #2a3b4f; padding-top: 12px; margin: 12px 0 4px; font-size: 0.98rem; }
-    .card h2 + h3[class] { border-top: none; padding-top: 0; }
-    .card h3[class]::after {
+    .card h4[class] { border-top: 1px solid #2a3b4f; padding-top: 12px; margin: 12px 0 4px; }
+    .card h3 + h4[class] { border-top: none; padding-top: 0; }
+    .card h4[class]::after {
       font-weight: normal; font-size: 0.8rem; color: var(--muted); margin-left: 8px;
       border: 1px solid #2a3b4f; border-radius: 10px; padding: 1px 8px; white-space: nowrap;
     }
-    h3.checkbox::after { content: "Checkbox"; }
-    h3.option::after { content: "Option"; }
-    h3.number::after { content: "Number"; }
-    h3.list::after { content: "List"; }
-    h3.button::after { content: "Button"; }
-    h3.display::after { content: "Display"; }
-    h3.text::after { content: "Text"; }
-    :lang(de) h3.checkbox::after { content: "Kontrollkästchen"; }
-    :lang(de) h3.number::after { content: "Zahl"; }
-    :lang(de) h3.list::after { content: "Liste"; }
-    :lang(de) h3.button::after { content: "Schaltfläche"; }
-    :lang(de) h3.display::after { content: "Anzeige"; }
+    h4.checkbox::after { content: "Checkbox"; }
+    h4.option::after { content: "Option"; }
+    h4.number::after { content: "Number"; }
+    h4.list::after { content: "List"; }
+    h4.button::after { content: "Button"; }
+    h4.display::after { content: "Display"; }
+    h4.text::after { content: "Text"; }
+    :lang(de) h4.checkbox::after { content: "Kontrollkästchen"; }
+    :lang(de) h4.number::after { content: "Zahl"; }
+    :lang(de) h4.list::after { content: "Liste"; }
+    :lang(de) h4.button::after { content: "Schaltfläche"; }
+    :lang(de) h4.display::after { content: "Anzeige"; }
     .card p { margin: 6px 0; }
     .card blockquote {
       border-left: 3px solid var(--warn); padding: 2px 10px; margin: 6px 0;
@@ -49,7 +56,6 @@
     figure.map a { display: block; }
     .card table td, .card table th { white-space: nowrap; }
     .card table td.wrap { white-space: normal; }
-    .pager { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -61,12 +67,22 @@
 {% include pi-dialog-nav.html %}
     </details>
 {%- comment -%}
-  The text before the first group (##) is the introduction; each group is a card.
+  One part per file of the collection, sorted by `order`; the file name is its
+  anchor. In a file, the text before the first group (##) is the introduction;
+  each group is a card. On this page a group is an h3 and a setting (###) an
+  h4. The ids of the groups get the file name as prefix, so they stay unique,
+  as do those of headings without a control of their own ({: .display}).
+  The first file opens the page under the title of the collection.
 {%- endcomment -%}
-{%- assign parts = content | split: '<h2' %}
-    <section class="card">
+{%- for d in dialog_pages %}
+{%- capture h3_prefix %}<h3 id="{{ d.slug }}-{% endcapture -%}
+{%- capture display_prefix %}<h4 class="display" id="{{ d.slug }}-{% endcapture -%}
+{%- assign body = d.content | replace: '<h3 class="display" id="', display_prefix | replace: '<h3', '<h4' | replace: '</h3>', '</h4>' | replace: '<h2 id="', h3_prefix | replace: '</h2>', '</h3>' -%}
+{%- assign parts = body | split: h3_prefix %}
+{%- if forloop.first %}
+    <section class="card" id="{{ d.slug }}">
       <div class="head">
-        <div><div class="crumb">{{ part_title }}{% if page.section %} › {{ page.section }}{% endif %}</div><h1>{{ page.title }}</h1></div>
+        <h1>{{ part_title }}</h1>
         <nav class="lang" aria-label="{{ ui.langnav }}">
 {%- if page.lang == 'de' -%}
           <a href="{{ en_url }}" hreflang="en" lang="en" title="{{ ui.other }}">EN</a><span aria-current="page">DE</span>
@@ -75,14 +91,18 @@
 {%- endif -%}
         </nav>
       </div>
+{%- else %}
+    <section class="card part" id="{{ d.slug }}">
+      <h2>{{ d.title }}</h2>
+{%- endif %}
 {{ parts.first }}
-{%- if page.handbook %}
+{%- if d.handbook %}
 {%- assign handbook_dir = "_sad_handbook/" | append: page.lang | append: "/" -%}
 {%- assign chapters = site.sad_handbook | where_exp: "c", "c.relative_path contains handbook_dir" | sort: "order" %}
       <p class="see">{{ ui.handbook }}:
 {%- assign sep = "" -%}
 {%- for ch in chapters -%}
-{%- if page.handbook contains ch.slug -%}
+{%- if d.handbook contains ch.slug -%}
         {{ sep }} <a href="{{ sad_url }}#{{ ch.slug }}">{{ forloop.index0 }}. {{ ch.title }}</a>
 {%- assign sep = "," -%}
 {%- endif -%}
@@ -90,34 +110,19 @@
 {%- endif %}
     </section>
 {%- comment -%} One card per screenshot in `shot` (a list); a missing file is shown as a placeholder. {%- endcomment -%}
-{%- for shot_name in page.shot -%}
+{%- for shot_name in d.shot -%}
 {%- assign shot = "/pi-scripts/StarAberrationDiagnostics/screenshots/" | append: shot_name -%}
 {%- assign shot_files = site.static_files | where: "path", shot -%}
 {%- if shot_files.size > 0 %}
-    <section class="card shot"><a href="{{ shot }}"><img src="{{ shot }}" loading="lazy" alt="{{ ui.alt | replace: '%s', page.title }}" /></a></section>
+    <section class="card shot"><a href="{{ shot }}"><img src="{{ shot }}" loading="lazy" alt="{{ ui.alt | replace: '%s', d.title }}" /></a></section>
 {%- else %}
     <section class="card"><div class="shot-missing">{{ ui.pending }}: <code>pi-scripts/StarAberrationDiagnostics/screenshots/{{ shot_name }}</code></div></section>
 {%- endif -%}
 {%- endfor %}
 {%- for part in parts offset: 1 %}
-    <section class="card"><h2{{ part }}</section>
+    <section class="card">{{ h3_prefix }}{{ part }}</section>
 {%- endfor %}
-{%- for p in dialog_pages -%}
-{%- if p.url == page.url -%}
-{%- assign prev_i = forloop.index0 | minus: 1 -%}
-{%- assign next_i = forloop.index0 | plus: 1 -%}
-{%- endif -%}
 {%- endfor %}
-    <section class="card pager">
-{%- if prev_i >= 0 %}
-      <a href="{{ dialog_pages[prev_i].url }}">&larr; {{ dialog_pages[prev_i].title }}</a>
-{%- else %}
-      <span></span>
-{%- endif -%}
-{%- if dialog_pages[next_i] %}
-      <a href="{{ dialog_pages[next_i].url }}">{{ dialog_pages[next_i].title }} &rarr;</a>
-{%- endif %}
-    </section>
   </main>
 </div>
 </body>

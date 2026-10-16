@@ -1,0 +1,18 @@
+<!doctype html>
+{%- comment -%}
+  A file of the dialog reference or of the examples used to have a page of its
+  own; that address now leads to its section on the common page. An anchor of
+  the old address (a setting) is kept: the ids of the settings did not change.
+{%- endcomment -%}
+{%- assign target = page.url | split: '/' | pop | join: '/' | append: '/' %}
+<html lang="{{ page.lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex" />
+  <title>{{ page.title }}</title>
+  <link rel="canonical" href="{{ site.url }}{{ target }}#{{ page.slug }}" />
+  <meta http-equiv="refresh" content="0; url={{ target }}#{{ page.slug }}" />
+  <script>location.replace("{{ target }}" + (location.hash || "#{{ page.slug }}"));</script>
+</head>
+<body><p><a href="{{ target }}#{{ page.slug }}">{{ page.title }}</a></p></body>
+</html>

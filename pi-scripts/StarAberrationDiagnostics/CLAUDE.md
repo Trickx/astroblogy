@@ -14,10 +14,11 @@ or with an AI. This file is also imported by `_sad_handbook/CLAUDE.md` and
 | Chapter title and order | front matter of the chapter: `title`, `order` | |
 | Header cards (install, screenshot, table of contents) | `index.html`, `de/index.html` | |
 | Figures | `handbook-src/figures.py` | `fig/*.svg`, `de/fig/*.svg` (generated) |
-| Dialog reference: one page per dialog page | `_sad_dialog/en/<page>.md`, `_sad_dialog/de/<page>.md` (repository root) | |
+| Dialog reference: one file per dialog page, all shown on one page | `_sad_dialog/en/<page>.md`, `_sad_dialog/de/<page>.md` (repository root) | |
 | Dialog screenshots | `screenshots/<name>.png` (shared by both languages) | |
-| Dialog reference: menu, page frame, interface texts | `_layouts/pi_dialog.html`, `_includes/pi-dialog-*.html`, `_includes/pi-sidenav.html`, `_data/pi_dialog.yml` | |
-| Examples: one page per example (same layout as the dialog reference) | `_sad_examples/en/<id>.md`, `_sad_examples/de/<id>.md` (repository root) | |
+| Dialog reference and examples: menu, page frame, interface texts | `_layouts/pi_dialog.html`, `_includes/pi-dialog-*.html`, `_includes/pi-sidenav.html`, `_data/pi_dialog.yml`; the pages themselves are `dialog/index.html`, `examples/index.html` and their `de/` copies (front matter only) | |
+| Redirects from the former addresses of single files (`…/dialog/<page>/`) | `_layouts/pi_redirect.html` | |
+| Examples: one file per example, all shown on one page (same layout as the dialog reference) | `_sad_examples/en/<id>.md`, `_sad_examples/de/<id>.md` (repository root) | |
 | Example images (maps scaled down from the script's PNGs, shared by both languages) | `examples/<id>/` | |
 | Page frame, chapter cards, style | `_layouts/pi_handbook.html`, `_includes/pi-handbook-*.html` (repository root) | |
 | Coma page, Newtonian page (DE) | `koma-src/`, `newton-src/` (template + `gen.py`) | `de/koma.html`, `de/newton.html` |
@@ -59,8 +60,12 @@ or with an AI. This file is also imported by `_sad_handbook/CLAUDE.md` and
 
 ## Dialog reference
 
-- One Markdown file per page of the dialog, at `/pi-scripts/StarAberrationDiagnostics/dialog/<page>/`
-  (German: `…/de/dialog/<page>/`). Front matter: `title`, `menu` (entry in the menu tree),
+- One Markdown file per page of the dialog; all of them are shown, sorted by `order`, on one
+  page: `/pi-scripts/StarAberrationDiagnostics/dialog/` (German: `…/de/dialog/`). The file name
+  is the anchor of its part (`maps-size.md` → `#maps-size`); link between parts with
+  `[Size](#maps-size)`. The first file (`overview.md`) opens the page under the title
+  "Dialog reference". The former address `…/dialog/<page>/` redirects to the anchor.
+  The examples work the same way (`_sad_examples/`, `…/examples/`). Front matter: `title`, `menu` (entry in the menu tree),
   `section` (the dialog tab: Setup, Maps; none for a page of its own), `order`,
   `shot` (list of screenshot file names, e.g. `[SAD_Maps_Size.png]`; a missing one is shown as a
   placeholder) and `handbook`
@@ -68,6 +73,10 @@ or with an AI. This file is also imported by `_sad_handbook/CLAUDE.md` and
 - `handbook` links both ways: the dialog page lists those chapters, and below each of them
   the handbook lists the dialog pages that name it. Prefer it to hand-written links.
 - The text before the first `##` is the introduction; each `##` group becomes a card.
+  On the page a group is an `h3` with the anchor `<page>-<heading>` (e.g. `#series-frames`), a
+  setting an `h4`. Headings without a control (`{: .display}`) also get the page as prefix;
+  control ids stay as they are and must be unique across all pages (a setting shown on several
+  tabs, like **Show** above all map tabs, is documented once, in `maps.md`).
 - A setting is a `###` heading with the name shown in the dialog, and below it the member
   name of its control in the script and its kind:
 

@@ -17,10 +17,11 @@ collections:
   # Chapters of the StarAberrationDiagnostics handbook, assembled by _layouts/pi_handbook.html
   sad_handbook:
     output: false
-  # Dialog reference of StarAberrationDiagnostics, one page per dialog page (_layouts/pi_dialog.html)
+  # Dialog reference of StarAberrationDiagnostics, one file per dialog page, assembled on one
+  # page by _layouts/pi_dialog.html; the old address of each file redirects there (_layouts/pi_redirect.html)
   sad_dialog:
     output: true
-  # Worked examples of StarAberrationDiagnostics, one page per example (_layouts/pi_dialog.html)
+  # Worked examples of StarAberrationDiagnostics, one file per example, assembled the same way
   sad_examples:
     output: true
 
@@ -40,25 +41,25 @@ defaults:
   - scope:
       path: "_sad_dialog/en"
     values:
-      layout: pi_dialog
+      layout: pi_redirect
       lang: en
       permalink: /pi-scripts/StarAberrationDiagnostics/dialog/:name/
   - scope:
       path: "_sad_dialog/de"
     values:
-      layout: pi_dialog
+      layout: pi_redirect
       lang: de
       permalink: /pi-scripts/StarAberrationDiagnostics/de/dialog/:name/
   - scope:
       path: "_sad_examples/en"
     values:
-      layout: pi_dialog
+      layout: pi_redirect
       lang: en
       permalink: /pi-scripts/StarAberrationDiagnostics/examples/:name/
   - scope:
       path: "_sad_examples/de"
     values:
-      layout: pi_dialog
+      layout: pi_redirect
       lang: de
       permalink: /pi-scripts/StarAberrationDiagnostics/de/examples/:name/
   - scope:

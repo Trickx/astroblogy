@@ -9,21 +9,6 @@ handbook: [coma]
 The coma map: on which side of each star its flare sits.
 Under- and over-corrected coma, a decentered corrector and the collimation of a reflector show here, with the coma-free point.
 
-## Above all map tabs
-
-### Show
-{: #mapSourceCombo .list}
-
-- Target image (Calculate)
-- Series static: *group* (*n* frames)
-
-**Target image (Calculate)**: the image measured by Calculate - to check the settings on one frame before running a series.
-
-**Series static**: after Analyze series, the stars of all frames (or of one side of the flip) pooled.
-Each frame loses its dynamic tracking (its own uniform term less the mean of the group) and its FWHM is scaled to the median center FWHM, so the seeing drops out: what remains is fixed to the sensor - the optics, plus any constant tracking, which a single camera angle cannot tell from astigmatism on the axis.
-With n frames the standard errors are about √n smaller.
-The background is dark: the pooled stars belong to no single frame.
-
 ## Coma field
 
 ### Measure PSF asymmetry (coma direction, coma-free point)
