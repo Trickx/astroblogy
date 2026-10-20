@@ -4505,12 +4505,13 @@ const OPTICS_PROFILES = [
    { name: "Classic SCT or Maksutov (no corrector)", kind: "cat", mirrorFocus: true },
    { name: "Astrograph with built-in flattener (Petzval, quadruplet)", kind: "astrograph", corrected: true,
      flatByDesign: true, lateralColor: true, corrector: "built-in flattener", distance: "camera back focus",
-     backFocus: "the back focus the manufacturer specifies" }
+       backFocus: "the back focus the manufacturer specifies" },
+   { name: "Photographic lens", kind: "camera-lens", lateralColor: true }
 ];
 const OPTICS_TYPES = OPTICS_PROFILES.map(function(o) { return o.name; });
 const OPTICS_UNKNOWN = 0, OPTICS_UNCORRECTED = 1, OPTICS_CORRECTED = 2, OPTICS_REFRACTOR = 3,
       OPTICS_REFRACTOR_FLAT = 4, OPTICS_RASA = 5, OPTICS_SCT_REDUCER = 6, OPTICS_SCT_APLANATIC = 7,
-      OPTICS_CLASSIC_CAT = 8, OPTICS_ASTROGRAPH = 9;
+   OPTICS_CLASSIC_CAT = 8, OPTICS_ASTROGRAPH = 9, OPTICS_CAMERA_LENS = 10;
 const ASSESS_OK = 0, ASSESS_NOTE = 1, ASSESS_ACTION = 2;
 
 // Half the critical focus zone in µm at f-ratio N (CFZ = ±2.44 λ N², λ = 0.55 µm):
@@ -4522,6 +4523,7 @@ function criticalFocusHalfUm(fRatio) {
 function assessImage(m, opticsType) {
    let P = OPTICS_PROFILES[opticsType] || OPTICS_PROFILES[OPTICS_UNKNOWN];
    let refractor = P.kind === "refractor";
+   let cameraLens = P.kind === "camera-lens";
    let classicCat = P.kind === "cat";
    // No corrector, flattener or reducer: coma and curvature are by design.
    let bare = P.kind !== "unknown" && !P.corrected;
@@ -4644,7 +4646,12 @@ function assessImage(m, opticsType) {
       let level = Math.abs(r.eRad) > 0.08 ? ASSESS_ACTION : ASSESS_NOTE;
       if (r.eRad > 0) {
          let text = format("Stars at the field edge are elongated radially (eps_rad %.3f).", r.eRad);
-         if (opticsType === OPTICS_UNCORRECTED)
+         if (cameraLens)
+            add(ASSESS_NOTE, "Spacing", text + " A camera lens has no adjustable corrector spacing; this can be " +
+               "a lens aberration or lateral color in a color frame." + caveat,
+               "There is no back focus to adjust. Compare a single color channel, check focus and camera alignment, " +
+               "and compare several frames.");
+         else if (opticsType === OPTICS_UNCORRECTED)
             add(ASSESS_NOTE, "Spacing", text + " This is the normal coma of an uncorrected system.",
                "A coma corrector would remove it; there is no spacing to adjust.");
          else if (classicCat)
@@ -4664,7 +4671,11 @@ function assessImage(m, opticsType) {
       } else {
          let text = format("Stars at the field edge are elongated tangentially, concentric around the center " +
             "(eps_rad %.3f).", r.eRad);
-         if (opticsType === OPTICS_REFRACTOR)
+         if (cameraLens)
+            add(ASSESS_NOTE, "Spacing", text + " This can be field curvature or astigmatism of the camera lens." +
+               caveat,
+               "There is no spacing to adjust. Check focus, especially at the center, and compare several frames.");
+         else if (opticsType === OPTICS_REFRACTOR)
             add(ASSESS_NOTE, "Spacing", text + " Without a flattener this is the field curvature or astigmatism " +
                "of the refractor." + caveat,
                "Expected; there is no spacing to adjust. Check the focus on the center; a flattener matching the " +
@@ -4694,7 +4705,9 @@ function assessImage(m, opticsType) {
             text += format(" That is about %.0f µm of focus difference", s.sagUm);
             text += cfz !== null ? format(" (critical focus zone ±%.0f µm).", cfz) : ".";
          }
-         let advice = (opticsType === OPTICS_REFRACTOR) ?
+         let advice = cameraLens ?
+               "Camera lenses vary in their edge correction by design; check focus and compare several frames." :
+            (opticsType === OPTICS_REFRACTOR) ?
                "Expected for a refractor without a flattener; a flattener matching it would remove it." :
             classicCat ?
                "Expected for a classic SCT or Maksutov; a reducer-corrector would flatten the field." :
@@ -4709,7 +4722,7 @@ function assessImage(m, opticsType) {
                "With a corrector or flattener, check its spacing (see Spacing); without one this is expected.";
          // Without a flattener the curvature of a refractor (or a classic
          // SCT/Maksutov) is by design.
-         let level = (opticsType === OPTICS_REFRACTOR || classicCat) ? ASSESS_NOTE :
+         let level = (cameraLens || opticsType === OPTICS_REFRACTOR || classicCat) ? ASSESS_NOTE :
             rel > 0.30 ? ASSESS_ACTION : ASSESS_NOTE;
          add(level, "Field curvature", text + caveat, advice);
       } else if (rel >= 0) {
@@ -4726,7 +4739,12 @@ function assessImage(m, opticsType) {
    } else if (!c.significant) {
       add(ASSESS_OK, "Coma", format("No significant field-dependent coma (k = %.3f ± %.3f).", c.k, c.kSd));
    } else {
-      if (opticsType === OPTICS_REFRACTOR) {
+      if (cameraLens) {
+         add(ASSESS_NOTE, "Coma", format("Field-dependent asymmetry in the camera lens (k = %.3f ± %.3f).", c.k, c.kSd),
+         "Possible causes include lens aberrations, lateral color in a color or broadband frame, or a tilted or " +
+         "decentered lens. Compare a single color channel and several frames; check that the camera and lens sit " +
+         "straight without play.");
+      } else if (opticsType === OPTICS_REFRACTOR) {
          // Not a spacing question: a bare refractor has no corrector.
          add(ASSESS_NOTE, "Coma", format("Field-dependent asymmetry, the flares pointing %s the coma-free point " +
             "(k = %.3f ± %.3f). A refractor has hardly any coma by design.", c.k > 0 ? "away from" : "toward",
@@ -4760,7 +4778,7 @@ function assessImage(m, opticsType) {
          let dirDeg = ((Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
          // Lenses are collimated at the factory, and only some cells can be
          // adjusted: the mechanics come first.
-         let lensOptics = refractor || P.kind === "astrograph";
+         let lensOptics = refractor || cameraLens || P.kind === "astrograph";
          let advice = lensOptics ?
                "The lenses are collimated at the factory: check first that the focuser, " +
                (opticsType === OPTICS_REFRACTOR_FLAT ? "the flattener, " : "") + "the adapters and the camera sit " +
