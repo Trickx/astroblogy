@@ -356,40 +356,6 @@
             }
         }
 
-        @media print {
-            body {
-                zoom: 50%;
-                background: none !important;
-                background-color: #203a43 !important;
-            }
-            .controls,
-            .site-back,
-            #help-details,
-            button {
-                display: none !important;
-            }
-            #location-info {
-                display: block !important;
-            }
-
-            #app {
-                width: 100% !important;
-                max-width: none !important;
-                padding: 0 50px 0 50px !important;
-            }
-
-            #calendar-view, #app {
-                background: none !important;
-                box-shadow: none !important;
-            }
-
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                text-shadow: none !important;
-            }
-        }
-
         /* Site theme: match the look of assets/css/site.css; kept as a separate block so
            the original styles above stay close to the upstream repository */
         :root {
@@ -503,12 +469,6 @@
         .help-details b {
             color: var(--text-color);
         }
-        @media print {
-            #app, .controls, #calendar-view, .day-detail {
-                border: 0 !important;
-                backdrop-filter: none !important;
-            }
-        }
     </style>
 </head>
 <body>
@@ -544,7 +504,6 @@
                     <label for="show-inline-altitude">
                         <input type="checkbox" id="show-inline-altitude"> Show max Moon altitude
                     </label>
-                    <button type="button" id="print-button">Print</button>
                 </div>
             </div>
             <section id="calendar-view" aria-live="polite">
@@ -602,19 +561,6 @@
 
                 <h3>Source and License</h3>
                 <p>The Moon and Darkness Calendar was written by Tristan Fischer and is published under the <a href="LICENSE.txt" style="color: var(--accent-color);">MIT License</a>. This copy is hosted from the fork <a href="https://github.com/Trickx/moon-and-darkness-calendar" style="color: var(--accent-color);">Trickx/moon-and-darkness-calendar</a>.</p>
-
-                <h3>Changelog</h3>
-                <ul>
-                    <li><strong>Version 2.5</strong> (14.11.2024): Add print button and layout for print and saving as PDF.</li>
-                    <li><strong>Version 2.4</strong> (12.11.2024): Visually highlight midnight and major hour lines.</li>
-                    <li><strong>Version 2.3</strong> (02.11.2024): Added max Moon altitude as inline text, save options in localStorage.</li>
-                    <li><strong>Version 2.2</strong> (28.10.2024): Switch to astronomy.browser as the underlying library for more precise moon calculations.</li>
-                    <li><strong>Version 2.1</strong> (26.10.2024): Added date to moon times, added moon age. Removed moon illumination angle.</li>
-                    <li><strong>Version 2.0</strong> (24.10.2024): Rewrite. Added inline-times, hour-lines, overlap-bar, and replace tooltips with a daily detail section.</li>
-                    <li><strong>Version 1.2</strong> (20.10.2024): Added gradient for moon illumination.</li>
-                    <li><strong>Version 1.1</strong> (19.10.2024): Added tooltip with times for darkness and moon visibility.</li>
-                    <li><strong>Version 1.0</strong> (19.10.2024): Initial release with basic darkness and moon phase calendar functionality.</li>
-                </ul>
             </section>
         </main>
     </div>
@@ -1274,9 +1220,6 @@
             $('#show-inline-times').addEventListener('change', toggleInlineTimes);
             $('#show-hour-lines').addEventListener('change', toggleHourLines);
             $('#show-inline-altitude').addEventListener('change', toggleInlineAltitude);
-            $('#print-button').addEventListener('click', () => {
-                window.print();
-            });
         });
     </script>
 </body>
