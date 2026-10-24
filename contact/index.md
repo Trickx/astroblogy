@@ -11,8 +11,7 @@ robots: noindex, nofollow, noarchive
     <a class="button" href="{{ '/galerie/' | relative_url }}">Gallery</a>
   </div>
   <div class="category-action-links">
-    <a class="button" href="{{ '/pixinsight-workflow/' | relative_url }}">PI Workflow</a>
-    <a class="button" href="{{ '/filter-compare/' | relative_url }}">Filter Comparator</a>
+    {% include nav-menus.html %}
     <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
   </div>
 </nav>

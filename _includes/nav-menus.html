@@ -1,0 +1,34 @@
+<details class="nav-menu">
+  <summary class="button">PixInsight</summary>
+  <div class="nav-menu-list">
+    <a href="{{ '/pi-tools/' | relative_url }}">Scripts</a>
+    <a href="{{ '/pixinsight-workflow/' | relative_url }}">Workflow</a>
+  </div>
+</details>
+<details class="nav-menu">
+  <summary class="button">Tools</summary>
+  <div class="nav-menu-list">
+    <a href="{{ '/moon-calendar/' | relative_url }}">Moon Calendar</a>
+    <a href="{{ '/filter-compare/' | relative_url }}">Filter Comparator</a>
+  </div>
+</details>
+<script>
+  (function () {
+    var menus = document.querySelectorAll('.nav-menu');
+
+    document.addEventListener('click', function (event) {
+      menus.forEach(function (menu) {
+        if (menu.open && !menu.contains(event.target)) menu.open = false;
+      });
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      menus.forEach(function (menu) {
+        if (!menu.open) return;
+        menu.open = false;
+        menu.querySelector('summary').focus();
+      });
+    });
+  })();
+</script>

@@ -1,6 +1,6 @@
 ---
 layout: default
-title: PI Tools
+title: Scripts
 permalink: /pi-tools/
 ---
 
@@ -115,15 +115,14 @@ permalink: /pi-tools/
     <a class="button" href="{{ '/blog/' | relative_url }}">Blog</a>
   </div>
   <div class="category-action-links">
-    <a class="button" href="{{ '/pixinsight-workflow/' | relative_url }}">PI Workflow</a>
-    <a class="button" href="{{ '/filter-compare/' | relative_url }}">Filter Comparator</a>
+    {% include nav-menus.html %}
     <a class="button contact-link" href="{{ '/contact/' | relative_url }}">Contact</a>
   </div>
 </nav>
 
 <section class="section-intro pi-tools-intro">
   <p class="section-label">PixInsight</p>
-  <h1>PI Tools</h1>
+  <h1>Scripts</h1>
   <p>Scripts and processes for PixInsight. Each tool's page has the repository link, installation steps and further details.</p>
 </section>
 
