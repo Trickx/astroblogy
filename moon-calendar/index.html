@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon and Darkness Calendar | Star Gallery</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg">
+    <style>
+        /* Global Styles */
+        :root {
+            --bg-gradient-start: #0f2027;
+            --text-color: #fff;
+            --accent-color: #ffd700;
+            --input-bg-color: rgba(255, 255, 255, 0.2);
+            --calendar-bg-color: rgba(255, 255, 255, 0.1);
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, var(--bg-gradient-start), #203a43, #2c5364);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #app {
+            width: 90%;
+            max-width: 1200px;
+            background-color: var(--calendar-bg-color);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        .site-back a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+        .site-back a:hover {
+            text-decoration: underline;
+        }
+        #location-info {
+            display: none;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        /* Controls Section Styles */
+        .controls {
+            background-color: var(--calendar-bg-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .controls-row:last-child {
+            margin-bottom: 0;
+        }
+        .location-row {
+            flex-wrap: nowrap;
+        }
+        .location-search {
+            position: relative;
+            flex-grow: 1;
+            min-width: 260px;
+        }
+        .or-separator {
+            color: var(--text-color);
+            padding: 0 20px 0 20px;
+        }
+        label {
+            text-wrap: nowrap;
+        }
+        input, button {
+            box-sizing: border-box;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--input-bg-color);
+            color: var(--text-color);
+            font-size: 1em;
+        }
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: 100%;
+        }
+        button {
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: var(--bg-gradient-start);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        button:hover {
+            background-color: var(--text-color);
+            color: var(--bg-gradient-start);
+        }
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-gradient-start);
+            border: 1px solid var(--accent-color);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .dropdown-item {
+            padding: 5px 10px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        .dropdown-item:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-gradient-start);
+        }
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Calendar Styles */
+        #calendar-view {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 10px;
+            background-color: var(--calendar-bg-color);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .day-row {
+            display: contents;
+            cursor: pointer;
+        }
+        .day-left, .day-right {
+            font-weight: bold;
+            background-color: var(--input-bg-color);
+            padding: 6px;
+            border-radius: 5px;
+            display: flex;
+            min-width: 80px;
+            justify-content: space-between;
+            align-items: center;
+            flex-direction: row;
+        }
+        .day-right {
+            justify-content: center;
+        }
+        .day-of-week {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        .weekend-night { background-color: rgba(0, 255, 0, 0.1) !important; }
+        .bars-container {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            width: 100%;
+            gap: 4px;
+        }
+        .bar {
+            display: flex;
+            height: 22px;
+            overflow: hidden;
+        }
+        .darkness-segment, .moon-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .darkness-segment[data-level="astronomicalNight"] { background-color: rgba(0, 0, 51, 0.9); }
+        .darkness-segment[data-level="astronomicalTwilight"] { background-color: rgba(0, 0, 102, 0.8); }
+        .darkness-segment[data-level="nauticalTwilight"] { background-color: rgba(0, 102, 204, 0.7); }
+        .darkness-segment[data-level="civilTwilight"] { background-color: rgba(51, 153, 255, 0.6); }
+        .darkness-segment[data-level="day"] { background-color: rgba(255, 255, 153, 0.5); }
+        .hour-labels-row { display: contents; }
+        .hour-labels-container {
+            position: relative;
+            left: -6px;
+            margin-top: 5px;
+            height: 30px;
+            top: 12px;
+        }
+        .hour-label {
+            position: absolute;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            transform: translateX(-50%) rotate(-90deg);
+            transform-origin: top center;
+            white-space: nowrap;
+        }
+        .inline-indicator {
+            font-size: 0.7em;
+            margin: 4px;
+            opacity: 0.6;
+            overflow: hidden;
+            display: none;
+        }
+        .inline-altitude {
+            font-size: 0.7em;
+            display: none;
+            width: 100%;
+            justify-content: center;
+        }
+        .date-info, .moon-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .moon-info {
+            font-size: 0.6em;
+        }
+        .moon-icon {
+            font-size: 18px;
+        }
+        .show-inline-times .inline-indicator,
+        .day-row:hover .inline-indicator {
+            display: inline;
+        }
+        .show-inline-altitude .inline-altitude,
+        .day-row:hover .inline-altitude {
+            display: flex;
+        }
+        .hour-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            display: none;
+        }
+        .hour-line.major {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .hour-line.midnight {
+            background-color: rgba(255, 255, 255, 0.2);
+            width: 2px;
+        }
+        .show-hour-lines .hour-line,
+        .day-row:hover .hour-line {
+            display: block;
+        }
+        .show-inline-altitude .inline-altitude {
+            display: flex;
+        }
+        .day-detail {
+            display: none;
+            background-color: var(--calendar-bg-color);
+            padding: 15px;
+            border-radius: 5px;
+            grid-column: 1 / -1;
+        }
+        .day-detail.active {
+            display: block;
+        }
+        .day-detail h3, .day-detail h4 {
+            color: var(--accent-color);
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .detail-table th, .detail-table td {
+            padding: 5px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            text-align: left;
+        }
+        .detail-table th {
+            background-color: rgba(255, 215, 0, 0.1);
+        }
+        .overlap-bar {
+            height: 4px;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+        .overlap-segment {
+            position: absolute;
+            height: 100%;
+            background-color: rgba(0, 255, 0, 0.3);
+        }
+
+        /* Help Details Styles */
+        .help-details {
+            margin-top: 30px;
+            background-color: var(--calendar-bg-color);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .help-details h2 {
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        .help-details h3 {
+            color: var(--accent-color);
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .help-details p, .help-details ul, .help-details ol {
+            margin-top: 10px;
+            margin-left: 20px;
+        }
+        .help-details li {
+            margin-bottom: 5px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            #app {
+                width: 95%;
+                padding: 15px;
+            }
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .or-separator {
+                display: none;
+            }
+            .location-row {
+                flex-wrap: wrap;
+            }
+            #calendar-view {
+                grid-template-columns: auto 1fr;
+                padding: 10px;
+            }
+            .hour-labels-row {
+                display: none;
+            }
+            .day-right {
+                display: none;
+            }
+            .day-left {
+                min-width: 0;
+            }
+        }
+
+        @media print {
+            body {
+                zoom: 50%;
+                background: none !important;
+                background-color: #203a43 !important;
+            }
+            .controls,
+            .site-back,
+            #help-details,
+            button {
+                display: none !important;
+            }
+            #location-info {
+                display: block !important;
+            }
+
+            #app {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 50px 0 50px !important;
+            }
+
+            #calendar-view, #app {
+                background: none !important;
+                box-shadow: none !important;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                text-shadow: none !important;
+            }
+        }
+
+        /* Site theme: match the look of assets/css/site.css; kept as a separate block so
+           the original styles above stay close to the upstream repository */
+        :root {
+            color-scheme: dark;
+            --bg-gradient-start: #07111f;
+            --text-color: #edf4ff;
+            --accent-color: #d8a34a;
+            --input-bg-color: rgba(255, 255, 255, 0.05);
+            --calendar-bg-color: rgba(5, 12, 22, 0.68);
+            --muted: #9eb4d1;
+            --line: rgba(192, 215, 255, 0.18);
+            --accent-soft: rgba(216, 163, 74, 0.18);
+        }
+        body {
+            align-items: flex-start;
+            padding: 1.25rem 0 4rem;
+            background:
+                radial-gradient(circle at top, rgba(79, 110, 168, 0.22), transparent 40%),
+                linear-gradient(180deg, #07111f 0%, #050b14 100%);
+            background-attachment: fixed;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        #app {
+            max-width: 1180px;
+            background: rgba(8, 18, 34, 0.72);
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(18px);
+            padding: clamp(1.5rem, 3vw, 3rem);
+        }
+        h1 {
+            color: var(--text-color);
+            text-shadow: none;
+            line-height: 1.05;
+            font-size: clamp(2rem, 5vw, 3.6rem);
+        }
+        .site-back {
+            margin: 0;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            font-size: 0.82rem;
+        }
+        .controls,
+        #calendar-view,
+        .help-details {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+        }
+        .day-left, .day-right {
+            border-radius: 10px;
+        }
+        .day-detail {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+        }
+        input {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 0.6rem 0.8rem;
+            font: inherit;
+        }
+        input:focus {
+            outline: 1px solid var(--accent-color);
+            outline-offset: 1px;
+        }
+        input[type="checkbox"] {
+            accent-color: var(--accent-color);
+        }
+        input::placeholder {
+            color: var(--muted);
+        }
+        button {
+            border: 1px solid var(--accent-color);
+            border-radius: 999px;
+            padding: 0.6rem 1.1rem;
+            background: transparent;
+            color: var(--text-color);
+            font: inherit;
+        }
+        button:hover,
+        button:focus-visible {
+            background: var(--accent-soft);
+            color: var(--text-color);
+        }
+        .dropdown {
+            background: #0f1f38;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            margin-top: 0.3rem;
+        }
+        .dropdown-item {
+            padding: 0.5rem 0.9rem;
+        }
+        .dropdown-item:hover {
+            background: var(--accent-soft);
+            color: var(--text-color);
+        }
+        .detail-table th, .detail-table td {
+            border-color: var(--line);
+        }
+        .detail-table th {
+            background: var(--accent-soft);
+        }
+        .help-details p,
+        .help-details li {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+        .help-details strong,
+        .help-details b {
+            color: var(--text-color);
+        }
+        @media print {
+            #app, .controls, #calendar-view, .day-detail {
+                border: 0 !important;
+                backdrop-filter: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <p class="site-back"><a href="/">&larr; Tricx' AstroBlogy</a></p>
+            <h1>Moon and Darkness Calendar</h1>
+            <p id="location-info"></p>
+        </header>
+        <main>
+            <div class="controls">
+                <div class="controls-row location-row">
+                    <button type="button" id="use-location">Use My Location</button>
+                    <span class="or-separator">or</span>
+                    <div class="location-search">
+                        <input type="text" id="location" placeholder="Search location" aria-label="Search location" autocomplete="off">
+                        <div id="location-dropdown" class="dropdown"></div>
+                    </div>
+                    <span class="or-separator">or</span>
+                    <input type="number" id="latitude" step="any" placeholder="Latitude" aria-label="Latitude">
+                    <input type="number" id="longitude" step="any" placeholder="Longitude" aria-label="Longitude">
+                    <button type="button" id="set-coordinates">Go</button>
+                </div>
+                <div class="controls-row options-row">
+                    <input type="date" id="start-date" aria-label="Start date">
+                    <input type="number" id="num-days" value="30" min="1" max="365" placeholder="Days" aria-label="Number of days">
+                    <label for="show-inline-times">
+                        <input type="checkbox" id="show-inline-times"> Show inline times
+                    </label>
+                    <label for="show-hour-lines">
+                        <input type="checkbox" id="show-hour-lines"> Show hour lines
+                    </label>
+                    <label for="show-inline-altitude">
+                        <input type="checkbox" id="show-inline-altitude"> Show max Moon altitude
+                    </label>
+                    <button type="button" id="print-button">Print</button>
+                </div>
+            </div>
+            <section id="calendar-view" aria-live="polite">
+                <h2>Please enter a location or click the "Use My Location" button.</h2>
+            </section>
+            <section id="help-details" class="help-details">
+                <h2>Help and Details</h2>
+                
+                <h3>About</h3>
+                <p>This Moon and Darkness Calendar is designed to help astronomers, astrophotographers, and night sky enthusiasts plan their observations. It provides a visual representation of darkness levels and moon phases, helping users identify optimal times for various types of night sky activities.</p>
+                <p>Each day-row focuses on a <b>night</b>, which is defined as a 24h period from 12:00 (noon) to 12:00 on the next day, while most other tools/tables/websites use calendar-days, so a 24h period from 00:00 to 24:00.</p>
+
+                <h3>Using the Calendar</h3>
+                <ol>
+                    <li>Enter a location or use your current location.</li>
+                    <li>Set a start date and number of days to display.</li>
+                    <li>Hover over a day row to see hour-lines and inline times.</li>
+                    <li>Click on a day row to see detailed information for that night.</li>
+                    <li>Use the "Show inline times" option to display key times directly on the bars.</li>
+                    <li>Use the "Show hour lines" option to display vertical hour markers.</li>
+                    <li>Use the "Show max Moon altitude" option to display the Moon's maximum altitude for that night.</li>
+                </ol>
+
+                <h3>Darkness Levels</h3>
+                <p>The darkness levels are calculated using the sun's altitude above the horizon.</p>
+                <ul>
+                    <li><strong>Day:</strong> Sun's altitude > 0°. Full daylight.</li>
+                    <li><strong>Civil Twilight:</strong> Sun's altitude between 0° and -6°. There's enough light for objects to be clearly distinguishable. Brightest stars become visible.</li>
+                    <li><strong>Nautical Twilight:</strong> Sun's altitude between -6° and -12°. The horizon is no longer visible. Many stars used for celestial navigation are visible.</li>
+                    <li><strong>Astronomical Twilight:</strong> Sun's altitude between -12° and -18°. The sky is dark enough for most astronomical observations, but some twilight still interferes with more sensitive observations.</li>
+                    <li><strong>Astronomical Night:</strong> Sun's altitude < -18°. The darkest part of the night. Ideal for deep-sky observations and astrophotography.</li>
+                </ul>
+                <p>These calculations take into account atmospheric refraction, which causes the sun to appear slightly higher than it actually is.</p>
+
+                <h3>Moon Information</h3>
+                <p>The moon information includes several key details:</p>
+                <ul>
+                    <li><strong>Moon Phase:</strong> The current phase name, illumination percentage, and moon age in days (based on the 29.53-day lunar cycle).</li>
+                    <li><strong>Moonrise:</strong> Rise time is when the moon first starts to be visible above the horizon, including its azimuth (direction) and altitude.</li>
+                    <li><strong>Moon Culmination:</strong> Time when the moon reaches its highest point in the sky, including azimuth and altitude.</li>
+                    <li><strong>Moonset:</strong> Set time is the moment when the moon appears to vanish below the horizon, including its azimuth and altitude.</li>
+                    <li><strong>Moon Distance:</strong> The distance between Earth and moon in kilometers, with a percentage comparison to the average distance (384,400 km).</li>
+                </ul>
+                <p>The visual representation in this calendar uses a grayscale gradient to indicate moon brightness, with darker shades representing a less bright moon and lighter shades a brighter moon. The moon is considered "invisible" when it's below the horizon, which is calculated based on the moon's altitude being negative.</p>
+                <p>Note: Actual visibility can be affected by local conditions such as weather, light pollution, and the observer's dark adaptation, which are not accounted for in these calculations.</p>
+
+                <h3>Overlap Bar</h3>
+                <p>The green overlap bar indicates periods when both astronomical darkness and moon invisibility occur simultaneously. These are optimal times for deep-sky observation.</p>
+
+                <h3>Weekend Nights</h3>
+                <p>Weekend nights (Friday and Saturday) are highlighted with a slight green tint for easy identification of potentially more convenient observation times.</p>
+
+                <h3>Feedback</h3>
+                <p>If you have any suggestions, feature requests, or encounter any issues, please don't hesitate to reach out. You can contact me via astro@dersphere.de</p>
+
+                <h3>Source and License</h3>
+                <p>The Moon and Darkness Calendar was written by Tristan Fischer and is published under the <a href="LICENSE.txt" style="color: var(--accent-color);">MIT License</a>. This copy is hosted from the fork <a href="https://github.com/Trickx/moon-and-darkness-calendar" style="color: var(--accent-color);">Trickx/moon-and-darkness-calendar</a>.</p>
+
+                <h3>Changelog</h3>
+                <ul>
+                    <li><strong>Version 2.5</strong> (14.11.2024): Add print button and layout for print and saving as PDF.</li>
+                    <li><strong>Version 2.4</strong> (12.11.2024): Visually highlight midnight and major hour lines.</li>
+                    <li><strong>Version 2.3</strong> (02.11.2024): Added max Moon altitude as inline text, save options in localStorage.</li>
+                    <li><strong>Version 2.2</strong> (28.10.2024): Switch to astronomy.browser as the underlying library for more precise moon calculations.</li>
+                    <li><strong>Version 2.1</strong> (26.10.2024): Added date to moon times, added moon age. Removed moon illumination angle.</li>
+                    <li><strong>Version 2.0</strong> (24.10.2024): Rewrite. Added inline-times, hour-lines, overlap-bar, and replace tooltips with a daily detail section.</li>
+                    <li><strong>Version 1.2</strong> (20.10.2024): Added gradient for moon illumination.</li>
+                    <li><strong>Version 1.1</strong> (19.10.2024): Added tooltip with times for darkness and moon visibility.</li>
+                    <li><strong>Version 1.0</strong> (19.10.2024): Initial release with basic darkness and moon phase calendar functionality.</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.17/astronomy.browser.js"></script>
+    <script type="module">
+        const $ = (selector) => document.querySelector(selector);
+        const getUrlParams = () => new URLSearchParams(window.location.search);
+        const setUrlParams = (params) => window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+
+        const formatDate = (date, format) => {
+            const options = {
+                'MMM D': { month: 'short', day: 'numeric' },
+                'ddd': { weekday: 'short' },
+                'YYYY-MM-DD': { year: 'numeric', month: '2-digit', day: '2-digit' },
+                'YYYY-MM-DD HH:mm:ss': { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false },
+                'HH:mm:ss': { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false },
+                'HH:mm': { hour: '2-digit', minute: '2-digit', hour12: false }
+            };
+            if (!date) return '--';
+            return new Intl.DateTimeFormat(navigator.language, options[format]).format(date);
+        };
+
+        const formatDegrees = (degrees) => {
+            if (degrees === null || degrees === undefined) return '--';
+            return `${degrees.toFixed(1)}°`;
+        };
+
+        const getCompassDirection = (azimuthDegrees) => {
+            if (azimuthDegrees === null || azimuthDegrees === undefined) return '--';
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            const index = Math.round(azimuthDegrees / 22.5) % 16;
+            return directions[index];
+        };
+
+        const formatDuration = (start, end) => {
+            if (!start || !end) return '--';
+            const durationMs = end - start;
+            const hours = Math.floor(durationMs / (1000 * 60 * 60));
+            const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}:${minutes.toString().padStart(2, '0')}h`;
+        };
+
+        const addDays = (date, days) => {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        };
+
+        const getRowData = (startDate, lat, lon) => {
+            const averageMoonDistance = 384400; // in km
+            const endDate = addDays(startDate, 1);
+            const centerDate = new Date(endDate);
+            centerDate.setHours(0, 0, 0, 0);
+
+            const dateToAstro = (date) => {
+                return Astronomy.MakeTime(date);
+            };
+
+            const getMoonHorizontalCoordinates = (time) => {
+                const EquatorialCoordinates = Astronomy.Equator("Moon", dateToAstro(time), observer, true, true);
+                const HorizontalCoordinates = Astronomy.Horizon(dateToAstro(time), observer, EquatorialCoordinates.ra, EquatorialCoordinates.dec);
+                return HorizontalCoordinates;
+            };
+
+            const getMoonPhaseName = (phaseFraction) => {
+                if (phaseFraction < 0.03) return 'New Moon';
+                if (phaseFraction < 0.21) return 'Waxing Crescent';
+                if (phaseFraction < 0.28) return 'First Quarter';
+                if (phaseFraction < 0.46) return 'Waxing Gibbous';
+                if (phaseFraction < 0.53) return 'Full Moon';
+                if (phaseFraction < 0.71) return 'Waning Gibbous';
+                if (phaseFraction < 0.78) return 'Last Quarter';
+                if (phaseFraction < 0.96) return 'Waning Crescent';
+                return 'New Moon';
+            };
+
+            const getMoonPhaseEmoji = (phaseFraction) => {
+                if (phaseFraction < 0.03) return '🌑'; // New Moon
+                if (phaseFraction < 0.21) return '🌒'; // Waxing Crescent
+                if (phaseFraction < 0.28) return '🌓'; // First Quarter
+                if (phaseFraction < 0.46) return '🌔'; // Waxing Gibbous
+                if (phaseFraction < 0.53) return '🌕'; // Full Moon
+                if (phaseFraction < 0.71) return '🌖'; // Waning Gibbous
+                if (phaseFraction < 0.78) return '🌗'; // Last Quarter
+                if (phaseFraction < 0.96) return '🌘'; // Waning Crescent
+                return '🌑'; // Default to New Moon
+            };
+
+            const observer = new Astronomy.Observer(lat, lon, 0);
+            const astroStartDate = dateToAstro(startDate);
+            const directionAsc = 1;
+            const directionDesc = -1;
+
+            const moonRiseTime = Astronomy.SearchRiseSet('Moon', observer, directionAsc, astroStartDate, 1)?.date;
+            const moonRiseCoordinates = moonRiseTime ? getMoonHorizontalCoordinates(dateToAstro(moonRiseTime)) : null;
+            const moonSetTime = Astronomy.SearchRiseSet('Moon', observer, directionDesc, astroStartDate, 1)?.date;
+            const moonSetCoordinates = moonSetTime ? getMoonHorizontalCoordinates(dateToAstro(moonSetTime)) : null;
+
+            const moonCulminationTime = Astronomy.SearchHourAngle('Moon', observer, 0, astroStartDate, directionAsc).time.date;
+            const moonCulminationCoordinates = getMoonHorizontalCoordinates(dateToAstro(moonCulminationTime));
+            const moonCulminationDistance = Astronomy.Libration(moonCulminationTime).dist_km;
+            const moonCulminationDistancePercentage = moonCulminationDistance / averageMoonDistance * 100;
+
+            const moonIllumination = Astronomy.Illumination('Moon', dateToAstro(centerDate));
+            const moonIlluminationFraction = moonIllumination.phase_fraction;
+            const moonPhaseFraction = Astronomy.MoonPhase(dateToAstro(centerDate)) / 360.0;
+            const moonPhaseName = getMoonPhaseName(moonPhaseFraction);
+            const moonAge = moonPhaseFraction * 29.53;
+            const moonEmoji = getMoonPhaseEmoji(moonPhaseFraction);
+
+            const sunRiseTime = Astronomy.SearchRiseSet('Sun', observer, directionAsc, astroStartDate, 1)?.date;
+            const sunSetTime = Astronomy.SearchRiseSet('Sun', observer, directionDesc, astroStartDate, 1)?.date;
+            const sunCivilDawnTime = Astronomy.SearchAltitude('Sun', observer, directionAsc, astroStartDate, 1, -6)?.date;
+            const sunCivilDuskTime = Astronomy.SearchAltitude('Sun', observer, directionDesc, astroStartDate, 1, -6)?.date;
+            const sunNauticalDawnTime = Astronomy.SearchAltitude('Sun', observer, directionAsc, astroStartDate, 1, -12)?.date;
+            const sunNauticalDuskTime = Astronomy.SearchAltitude('Sun', observer, directionDesc, astroStartDate, 1, -12)?.date;
+            const sunAstronomicalDawnTime = Astronomy.SearchAltitude('Sun', observer, directionAsc, astroStartDate, 1, -18)?.date;
+            const sunAstronomicalDuskTime = Astronomy.SearchAltitude('Sun', observer, directionDesc, astroStartDate, 1, -18)?.date;
+
+            const getSunDarknessLevel = (time) => {
+                const EquatorialCoordinates = Astronomy.Equator("Sun", dateToAstro(time), observer, true, true);
+                const HorizontalCoordinates = Astronomy.Horizon(dateToAstro(time), observer, EquatorialCoordinates.ra, EquatorialCoordinates.dec);
+                if (HorizontalCoordinates.altitude < -18) return 'astronomicalNight';
+                if (HorizontalCoordinates.altitude < -12) return 'astronomicalTwilight';
+                if (HorizontalCoordinates.altitude < -6) return 'nauticalTwilight';
+                if (HorizontalCoordinates.altitude < 0) return 'civilTwilight';
+                return 'day';
+            };
+
+            const getMoonIsVisible = (time) => {
+                if (getMoonHorizontalCoordinates(time).altitude < 0) return false;
+                return true
+            }
+
+            const rowData = {
+                startDate,
+                endDate,
+                centerDate,
+                moonRiseTime,
+                moonRiseCoordinates,
+                moonSetTime,
+                moonSetCoordinates,
+                moonCulminationTime,
+                moonCulminationCoordinates,
+                moonCulminationDistance,
+                moonCulminationDistancePercentage,
+                moonIlluminationFraction,
+                moonPhaseFraction,
+                moonPhaseName,
+                moonAge,
+                moonEmoji,
+                sunSetTime,
+                sunCivilDawnTime,
+                sunCivilDuskTime,
+                sunNauticalDawnTime,
+                sunNauticalDuskTime,
+                sunAstronomicalDawnTime,
+                sunAstronomicalDuskTime,
+                getSunDarknessLevel,
+                getMoonIsVisible,
+            }
+            return rowData;
+        };
+
+        const getMoonGray = (illumination) => Math.round(64 + (255 - 64) * illumination);
+
+        const getMoonSegmentColor = (isVisible, illumination) => {
+            const c = getMoonGray(illumination);
+            return isVisible ? `rgba(${c}, ${c}, ${c}, 1)` : 'rgba(0, 0, 32, 0.8)';
+        };
+
+        const getWidth = (start, end) => `${(end - start) / (24 * 60 * 60 * 1000) * 100}%`;
+
+        const createDarknessSegment = (start, end, level, rowData) => {
+            const segment = document.createElement('div');
+            segment.className = 'darkness-segment';
+            segment.style.width = getWidth(start, end);
+            segment.dataset.level = level;
+            if (level === 'astronomicalNight') {
+                const startElement = document.createElement('div');
+                startElement.className = 'inline-indicator';
+                if (start > rowData.startDate) {
+                    startElement.textContent = formatDate(rowData.sunAstronomicalDuskTime, 'HH:mm');
+                }
+                segment.appendChild(startElement);
+
+                const endElement = document.createElement('div');
+                endElement.className = 'inline-indicator';
+                if (end < rowData.endDate) {
+                    endElement.textContent = formatDate(rowData.sunAstronomicalDawnTime, 'HH:mm');
+                }
+                segment.appendChild(endElement);
+            }
+            return segment;
+        };
+
+        const createMoonSegment = (start, end, isVisible, rowData) => {
+            const segment = document.createElement('div');
+            segment.className = 'moon-segment';
+            segment.style.width = getWidth(start, end);
+            segment.style.backgroundColor = getMoonSegmentColor(isVisible, rowData.moonIlluminationFraction);
+
+            if (!isVisible) {
+                const startElement = document.createElement('div');
+                startElement.className = 'inline-indicator';
+                if (start > rowData.startDate) {
+                    startElement.textContent = formatDate(rowData.moonSetTime, 'HH:mm');
+                }
+                segment.appendChild(startElement);
+
+                const endElement = document.createElement('div');
+                endElement.className = 'inline-indicator';
+                if (end < rowData.endDate) {
+                    endElement.textContent = formatDate(rowData.moonRiseTime, 'HH:mm');
+                }
+                segment.appendChild(endElement);
+            } else {
+                const altitudeElement = document.createElement('div');
+                altitudeElement.className = 'inline-altitude';
+                // Pick the text color by the brightness of the gray moon bar behind it
+                if (getMoonGray(rowData.moonIlluminationFraction) < 128) {
+                    altitudeElement.style.color = 'rgba(255, 255, 255, 1)';
+                } else {
+                    altitudeElement.style.color = 'rgba(0, 0, 0, 1)';
+                }
+                altitudeElement.textContent = formatDegrees(rowData.moonCulminationCoordinates.altitude);
+                segment.appendChild(altitudeElement);
+            }
+
+            return segment;
+        };
+
+        const createHourLabels = () => {
+            const hourLabelsRow = document.createElement('div');
+            hourLabelsRow.className = 'hour-labels-row';
+
+            const emptyLeft = document.createElement('div');
+            emptyLeft.className = 'day-left';
+            emptyLeft.style.visibility = 'hidden';
+            hourLabelsRow.appendChild(emptyLeft);
+
+            const labelsContainer = document.createElement('div');
+            labelsContainer.className = 'hour-labels-container';
+
+            for (let hour = 12; hour <= 36; hour++) {
+                const label = document.createElement('div');
+                label.className = 'hour-label';
+                label.textContent = `${(hour % 24).toString().padStart(2, '0')}:00`;
+                label.style.left = `${((hour - 12) / 24) * 100}%`;
+                labelsContainer.appendChild(label);
+            }
+
+            hourLabelsRow.appendChild(labelsContainer);
+
+            const emptyRight = document.createElement('div');
+            emptyRight.className = 'day-right';
+            emptyRight.style.visibility = 'hidden';
+            hourLabelsRow.appendChild(emptyRight);
+
+            return hourLabelsRow;
+        };
+
+        const createDarknessBar = (rowData) => {
+            const bar = document.createElement('div');
+            bar.className = 'bar darkness-bar';
+
+            let currentTime = new Date(rowData.startDate);
+            let currentState = rowData.getSunDarknessLevel(currentTime);
+            let segmentStart = new Date(currentTime);
+
+            while (currentTime < rowData.endDate) {
+                const newState = rowData.getSunDarknessLevel(currentTime);
+
+                if (newState !== currentState) {
+                    bar.appendChild(createDarknessSegment(segmentStart, currentTime, currentState, rowData));
+                    segmentStart = new Date(currentTime);
+                    currentState = newState;
+                }
+                currentTime.setMinutes(currentTime.getMinutes() + 5);
+            }
+
+            bar.appendChild(createDarknessSegment(segmentStart, rowData.endDate, currentState, rowData));
+
+            return bar;
+        };
+
+        const createMoonBar = (rowData) => {
+            const bar = document.createElement('div');
+            bar.className = 'bar moon-bar';
+
+            let currentTime = new Date(rowData.startDate);
+            let currentState = rowData.getMoonIsVisible(currentTime);
+            let segmentStart = new Date(currentTime);
+
+            while (currentTime < rowData.endDate) {
+                const newState = rowData.getMoonIsVisible(currentTime);
+
+                if (newState !== currentState) {
+                    bar.appendChild(createMoonSegment(segmentStart, currentTime, currentState, rowData));
+                    segmentStart = new Date(currentTime);
+                    currentState = newState;
+                }
+                currentTime.setMinutes(currentTime.getMinutes() + 5);
+            }
+
+            bar.appendChild(createMoonSegment(segmentStart, rowData.endDate, currentState, rowData));
+
+            return bar;
+        };
+
+        const createOverlapBar = (rowData) => {
+            const bar = document.createElement('div');
+            bar.className = 'bar overlap-bar';
+
+            let currentTime = new Date(rowData.startDate);
+            let segmentStart = null;
+
+            while (currentTime < rowData.endDate) {
+                const isDark = rowData.getSunDarknessLevel(currentTime) === 'astronomicalNight';
+                const isMoonInvisible = !rowData.getMoonIsVisible(currentTime);
+
+                if (isDark && isMoonInvisible) {
+                    if (!segmentStart) {
+                        segmentStart = new Date(currentTime);
+                    }
+                } else if (segmentStart) {
+                    const segment = document.createElement('div');
+                    segment.className = 'overlap-segment';
+                    segment.style.left = getWidth(rowData.startDate, segmentStart);
+                    segment.style.width = getWidth(segmentStart, currentTime);
+                    bar.appendChild(segment);
+                    segmentStart = null;
+                }
+
+                currentTime.setMinutes(currentTime.getMinutes() + 5);
+            }
+
+            if (segmentStart) {
+                const segment = document.createElement('div');
+                segment.className = 'overlap-segment';
+                segment.style.left = getWidth(rowData.startDate, segmentStart);
+                segment.style.width = getWidth(segmentStart, rowData.endDate);
+                bar.appendChild(segment);
+            }
+
+            return bar;
+        };
+
+        const createDetailSection = (rowData) => {
+            const detailSection = document.createElement('div');
+            detailSection.className = 'day-detail';
+            detailSection.innerHTML = `
+                <h3>Night Details ${formatDate(rowData.startDate, 'YYYY-MM-DD')} - ${formatDate(rowData.endDate, 'YYYY-MM-DD')}</h3>
+                
+                <h4>Darkness Information</h4>
+                <table class="detail-table">
+                    <tr>
+                        <th>Level</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Duration</th>
+                    </tr>
+                    <tr>
+                        <td>Civil Darkness</td>
+                        <td>${formatDate(rowData.sunCivilDuskTime, 'YYYY-MM-DD HH:mm:ss')}</td>
+                        <td>${formatDate(rowData.sunCivilDawnTime, 'YYYY-MM-DD HH:mm:ss')}</td>
+                        <td>${formatDuration(rowData.sunCivilDuskTime, rowData.sunCivilDawnTime)}</td>
+                    </tr>
+                    <tr>
+                        <td>Nautical Darkness</td>
+                        <td>${formatDate(rowData.sunNauticalDuskTime, 'YYYY-MM-DD HH:mm:ss')}</td>
+                        <td>${formatDate(rowData.sunNauticalDawnTime, 'YYYY-MM-DD HH:mm:ss')}</td>
+                        <td>${formatDuration(rowData.sunNauticalDuskTime, rowData.sunNauticalDawnTime)}</td>
+                    </tr>
+                    <tr>
+                        <td>Astronomical Darkness</td>
+                        <td>${formatDate(rowData.sunAstronomicalDuskTime, 'YYYY-MM-DD HH:mm:ss')}</td>
+                        <td>${formatDate(rowData.sunAstronomicalDawnTime, 'YYYY-MM-DD HH:mm:ss')}</td>
+                        <td>${formatDuration(rowData.sunAstronomicalDuskTime, rowData.sunAstronomicalDawnTime)}</td>
+                    </tr>
+                </table>
+                
+                <h4>Moon Information</h4>
+                <table class="detail-table">
+                    <tr>
+                        <td>Moon Phase</td>
+                        <td>${formatDate(rowData.centerDate, 'YYYY-MM-DD HH:mm:ss')} ${rowData.moonPhaseName} (${(rowData.moonIlluminationFraction * 100).toFixed(1)}% illuminated, Age: ${rowData.moonAge.toFixed(0)} days)</td>
+                    </tr>
+                    <tr>
+                        <td>Moonrise</td>
+                        <td>${formatDate(rowData.moonRiseTime, 'YYYY-MM-DD HH:mm:ss')} (Azimuth ${formatDegrees(rowData.moonRiseCoordinates?.azimuth)} ${getCompassDirection(rowData.moonRiseCoordinates?.azimuth)}, Altitude ${formatDegrees(rowData.moonRiseCoordinates?.altitude)})</td>
+                    </tr>
+                    <tr>
+                        <td>Moon Culmination</td>
+                        <td>${formatDate(rowData.moonCulminationTime, 'YYYY-MM-DD HH:mm:ss')} (Azimuth ${formatDegrees(rowData.moonCulminationCoordinates.azimuth)} ${getCompassDirection(rowData.moonCulminationCoordinates.azimuth)}, Altitude ${formatDegrees(rowData.moonCulminationCoordinates.altitude)})</td>
+                    </tr>
+                    <tr>
+                        <td>Moonset</td>
+                        <td>${formatDate(rowData.moonSetTime, 'YYYY-MM-DD HH:mm:ss')} (Azimuth ${formatDegrees(rowData.moonSetCoordinates?.azimuth)} ${getCompassDirection(rowData.moonSetCoordinates?.azimuth)}, Altitude ${formatDegrees(rowData.moonSetCoordinates?.altitude)})</td>
+                    </tr>
+                    <tr>
+                        <td>Moon Distance</td>
+                        <td>${rowData.moonCulminationDistance.toFixed(0)} km (${rowData.moonCulminationDistancePercentage.toFixed(2)}% of average)</td>
+                    </tr>
+                </table>
+            `;
+            return detailSection;
+        };
+
+        const createDayRow = (startDate, lat, lon) => {
+            const rowData = getRowData(startDate, lat, lon);
+
+            const dayRow = document.createElement('div');
+            dayRow.className = 'day-row';
+
+            const dayLeft = document.createElement('div');
+            dayLeft.className = 'day-left';
+            if ([5, 6].includes(rowData.startDate.getDay())) dayLeft.classList.add('weekend-night');
+            
+            dayLeft.innerHTML = `
+                <div class="date-info">
+                    <span>${formatDate(rowData.startDate, 'MMM D')}</span>
+                    <span class="day-of-week">${formatDate(rowData.startDate, 'ddd')}</span>
+                </div>
+                <div class="moon-info">
+                    <span class="moon-icon">${rowData.moonEmoji}</span>
+                    <span>${(rowData.moonIlluminationFraction * 100).toFixed(0)}%</span>
+                </div>
+            `;
+            dayRow.appendChild(dayLeft);
+
+            const barsContainer = document.createElement('div');
+            barsContainer.className = 'bars-container';
+
+            barsContainer.appendChild(createDarknessBar(rowData));
+            barsContainer.appendChild(createMoonBar(rowData));
+            barsContainer.appendChild(createOverlapBar(rowData));
+            for (let hour = 0; hour <= 24; hour++) {
+                const line = document.createElement('div');
+                line.className = 'hour-line';
+                if (hour === 12) {
+                    line.classList.add('midnight');
+                }
+                else if (hour % 3 === 0) {
+                    line.classList.add('major');
+                }
+                line.style.left = `${(hour / 24) * 100}%`;
+                barsContainer.appendChild(line);
+            }
+            dayRow.appendChild(barsContainer);
+
+            const dayRight = document.createElement('div');
+            dayRight.className = 'day-right';
+            if ([6, 0].includes(rowData.endDate.getDay())) dayRight.classList.add('weekend-night');
+            dayRight.innerHTML = `
+                <div class="date-info">
+                    <span>${formatDate(rowData.endDate, 'MMM D')}</span>
+                    <span class="day-of-week">${formatDate(rowData.endDate, 'ddd')}</span>
+                </div>
+            `;
+            dayRow.appendChild(dayRight);
+
+            const detailSection = createDetailSection(rowData);
+            dayRow.appendChild(detailSection);
+
+            dayRow.addEventListener('click', () => {
+                detailSection.classList.toggle('active');
+            });
+
+            return dayRow;
+        };
+
+        const reverseGeocode = async (lat, lon) => {
+            const cachedLocation = localStorage.getItem(`location-${lat}-${lon}`);
+            if (cachedLocation) {
+                return cachedLocation;
+            }
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                localStorage.setItem(`location-${lat}-${lon}`, data.display_name);
+                return data.display_name;
+            } catch (error) {
+                console.error('Error reverse geocoding:', error);
+                return null;
+            }
+        };
+
+        const setCoordinates = async (lat, lon) => {
+            $('#latitude').value = lat;
+            $('#longitude').value = lon;
+            setUrlParams(new URLSearchParams({ lat, lon }));
+
+            const locationName = await reverseGeocode(lat, lon);
+            if (locationName) {
+                $('#location').value = locationName;
+                $('#location-info').textContent = locationName;
+            }
+        };
+
+        const searchLocation = async (query) => {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error searching location:', error);
+                alert('An error occurred while searching for the location. Please try again.');
+                return [];
+            }
+        };
+
+        const showLocationDropdown = (results) => {
+            const dropdown = $('#location-dropdown');
+            dropdown.innerHTML = '';
+            dropdown.style.display = results.length ? 'block' : 'none';
+
+            results.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.textContent = result.display_name;
+                item.addEventListener('click', async () => {
+                    dropdown.style.display = 'none';
+                    await setCoordinates(result.lat, result.lon);
+                    $('#location').value = result.display_name;
+                    generateCalendar();
+                });
+                dropdown.appendChild(item);
+            });
+        };
+
+        const useMyLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    await setCoordinates(latitude, longitude);
+                    generateCalendar();
+                }, (error) => {
+                    console.error('Error getting geolocation:', error);
+                    alert('Unable to get your location. Please try entering coordinates manually.');
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        };
+
+        const generateCalendar = async () => {
+            const lat = parseFloat($('#latitude').value);
+            const lon = parseFloat($('#longitude').value);
+            const startDate = $('#start-date').value ? new Date($('#start-date').value) : new Date();
+            const numDays = parseInt($('#num-days').value, 10);
+
+            if (!lat || !lon || isNaN(startDate.getTime()) || isNaN(numDays) || numDays < 1) {
+                alert('Please ensure location is set and all fields are filled correctly.');
+                return;
+            }
+
+            const calendarView = $('#calendar-view');
+            calendarView.innerHTML = '';
+            calendarView.appendChild(createHourLabels());
+
+            const start = new Date(startDate);
+            start.setHours(12, 0, 0, 0);
+
+            for (let day = 0; day < numDays; day++) {
+                const date = addDays(start, day);
+                const dayRow = createDayRow(date, lat, lon);
+                calendarView.appendChild(dayRow);
+            }
+
+            calendarView.appendChild(createHourLabels());
+        };
+
+        const toggleInlineTimes = () => {
+            const checked = $('#show-inline-times').checked;
+            document.body.classList.toggle('show-inline-times', checked);
+            localStorage.setItem('show-inline-times', checked.toString());
+        };
+
+        const toggleHourLines = () => {
+            const checked = $('#show-hour-lines').checked;
+            document.body.classList.toggle('show-hour-lines', checked);
+            localStorage.setItem('show-hour-lines', checked.toString());
+        };
+
+        const toggleInlineAltitude = () => {
+            const checked = $('#show-inline-altitude').checked;
+            document.body.classList.toggle('show-inline-altitude', checked);
+            localStorage.setItem('show-inline-altitude', checked.toString());
+        };
+
+        const loadStoredPreferences = () => {
+            const showInlineTimes = localStorage.getItem('show-inline-times') === 'true';
+            const showHourLines = localStorage.getItem('show-hour-lines') === 'true';
+            const showInlineAltitude = localStorage.getItem('show-inline-altitude') === 'true';
+
+            $('#show-inline-times').checked = showInlineTimes;
+            $('#show-hour-lines').checked = showHourLines;
+            $('#show-inline-altitude').checked = showInlineAltitude;
+
+            document.body.classList.toggle('show-inline-times', showInlineTimes);
+            document.body.classList.toggle('show-hour-lines', showHourLines);
+            document.body.classList.toggle('show-inline-altitude', showInlineAltitude);
+        };
+
+        const debounce = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func(...args), delay);
+            };
+        };
+
+        const debouncedGenerateCalendar = debounce(generateCalendar, 300);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadStoredPreferences();
+
+            const params = getUrlParams();
+            const lat = params.get('lat');
+            const lon = params.get('lon');
+
+            if (lat && lon) {
+                await setCoordinates(lat, lon);
+                generateCalendar();
+            }
+
+            $('#start-date').value = new Date().toISOString().split('T')[0];
+            $('#use-location').addEventListener('click', useMyLocation);
+            $('#set-coordinates').addEventListener('click', async () => {
+                await setCoordinates($('#latitude').value, $('#longitude').value);
+                generateCalendar();
+            });
+
+            // Add event listeners for start date and number of days
+            $('#start-date').addEventListener('change', debouncedGenerateCalendar);
+            $('#num-days').addEventListener('input', debouncedGenerateCalendar);
+
+            const debouncedSearch = debounce(async (query) => {
+                if (query.length > 2) {
+                    const results = await searchLocation(query);
+                    showLocationDropdown(results);
+                } else {
+                    $('#location-dropdown').style.display = 'none';
+                }
+            }, 300);
+
+            $('#location').addEventListener('input', (e) => {
+                debouncedSearch(e.target.value);
+            });
+
+            $('#show-inline-times').addEventListener('change', toggleInlineTimes);
+            $('#show-hour-lines').addEventListener('change', toggleHourLines);
+            $('#show-inline-altitude').addEventListener('change', toggleInlineAltitude);
+            $('#print-button').addEventListener('click', () => {
+                window.print();
+            });
+        });
+    </script>
+</body>
+</html>
