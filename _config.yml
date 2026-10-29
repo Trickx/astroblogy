@@ -77,3 +77,4 @@ exclude:
   - pi-scripts/StarAberrationDiagnostics/handbook-src
   - pi-scripts/StarAberrationDiagnostics/koma-src
   - pi-scripts/StarAberrationDiagnostics/newton-src
+  - pi-scripts/StarAberrationDiagnostics/pidoc-src

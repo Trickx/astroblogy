@@ -6,7 +6,7 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="StarAberrationDiagnostics20261020v00100.tar.gz" sha1="43f76246663ce41ea29970a0f8503f0ac856c8aa" type="script" releaseDate="20261020">
+      <package fileName="StarAberrationDiagnostics20261029v00100.tar.gz" sha1="f8b39b6bc06e204f099c1d3efb515ac951e4ffad" type="script" releaseDate="20261029">
          <title>
          StarAberrationDiagnostics 0.10.0
          </title>
@@ -22,6 +22,7 @@
                <br/>src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.js
                <br/>src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.svg
                <br/>src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.xsgn
+               <br/>doc/scripts/StarAberrationDiagnostics/StarAberrationDiagnostics.html (reference documentation, with images)
             </p>
             <p>
                Released under the GNU General Public License v3 or later.
@@ -30,4 +31,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-10-20T16:55:30.982Z" encoding="Base64">UKG/yKKRjc2jiUBnUpqnrFJl5ulWSYKfp2g9MKVsZ+3nXxPyBnnUzAHYL8il0DWZicJAYq9LYhABVg+fXhQiDw==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-10-29T10:39:33.888Z" encoding="Base64">qTS+7HHpkeKnAd2hHstazaxaL2rsOiDQeWE8km8b0CQaZf2Le0T56k2buwtMlMYLa9LEK2nICnnH13YarHXmAA==</Signature>

@@ -49,6 +49,13 @@ Double-clicking the dropped icon later reopens the dialog with the same settings
 
 **Note:** Dragging directly onto an image is not supported for script processes in current PixInsight versions.
 
+### Browse Documentation (book, next to it)
+{: #documentationButton .button}
+
+Opens the reference documentation of the dialog in the PixInsight documentation browser.
+
+> The documentation is this reference, installed with the script; without the simulators of the maps, which are only on the website.
+
 ### Calculate
 {: #previewButton .button}
 

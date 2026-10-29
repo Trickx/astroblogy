@@ -8230,6 +8230,20 @@ class StarAberrationDialog extends Dialog {
          this.dialog.newInstance();
       };
 
+      // Browse Documentation: the PIDoc reference installed with the script
+      // in doc/scripts/StarAberrationDiagnostics/ (built by pidoc-src/).
+      this.documentationButton = new ToolButton(this);
+      this.documentationButton.icon = this.scaledResource(":/process-interface/browse-documentation.png");
+      this.documentationButton.setScaledFixedSize(20, 20);
+      this.documentationButton.toolTip =
+         "<p>Opens the reference documentation of the dialog in the PixInsight documentation browser.</p>";
+      this.documentationButton.onClick = () => {
+         if (!Dialog.browseScriptDocumentation("StarAberrationDiagnostics"))
+            (new MessageBox("<p>The documentation has not been installed.</p>" +
+               "<p>It is also on the website: tricx.de/pi-scripts/StarAberrationDiagnostics/dialog/</p>",
+               TITLE, StdIcon.Information, StdButton.Ok)).execute();
+      };
+
       // Buttons
       // The analysis of the last Preview (see analyzeView()) is kept while
       // the dialog is open. Switching layers or changing their settings
@@ -9097,6 +9111,7 @@ class StarAberrationDialog extends Dialog {
       let buttonRow = new HorizontalSizer;
       buttonRow.spacing = 6;
       buttonRow.add(this.newInstanceButton);
+      buttonRow.add(this.documentationButton);
       buttonRow.add(this.progressBar);
       buttonRow.addStretch();
       buttonRow.add(this.previewButton);

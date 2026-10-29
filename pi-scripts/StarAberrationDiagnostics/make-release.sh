@@ -8,12 +8,17 @@
 #   StarAberrationDiagnostics.svg
 #   StarAberrationDiagnostics.xsgn   (signed in PixInsight after copying)
 #
+# and the compiled documentation (pidoc-src/make-pidoc.py, then compiled in
+# PixInsight) in pidoc-src/build/system/scripts/StarAberrationDiagnostics/.
+#
 # Creates the package in this directory and rewrites updates.xri for it:
 #
 #   StarAberrationDiagnostics<YYYYMMDD>v<version>.tar.gz
 #      src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.js
 #      src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.svg
 #      src/scripts/Tricx/StarAberrationDiagnostics/StarAberrationDiagnostics.xsgn
+#      doc/scripts/StarAberrationDiagnostics/StarAberrationDiagnostics.html
+#      doc/scripts/StarAberrationDiagnostics/images/...
 #
 # updates.xri must be signed afterwards, like the other repositories. Once
 # the script moves, add a <remove> list of its old paths (see FilterZWOFit).
@@ -29,8 +34,10 @@ SCRIPT="StarAberrationDiagnostics"
 INSTALL_DIR="src/scripts/Tricx/$SCRIPT"
 PI_VERSIONS="1.9.4:1.9.99"
 FILES="$SCRIPT.js $SCRIPT.svg $SCRIPT.xsgn"
+DOC_INSTALL_DIR="doc/scripts/$SCRIPT"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOC_DIR="$HERE/pidoc-src/build/system/scripts/$SCRIPT"
 
 # ----------------------------------------------------------------------------
 # Check the files; the signature must be newer than the script
@@ -43,6 +50,14 @@ for f in $FILES; do
 done
 if [ "$HERE/$SCRIPT.js" -nt "$HERE/$SCRIPT.xsgn" ]; then
    echo "$SCRIPT.js is newer than its signature; sign it again in PixInsight." >&2
+   exit 1
+fi
+if [ ! -f "$DOC_DIR/$SCRIPT.html" ]; then
+   echo "Missing $DOC_DIR/$SCRIPT.html; run pidoc-src/make-pidoc.py and compile it in PixInsight." >&2
+   exit 1
+fi
+if [ "$HERE/pidoc-src/build/$SCRIPT.pidoc" -nt "$DOC_DIR/$SCRIPT.html" ]; then
+   echo "$SCRIPT.pidoc is newer than the compiled documentation; compile it again in PixInsight." >&2
    exit 1
 fi
 
@@ -77,8 +92,13 @@ for f in $FILES; do
    cp "$HERE/$f" "$pkgdir/$INSTALL_DIR/"
 done
 chmod 644 "$pkgdir/$INSTALL_DIR/"*
+mkdir -p "$pkgdir/$DOC_INSTALL_DIR"
+# Without hidden files (e.g. .DS_Store, or tool markers in the build tree).
+rsync -a --exclude='.*' "$DOC_DIR/" "$pkgdir/$DOC_INSTALL_DIR/"
+find "$pkgdir/$DOC_INSTALL_DIR" -type d -exec chmod 755 {} +
+find "$pkgdir/$DOC_INSTALL_DIR" -type f -exec chmod 644 {} +
 # COPYFILE_DISABLE: no AppleDouble (._*) files from macOS tar.
-COPYFILE_DISABLE=1 tar -czf "$HERE/$PACKAGE" -C "$pkgdir" src
+COPYFILE_DISABLE=1 tar -czf "$HERE/$PACKAGE" -C "$pkgdir" src doc
 rm -rf "$pkgdir"
 
 SHA1="$(shasum -a 1 "$HERE/$PACKAGE" | cut -d' ' -f1)"
@@ -112,6 +132,7 @@ cat > "$HERE/updates.xri" <<EOF
                <br/>$INSTALL_DIR/$SCRIPT.js
                <br/>$INSTALL_DIR/$SCRIPT.svg
                <br/>$INSTALL_DIR/$SCRIPT.xsgn
+               <br/>$DOC_INSTALL_DIR/$SCRIPT.html (reference documentation, with images)
             </p>
             <p>
                Released under the GNU General Public License v3 or later.

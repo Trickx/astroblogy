@@ -49,6 +49,13 @@ Ein Doppelklick auf das Icon öffnet den Dialog später mit denselben Einstellun
 
 **Hinweis:** Das direkte Ziehen auf ein Bild wird für Script-Prozesse in aktuellen PixInsight-Versionen nicht unterstützt.
 
+### Browse Documentation (Buch, daneben)
+{: #documentationButton .button}
+
+Öffnet die Referenzdokumentation des Dialogs im Dokumentationsbrowser von PixInsight.
+
+> Die Dokumentation ist diese Referenz, mit dem Script installiert; ohne die Simulatoren der Karten, die es nur auf der Website gibt.
+
 ### Calculate
 {: #previewButton .button}
 

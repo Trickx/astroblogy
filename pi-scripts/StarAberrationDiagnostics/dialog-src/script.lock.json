@@ -72,6 +72,9 @@
    "text": "Debayer (SuperPixel) before star detection",
    "tooltip": "<p>Creates a debayered copy of the target image (SuperPixel method: direct 2x2 pixel grouping without interpolation, half resolution) and continues working on this copy. The original image is left unchanged. Only enable this if the target image is still an unprocessed Bayer mosaic (not true RGB).</p><p>It also applies to the frames of the Series tab. It is disabled for a color target image unless the Series tab lists frames; color images are never debayered.</p>"
   },
+  "documentationButton": {
+   "tooltip": "<p>Opens the reference documentation of the dialog in the PixInsight documentation browser.</p>"
+  },
   "exportCheck": {
    "text": "Export data table as CSV",
    "tooltip": "<p>Save: <i>name</i>_aberration.csv next to the original file (the temporary directory for an image that was never saved). Analyze series: StarAberrationSeries.csv in the directory of the frames. Existing files are replaced.</p>"

@@ -9,13 +9,14 @@ or with an AI. This file is also imported by `_sad_handbook/CLAUDE.md` and
 | What | Edit here | Never edit |
 |---|---|---|
 | The script (developed here since 2026-10-04) | `StarAberrationDiagnostics.js`, icon `StarAberrationDiagnostics.svg` | |
-| Release | sign the script in PixInsight (`.xsgn`), then `./make-release.sh`, then sign `updates.xri` | `.package/`, the `.tar.gz` by hand |
+| Release | `python3 pidoc-src/make-pidoc.py` and compile the documentation in PixInsight (it prints the command), sign the script in PixInsight (`.xsgn`), then `./make-release.sh`, then sign `updates.xri` | `.package/`, the `.tar.gz` by hand |
 | Chapter text | `_sad_handbook/en/<id>.md`, `_sad_handbook/de/<id>.md` (repository root) | `_site/` |
 | Chapter title and order | front matter of the chapter: `title`, `order` | |
 | Header cards (install, screenshot, table of contents) | `index.html`, `de/index.html` | |
 | Figures | `handbook-src/figures.py` | `fig/*.svg`, `de/fig/*.svg` (generated) |
 | Dialog reference: one file per dialog page, all shown on one page | `_sad_dialog/en/<page>.md`, `_sad_dialog/de/<page>.md` (repository root) | |
 | Simulators of the star size, star shape and coma maps (Maps › Size, Shape, Coma): model, evaluation (copies of `evaluateFwhmGrid()`, `evaluateShapeField()`, `fitComaField()` and the drawing of their layers in the script; update them when the script changes) and the texts that change with the values, both languages | `dialog/size-sim.js`, `dialog/shape-sim.js`, `dialog/coma-sim.js`; their controls are in `_sad_dialog/<lang>/maps-size.md`, `maps-shape.md` and `maps-coma.md`, their style in `_layouts/pi_dialog.html` | |
+| PixInsight documentation (Browse Documentation, installed in `doc/scripts/StarAberrationDiagnostics/`): the English dialog reference without the simulators | the dialog reference; frame (brief, keywords, links) in `pidoc-src/make-pidoc.py` | `pidoc-src/build/` (generated, not in git) |
 | Dialog screenshots | `screenshots/<name>.png` (shared by both languages) | |
 | Dialog reference and examples: menu, page frame, interface texts | `_layouts/pi_dialog.html`, `_includes/pi-dialog-*.html`, `_includes/pi-sidenav.html`, `_data/pi_dialog.yml`; the pages themselves are `dialog/index.html`, `examples/index.html` and their `de/` copies (front matter only) | |
 | Redirects from the former addresses of single files (`…/dialog/<page>/`) | `_layouts/pi_redirect.html` | |
