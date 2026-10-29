@@ -15,6 +15,7 @@ or with an AI. This file is also imported by `_sad_handbook/CLAUDE.md` and
 | Header cards (install, screenshot, table of contents) | `index.html`, `de/index.html` | |
 | Figures | `handbook-src/figures.py` | `fig/*.svg`, `de/fig/*.svg` (generated) |
 | Dialog reference: one file per dialog page, all shown on one page | `_sad_dialog/en/<page>.md`, `_sad_dialog/de/<page>.md` (repository root) | |
+| Simulators of the star size, star shape and coma maps (Maps › Size, Shape, Coma): model, evaluation (copies of `evaluateFwhmGrid()`, `evaluateShapeField()`, `fitComaField()` and the drawing of their layers in the script; update them when the script changes) and the texts that change with the values, both languages | `dialog/size-sim.js`, `dialog/shape-sim.js`, `dialog/coma-sim.js`; their controls are in `_sad_dialog/<lang>/maps-size.md`, `maps-shape.md` and `maps-coma.md`, their style in `_layouts/pi_dialog.html` | |
 | Dialog screenshots | `screenshots/<name>.png` (shared by both languages) | |
 | Dialog reference and examples: menu, page frame, interface texts | `_layouts/pi_dialog.html`, `_includes/pi-dialog-*.html`, `_includes/pi-sidenav.html`, `_data/pi_dialog.yml`; the pages themselves are `dialog/index.html`, `examples/index.html` and their `de/` copies (front matter only) | |
 | Redirects from the former addresses of single files (`…/dialog/<page>/`) | `_layouts/pi_redirect.html` | |

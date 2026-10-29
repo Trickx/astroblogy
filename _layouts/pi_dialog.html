@@ -56,6 +56,25 @@
     figure.map a { display: block; }
     .card table td, .card table th { white-space: nowrap; }
     .card table td.wrap { white-space: normal; }
+    /* Simulator (Maps › Size): controls, canvases and the readouts below them */
+    .sim { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 20px; margin: 8px 0 16px 0; }
+    .card .sim-head { margin: 16px 0 0 0; font-weight: 600; color: var(--text); }
+    .sim label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--muted); }
+    .sim label span b { color: var(--text); font-weight: 600; }
+    .sim input[type=range] { width: 100%; accent-color: var(--accent); }
+    .sim select, .sim button {
+      background: #0c141d; color: var(--text); border: 1px solid #2a3b4f; border-radius: 6px;
+      padding: 4px 6px; font: inherit; font-size: 0.92rem;
+    }
+    .sim button { cursor: pointer; align-self: end; }
+    .sim label.check { flex-direction: row; align-items: center; gap: 8px; }
+    .sim-canvas { display: block; width: 100%; height: auto; border-radius: 10px; margin: 8px 0; }
+    .readout {
+      background: #0c141d; border: 1px solid #2a3b4f; border-radius: 6px; padding: 8px 12px;
+      margin: 8px 0 0 0; font-size: 0.92rem; color: var(--muted); overflow-x: auto;
+    }
+    .readout b { color: var(--text); }
+    pre.readout { font-size: 0.82rem; line-height: 1.45; white-space: pre; }
   </style>
 </head>
 <body>
