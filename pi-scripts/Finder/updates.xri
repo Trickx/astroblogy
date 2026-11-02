@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="macosx" arch="arm64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261020v0101-macosx-arm64.tar.gz" sha1="def80c205907bec4ced5fbcaea1f244cb08c79c4" type="module" releaseDate="20261020">
+      <package fileName="Finder20261102v0102-macosx-arm64.tar.gz" sha1="27a49d7c0472e94d1a636019c42941feee3ac2f2" type="module" releaseDate="20261102">
          <title>
-         Finder 1.0.1
+         Finder 1.0.2
          </title>
          <description>
             <p>
@@ -20,10 +20,11 @@
                Installed files:
                <br/>bin/Finder-pxm.dylib
                <br/>bin/Finder-pxm.xsgn
+               <br/>doc/tools/Finder/Finder.html (reference documentation, with images)
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 96b52ad).
+               https://github.com/Trickx/PI-Finder (commit 0530ebb).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -33,9 +34,9 @@
       </package>
    </platform>
    <platform os="macosx" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261020v0101-macosx-x64.tar.gz" sha1="fb40e580b0fc00ee8e3b0cbbc7b1d8fd84a2a605" type="module" releaseDate="20261020">
+      <package fileName="Finder20261102v0102-macosx-x64.tar.gz" sha1="bdc8cbbf92ccbf074c31b76a0fa8c08e3dd9ce9b" type="module" releaseDate="20261102">
          <title>
-         Finder 1.0.1
+         Finder 1.0.2
          </title>
          <description>
             <p>
@@ -47,10 +48,11 @@
                Installed files:
                <br/>bin/Finder-pxm.dylib
                <br/>bin/Finder-pxm.xsgn
+               <br/>doc/tools/Finder/Finder.html (reference documentation, with images)
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 96b52ad).
+               https://github.com/Trickx/PI-Finder (commit 0530ebb).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -60,9 +62,9 @@
       </package>
    </platform>
    <platform os="linux" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261020v0101-linux-x64.tar.gz" sha1="63fe589258684f5cfadc67bb1237bb3c118704ad" type="module" releaseDate="20261020">
+      <package fileName="Finder20261102v0102-linux-x64.tar.gz" sha1="11b532a307521ada9733147902fc5d604ef2f08c" type="module" releaseDate="20261102">
          <title>
-         Finder 1.0.1
+         Finder 1.0.2
          </title>
          <description>
             <p>
@@ -74,10 +76,11 @@
                Installed files:
                <br/>bin/Finder-pxm.so
                <br/>bin/Finder-pxm.xsgn
+               <br/>doc/tools/Finder/Finder.html (reference documentation, with images)
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 96b52ad).
+               https://github.com/Trickx/PI-Finder (commit 0530ebb).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -87,9 +90,9 @@
       </package>
    </platform>
    <platform os="windows" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261020v0101-windows-x64.tar.gz" sha1="6beeff2eea65cf221e08fc77eceb5471688590d1" type="module" releaseDate="20261020">
+      <package fileName="Finder20261102v0102-windows-x64.tar.gz" sha1="4a52b5c8415f90474ed379767c42dd20c7df9bf2" type="module" releaseDate="20261102">
          <title>
-         Finder 1.0.1
+         Finder 1.0.2
          </title>
          <description>
             <p>
@@ -101,10 +104,11 @@
                Installed files:
                <br/>bin/Finder-pxm.dll
                <br/>bin/Finder-pxm.xsgn
+               <br/>doc/tools/Finder/Finder.html (reference documentation, with images)
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 96b52ad).
+               https://github.com/Trickx/PI-Finder (commit 0530ebb).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -114,4 +118,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-10-20T17:39:51.891Z" encoding="Base64">O7iwu/FrvfQ67gx6pgpnaUGH79DG/vERabQ3fG9xwN7sjksWDbM96zeJ9LkprbJ5V72Nv3HW5F9/97szfqMkAg==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-02T19:05:21.630Z" encoding="Base64">p5qo+aiKnOVTZ+mL8n7vMo/VZjDL9wQ125T2jGozOuHde0ETteJ4Tevx9ZNPwaqBsLPV8s41+f32iSsSkpNJDQ==</Signature>
