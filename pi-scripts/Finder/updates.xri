@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="macosx" arch="arm64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261102v0102-macosx-arm64.tar.gz" sha1="27a49d7c0472e94d1a636019c42941feee3ac2f2" type="module" releaseDate="20261102">
+      <package fileName="Finder20261104v0103-macosx-arm64.tar.gz" sha1="9587e539d1a82f60e216bc29c24c602133c85313" type="module" releaseDate="20261104">
          <title>
-         Finder 1.0.2
+         Finder 1.0.3
          </title>
          <description>
             <p>
@@ -24,7 +24,7 @@
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 0530ebb).
+               https://github.com/Trickx/PI-Finder (commit 921ecbf).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -34,9 +34,9 @@
       </package>
    </platform>
    <platform os="macosx" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261102v0102-macosx-x64.tar.gz" sha1="bdc8cbbf92ccbf074c31b76a0fa8c08e3dd9ce9b" type="module" releaseDate="20261102">
+      <package fileName="Finder20261104v0103-macosx-x64.tar.gz" sha1="70a21d285a8b8c0586df65e6c376eda04c86ff09" type="module" releaseDate="20261104">
          <title>
-         Finder 1.0.2
+         Finder 1.0.3
          </title>
          <description>
             <p>
@@ -52,7 +52,7 @@
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 0530ebb).
+               https://github.com/Trickx/PI-Finder (commit 921ecbf).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -62,9 +62,9 @@
       </package>
    </platform>
    <platform os="linux" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261102v0102-linux-x64.tar.gz" sha1="11b532a307521ada9733147902fc5d604ef2f08c" type="module" releaseDate="20261102">
+      <package fileName="Finder20261104v0103-linux-x64.tar.gz" sha1="d58bf2f1c640cc49ce7637b50841e1b6118f9bcd" type="module" releaseDate="20261104">
          <title>
-         Finder 1.0.2
+         Finder 1.0.3
          </title>
          <description>
             <p>
@@ -80,7 +80,7 @@
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 0530ebb).
+               https://github.com/Trickx/PI-Finder (commit 921ecbf).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -90,9 +90,9 @@
       </package>
    </platform>
    <platform os="windows" arch="x64" version="1.9.5:1.9.99">
-      <package fileName="Finder20261102v0102-windows-x64.tar.gz" sha1="4a52b5c8415f90474ed379767c42dd20c7df9bf2" type="module" releaseDate="20261102">
+      <package fileName="Finder20261104v0103-windows-x64.tar.gz" sha1="2471cb1a5f88f8480046ea62c12958d4ce3beb9a" type="module" releaseDate="20261104">
          <title>
-         Finder 1.0.2
+         Finder 1.0.3
          </title>
          <description>
             <p>
@@ -108,7 +108,7 @@
             </p>
             <p>
                Released under the GNU General Public License v3. Source code:
-               https://github.com/Trickx/PI-Finder (commit 0530ebb).
+               https://github.com/Trickx/PI-Finder (commit 921ecbf).
             </p>
             <p>
                This product is based on software from the PixInsight project, developed by
@@ -118,4 +118,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-11-02T19:05:21.630Z" encoding="Base64">p5qo+aiKnOVTZ+mL8n7vMo/VZjDL9wQ125T2jGozOuHde0ETteJ4Tevx9ZNPwaqBsLPV8s41+f32iSsSkpNJDQ==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-04T20:40:38.520Z" encoding="Base64">w7iCvD3axy7dOGerAC/82fSS+51P5DSOoFyhtdye3agZFgsM8JytSmcPKUWDD/kFsXz6DOYX5ZLHD7bQEVLOBA==</Signature>
