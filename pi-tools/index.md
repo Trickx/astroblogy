@@ -129,15 +129,6 @@ permalink: /pi-tools/
 <section class="gallery-section pi-tool-list" aria-label="PixInsight tools">
   <article class="pi-tool-entry">
     <div>
-      <h2><a href="{{ '/pi-scripts/CanonBandingReduction/' | relative_url }}">CanonBandingReduction</a></h2>
-      <p>Reduces the horizontal banding that affects images from some Canon DSLRs by equalizing the background brightness of each row, with optional highlight protection. Georg Viehoever's original script has been ported to the current PJSR library, so it runs on PixInsight 1.9.4 and later, and now includes a preview with zoom and screen transfer function (STF) controls.</p>
-      <a class="pi-tool-link" href="{{ '/pi-scripts/CanonBandingReduction/' | relative_url }}">Repository and installation</a>
-    </div>
-    <img src="{{ '/pi-scripts/CanonBandingReduction/CanonBandingReduction.png' | relative_url }}" alt="CanonBandingReduction script window with preview" loading="lazy">
-  </article>
-
-  <article class="pi-tool-entry">
-    <div>
       <h2><a href="{{ '/pi-scripts/FilterZWOFit/' | relative_url }}">FilterZWOFit</a></h2>
       <p>ASIAIR cannot write filter information to the image header. FilterZWOFit lets you pick a filter from a predefined list and writes it to the FILTER keyword in the FITS header, either for the active image or in batch mode for all images in a selected folder.</p>
       <a class="pi-tool-link" href="{{ '/pi-scripts/FilterZWOFit/' | relative_url }}">Repository and installation</a>
@@ -170,6 +161,15 @@ permalink: /pi-tools/
       <a class="pi-tool-link" href="{{ '/pi-scripts/RemovePedestal/' | relative_url }}">Repository and installation</a>
     </div>
     <img src="{{ '/pi-scripts/RemovePedestal/RemovePedestal.png' | relative_url }}" alt="RemovePedestal script window" loading="lazy">
+  </article>
+
+  <article class="pi-tool-entry">
+    <div>
+      <h2><a href="{{ '/pi-scripts/SensorDestripe/' | relative_url }}">SensorDestripe</a></h2>
+      <p>Reduces the horizontal banding along the sensor rows that affects images from some DSLR and mirrorless cameras, for example the Canon EOS series, by equalizing the background brightness of each row, with optional highlight protection. Based on Georg Viehoever's CanonBandingReduction, ported to the current PJSR library, so it runs on PixInsight 1.9.4 and later, and now includes a preview with zoom and screen transfer function (STF) controls. Formerly published here as CanonBandingReduction.</p>
+      <a class="pi-tool-link" href="{{ '/pi-scripts/SensorDestripe/' | relative_url }}">Repository and installation</a>
+    </div>
+    <img src="{{ '/pi-scripts/SensorDestripe/SensorDestripe.png' | relative_url }}" alt="SensorDestripe script window with preview" loading="lazy">
   </article>
 
   <article class="pi-tool-entry">

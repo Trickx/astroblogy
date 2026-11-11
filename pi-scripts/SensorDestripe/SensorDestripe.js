@@ -2,8 +2,11 @@
 CoreApplication.ensureMinimumVersion( 1, 9, 4 );
 
 /*
-   CanonBandingReduction.js v0.10.0
-   Reduces Banding in Canon DSLR images.
+   SensorDestripe.js v0.11.0
+   Reduces horizontal banding along the sensor rows of DSLR and mirrorless camera images.
+
+   Derived from CanonBandingReduction by Georg Viehoever. Renamed to SensorDestripe in
+   version 0.11.0; the original name and copyright belong to the original script.
 
    The problem has been discussed for example in http://tech.groups.yahoo.com/group/digital_astro/message/126102,
    cannot be fixed by image normalization with flats or darks, is not caused by problems in power supplies or
@@ -31,6 +34,11 @@ CoreApplication.ensureMinimumVersion( 1, 9, 4 );
 
 /*
    Changelog:
+   0.11.0: Renamed from CanonBandingReduction to SensorDestripe:
+         - script id, menu entry (Script > Tricx > SensorDestripe), icon and window title renamed
+         - settings of CanonBandingReduction are taken over on the first run
+   0.10.2: applied settings stored in the processing history (Processing:History, FITS HISTORY);
+           Apply closes the dialog with a single click
    0.10.0: GUI rework:
          - preview is always active, "Activate Preview" checkbox removed
          - new "Fit" / "Zoom 1:1" button to scale the preview to the window
@@ -113,27 +121,41 @@ CoreApplication.ensureMinimumVersion( 1, 9, 4 );
 
 // ======== #features ==============================================================
 
-#script-id     CanonBandingReduction
-#feature-id    Tricx > CanonBandingReduction
+#script-id     SensorDestripe
+#feature-id    Tricx > SensorDestripe
 
 #feature-info \
-Attempts to reduce the horizontal banding plaguing some Canon DSLRs.<br/>\
+Reduces the horizontal banding along the sensor rows that affects images from some \
+DSLR and mirrorless cameras, for example the Canon EOS series.<br/>\
 <br/>\
-This script allows you to reduce the banding by equalizing horizontal background \
-brightness.<br/>\
+This script reduces the banding by equalizing the background brightness of each row. \
+Apply it to images that have not been rotated, so the rows of the image are the rows \
+of the sensor.<br/>\
 <br/>\
+Based on CanonBandingReduction by Georg Viehoever (GPLv3).<br/>\
 Copyright (C) 2009-2013 Georg Viehoever
 
-#feature-icon  CanonBandingReduction.svg
+#feature-icon  SensorDestripe.svg
 
 // ========= # defines =============================================================
 
 /// define for debugging output
 #define DEBUGGING_MODE_ON false
 
-#define TITLE   "CanonBandingReduction"
-#define VERSION "0.10.0"
-#define SETTINGS_KEY "CanonBandingReduction"
+#define TITLE   "SensorDestripe"
+#define VERSION "0.11.0"
+#define SETTINGS_KEY "SensorDestripe"
+/// settings key of the script before it was renamed; read when a setting is missing
+#define LEGACY_SETTINGS_KEY "CanonBandingReduction"
+
+/// read a setting, falling back to the key used before the rename.
+/// Settings.lastReadOK reflects the result as for Settings.read().
+function readSetting( name, type ) {
+   var value = Settings.read( SETTINGS_KEY + "/" + name, type );
+   if ( Settings.lastReadOK )
+      return value;
+   return Settings.read( LEGACY_SETTINGS_KEY + "/" + name, type );
+}
 
 /// size of preview viewport in logical pixels. 3:2, so that a 2:3 image fits without border
 #define PREVIEW_WIDTH  720
@@ -174,13 +196,13 @@ function BandingEngine() {
 
    /// retrieve settings persisted by previous runs of the dialog
    this.loadSettings = function() {
-      var value = Settings.read( SETTINGS_KEY + "/amount", DataType.Double );
+      var value = readSetting( "amount", DataType.Double );
       if ( Settings.lastReadOK )
          this.dAmount = value;
-      value = Settings.read( SETTINGS_KEY + "/highlightProtect", DataType.Boolean );
+      value = readSetting( "highlightProtect", DataType.Boolean );
       if ( Settings.lastReadOK )
          this.bDoHighlightProtect = value;
-      value = Settings.read( SETTINGS_KEY + "/sigma", DataType.Double );
+      value = readSetting( "sigma", DataType.Double );
       if ( Settings.lastReadOK )
          this.dSigma = value;
    };
@@ -748,7 +770,7 @@ constructor(bandingEngine,targetView)
 
    //init values
    this.previewWithSTF=false;
-   var withSTF=Settings.read( SETTINGS_KEY + "/previewWithSTF", DataType.Boolean );
+   var withSTF=readSetting( "previewWithSTF", DataType.Boolean );
    if ( Settings.lastReadOK )
       this.previewWithSTF=withSTF;
 
@@ -854,7 +876,7 @@ constructor(bandingEngine,targetView)
 
    this.previewControl=new BandingScrollControl(this);
    this.previewControl.setScaledMinSize( PREVIEW_WIDTH, PREVIEW_HEIGHT );
-   var fitToWindow=Settings.read( SETTINGS_KEY + "/fitToWindow", DataType.Boolean );
+   var fitToWindow=readSetting( "fitToWindow", DataType.Boolean );
    if ( Settings.lastReadOK )
       this.previewControl.fitToWindow=fitToWindow;
 
@@ -1095,7 +1117,7 @@ function main() {
 
    if ( DEBUGGING_MODE_ON ){
       Console.show();
-      Console.writeln("Canon Banding Script started");
+      Console.writeln("SensorDestripe started");
    }
    // allow stop
    Console.abortEnabled = true;
@@ -1157,7 +1179,7 @@ function main() {
    }
 
    if ( DEBUGGING_MODE_ON ){
-      Console.writeln("Canon Banding Script done");
+      Console.writeln("SensorDestripe done");
       Console.hide();
    }
 }  //main()

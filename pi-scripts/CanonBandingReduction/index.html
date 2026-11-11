@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CanonBandingReduction - PixInsight Update Repository</title>
+  <title>CanonBandingReduction is now SensorDestripe</title>
   <style>
     :root {
       --bg: #0f1720;
@@ -11,7 +11,6 @@
       --text: #e7edf5;
       --muted: #a8b6c8;
       --accent: #64c7ff;
-      --ok: #82e0aa;
     }
     body {
       margin: 0;
@@ -48,75 +47,27 @@
       color: #d8e7f7;
       word-break: break-all;
     }
-    .ok {
-      color: var(--ok);
-      font-weight: 600;
-    }
-    img {
-      display: block;
-      max-width: 100%;
-      height: auto;
-      border: 1px solid #2a3b4f;
-      border-radius: 10px;
-      box-sizing: border-box;
-    }
-    ul { margin: 8px 0 0 20px; }
-    .shots {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 8px;
-    }
-    .shot {
-      background: #0c141d;
-      border: 1px solid #2a3b4f;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .shot img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-    .shot figcaption {
-      padding: 8px 10px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="card">
-      <h1>CanonBandingReduction</h1>
-      <p>PixInsight update repository for the <strong>CanonBandingReduction</strong> script.</p>
-      <p>Reduces the horizontal banding of some Canon DSLRs by equalizing the background
-         brightness of each image row. An optional highlight protection excludes bright pixels
-         from the row background, so stars and nebulae do not cause overcorrection. The result
-         can be checked in a live preview, optionally with the current STF.</p>
-      <p>Based on the original script by Georg Viehoever (2009-2013), ported to the V8 engine
-         by Peter Proulx.</p>
-      <p class="ok">This page is informational. For PixInsight, use the repository URL shown below.</p>
+      <h1>CanonBandingReduction is now SensorDestripe</h1>
+      <p>The script published here as <strong>CanonBandingReduction</strong> has been renamed to
+         <a href="/pi-scripts/SensorDestripe/">SensorDestripe</a>. It works the same way and is found
+         under Script &gt; Tricx &gt; SensorDestripe.</p>
     </section>
 
     <section class="card">
-      <h2>Repository URL for PixInsight</h2>
-      <p><code>https://tricx.de/pi-scripts/CanonBandingReduction/</code></p>
-    </section>
-
-    <section class="card">
-      <h2>Installation in PixInsight</h2>
+      <h2>If you added this repository in PixInsight</h2>
+      <p>The next Check for Updates installs SensorDestripe and removes CanonBandingReduction.
+         Your saved settings are taken over. Then switch the repository entry to the new address:</p>
       <ol>
         <li>Resources &gt; Updates &gt; Manage Repositories</li>
-        <li>Add repository: <code>https://tricx.de/pi-scripts/CanonBandingReduction/</code></li>
-        <li>Run Check for Updates</li>
-        <li>Run via Script &gt; Tricx &gt; CanonBandingReduction</li>
+        <li>Remove <code>https://tricx.de/pi-scripts/CanonBandingReduction/</code></li>
+        <li>Add <code>https://tricx.de/pi-scripts/SensorDestripe/</code></li>
       </ol>
-    </section>
-
-    <section class="card">
-      <h2>Screenshot</h2>
-      <img src="CanonBandingReduction.png" alt="CanonBandingReduction script screenshot" />
+      <p>This address will be taken offline in a later release.</p>
     </section>
   </main>
 </body>

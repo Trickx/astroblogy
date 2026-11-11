@@ -2,13 +2,13 @@
 <xri version="1.0">
    <description>
       <p>
-         CanonBandingReduction PixInsight Script Updates
+         SensorDestripe PixInsight Script Updates
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="CanonBandingReduction20261011v0102.tar.gz" sha1="7b0e7f24829cae368f29bcaf13221add2e380449" type="script" releaseDate="20261011">
+      <package fileName="SensorDestripe20261111v0110.tar.gz" sha1="9054c72f5ab96ff86a55bf14d49645a0098ee522" type="script" releaseDate="20261111">
          <title>
-         CanonBandingReduction 0.10.2
+         SensorDestripe 0.11.0
          </title>
          <remove>
             src/scripts/CanonBandingReduction/CanonBandingReduction.js
@@ -17,24 +17,31 @@
             src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.js
             src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.svg
             src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.xsgn
+            src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.js
+            src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.svg
+            src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.xsgn
             src/scripts/CanonBandingReduction/
             src/scripts/Trickx/CanonBandingReduction/
+            src/scripts/Tricx/CanonBandingReduction/
          </remove>
          <description>
             <p>
-               Installs the CanonBandingReduction PixInsight feature script, which reduces the horizontal banding of Canon DSLR images with live preview and highlight protection.
+               Installs the SensorDestripe PixInsight feature script, which reduces the horizontal banding along the sensor rows of DSLR and mirrorless camera images with live preview and highlight protection.
             </p>
             <p>
-               Changes in 0.10.2: applied settings are stored in the processing history of the image, and name, version, time and settings are recorded in the XISF property Processing:History and in FITS HISTORY keywords. Apply now closes the dialog with a single click.
+               Changes in 0.11.0: the script formerly named CanonBandingReduction is now SensorDestripe. It is found under Script &gt; Tricx &gt; SensorDestripe, and the CanonBandingReduction files installed from this repository are removed. Saved settings are taken over. This repository has moved: in Resources &gt; Updates &gt; Manage Repositories, replace https://tricx.de/pi-scripts/CanonBandingReduction/ with https://tricx.de/pi-scripts/SensorDestripe/.
+            </p>
+            <p>
+               Based on CanonBandingReduction by Georg Viehoever (GPLv3).
             </p>
             <p>
                Installed files:
-               <br/>src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.js
-               <br/>src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.svg
-               <br/>src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.xsgn
+               <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.js
+               <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.svg
+               <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.xsgn
             </p>
          </description>
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-10-11T07:24:28.046Z" encoding="Base64">uYjeJcm/98C/IfHZZCp/viH+mtzKJ/I6MhDeUyuHVfX0NUViYBDoLbXHONZAAYa81AItMRVIee1mc77jrtI0Cw==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-11T06:54:59.925Z" encoding="Base64">npccgVunjqlNnQnbtyoqs8MVA6vfsOL5b1z4+D62gzNAg/KnGdt2EnqV7GMf7Zny2aQGW02FKOH/PI08D7PzDQ==</Signature>

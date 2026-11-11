@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         SensorDestripe PixInsight Script Updates
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.4:1.9.99">
+      <package fileName="SensorDestripe20261111v0110.tar.gz" sha1="9054c72f5ab96ff86a55bf14d49645a0098ee522" type="script" releaseDate="20261111">
+         <title>
+         SensorDestripe 0.11.0
+         </title>
+         <remove>
+            src/scripts/CanonBandingReduction/CanonBandingReduction.js
+            src/scripts/CanonBandingReduction/CanonBandingReduction.svg
+            src/scripts/CanonBandingReduction/CanonBandingReduction.xsgn
+            src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.js
+            src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.svg
+            src/scripts/Trickx/CanonBandingReduction/CanonBandingReduction.xsgn
+            src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.js
+            src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.svg
+            src/scripts/Tricx/CanonBandingReduction/CanonBandingReduction.xsgn
+            src/scripts/CanonBandingReduction/
+            src/scripts/Trickx/CanonBandingReduction/
+            src/scripts/Tricx/CanonBandingReduction/
+         </remove>
+         <description>
+            <p>
+               Installs the SensorDestripe PixInsight feature script, which reduces the horizontal banding along the sensor rows of DSLR and mirrorless camera images with live preview and highlight protection.
+            </p>
+            <p>
+               Changes in 0.11.0: the script formerly named CanonBandingReduction is now SensorDestripe. It is found under Script &gt; Tricx &gt; SensorDestripe, and the CanonBandingReduction files installed from this repository are removed. Saved settings are taken over.
+            </p>
+            <p>
+               Based on CanonBandingReduction by Georg Viehoever (GPLv3).
+            </p>
+            <p>
+               Installed files:
+               <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.js
+               <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.svg
+               <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.xsgn
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-11T06:54:59.924Z" encoding="Base64">G82Dt60LUefJNMDxIO1mFUMMI0/+T3EM65YDikmB4h0S7hjuKxABRbkgzgzPDMQP9H7Cr11MkrnNf1NJr93RBQ==</Signature>
