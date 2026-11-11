@@ -13,7 +13,7 @@ On the **right** are the settings in four tabs:
 
 - [Setup](#setup-general) - the target image, debayering, optics and output ([General](#setup-general)), and the star detection and PSF fit ([Star detection](#setup-star-detection)).
 - [Maps](#maps) - one sub-tab per map: [Size](#maps-size), [Shape](#maps-shape), [Coma](#maps-coma) and [Tilt](#maps-tilt), each with its layers and its evaluation.
-- [Assessment](#assessment) - the verdicts with suggested corrections, and the optional AI review.
+- [Assessment](#assessment) - the verdicts with suggested corrections.
 - [Series](#series) - several frames, e.g. before and after the meridian flip, compared.
 
 ### Typical workflow

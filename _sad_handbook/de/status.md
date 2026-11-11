@@ -13,10 +13,6 @@ order: 10
 - **Kann Fehler enthalten.**
   Berechnungen, Urteile und Erklärungen können falsch sein.
   Prüfen Sie die Ergebnisse mit Ihrer eigenen Erfahrung, bevor Sie Ihre Ausrüstung verstellen.
-- **Handlungsempfehlungen der KI.**
-  Die KI-Auswertung gibt mitunter Handlungsempfehlungen, etwa zu einer Justage oder zu Zubehör.
-  Diese sind nicht als Kaufempfehlung zu verstehen.
-  Es besteht keinerlei Gewähr, dass ihre Umsetzung etwas verbessert.
 - **Rückmeldungen sind willkommen.**
   Einen Fehler gefunden, eine Frage oder einen Vorschlag?
   Melden Sie sich gerne über die [Kontaktseite](/contact/).

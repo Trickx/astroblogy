@@ -175,7 +175,7 @@ def blocks(lines):
             while i < len(lines) and (re.match(r"([-*]|\d+\.) ", lines[i])
                                       or (lines[i].startswith("   ") and items)):
                 if lines[i].startswith("   "):
-                    items[-1] += "\n" + lines[i].strip()
+                    items[-1] += " " + lines[i].strip()
                 else:
                     items.append(re.sub(r"^([-*]|\d+\.) ", "", lines[i]))
                 i += 1
@@ -193,7 +193,9 @@ def blocks(lines):
                     and not re.match(r"([-*]|\d+\.) ", lines[i]):
                 para.append(inl(lines[i]))
                 i += 1
-            out.append("\n".join(para))
+            # One line: the PIDoc compiler joins the lines of a paragraph
+            # without a space (one sentence per line in the sources).
+            out.append(" ".join(para))
     return "\n\n".join(out)
 
 

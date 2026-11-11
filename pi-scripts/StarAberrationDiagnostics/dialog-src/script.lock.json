@@ -1,34 +1,6 @@
 {
  "script": "StarAberrationDiagnostics.js",
  "controls": {
-  "aiButton": {
-   "text": "Ask Claude",
-   "tooltip": "<p>Sends the measured values of the kept analysis (Calculate), the script assessment and optionally the three maps, and the comparison of the Series tab if there is one, to Claude (claude-opus-5-5, Anthropic API) and shows its review on the AI review tab left: which explanation fits all values, where the rules are too strict or too lenient, and what to do in which order. Either a Calculate or a series is enough.</p><p>Needs an API key and an internet connection; each request is billed to the key (typically a few cents) and can take a minute. No image data other than the attached maps leaves the computer.</p>"
-  },
-  "aiContinueButton": {
-   "text": "Continue",
-   "tooltip": "<p>Only when Claude's answer was cut off at the token limit: asks Claude for the rest of the answer and shows the joined answer. Billed like a new request (the request and the answer so far are sent again).</p>"
-  },
-  "aiDetailCombo": {
-   "label": "Explanation:",
-   "tooltip": "<p><b>Step by step</b>: for up to 6 findings that need attention, the measured values and what they mean, what the stars look like, the derivation of the cause, at most two other causes, what to do and how to check it - each in at most two sentences, terms explained briefly (about 700 words).</p><p><b>Short</b>: up to 5 findings, at most 25 words per field (about 300 words) - faster and cheaper.</p>"
-  },
-  "aiKeyEdit": {
-   "label": "API key:",
-   "tooltip": "<p>Your Anthropic API key (console.anthropic.com). The environment variable ANTHROPIC_API_KEY takes precedence when it is set.</p><p>A key entered here is stored unencrypted in PixInsight's settings, but never in a process icon. Clear the field to remove it.</p>"
-  },
-  "aiLanguageEdit": {
-   "label": "Answer language:",
-   "tooltip": "<p>The language of the AI review, e.g. English or Deutsch.</p>"
-  },
-  "aiSaveLogCheck": {
-   "text": "Save requests and answers",
-   "tooltip": "<p>Saves every request and its answer as a text file StarAberrationAI_<i>date</i>_<i>time</i>.txt: a header with the date and the analyzed files, the request as sent (the maps only as placeholders) and the answer, readable and as JSON. Failed requests are saved with the error.</p><p>The file goes next to the series frames, else next to the target image, else to the temporary directory. The API key is never written.</p>"
-  },
-  "aiSendMapCheck": {
-   "text": "Attach the maps",
-   "tooltip": "<p>Sends the maps Star size, Star shape and Coma with their current layers as images (at most 1092 px each), so that Claude can see the patterns as well as the numbers. Without it, only the measured values and the assessment are sent.</p>"
-  },
   "apertureSpin": {
    "label": "Aperture (mm):",
    "tooltip": "<p>Aperture of the telescope in mm (e.g. 150 for a Skywatcher 150P). Together with the focal length, this gives the f-number (focal length/aperture).</p><p>Grayed: from the FITS header of the target image (APTDIA, or FOCALLEN/FOCRATIO), 0 when it has none.</p>"
@@ -105,7 +77,7 @@
   },
   "loadResultsButton": {
    "text": "Load results...",
-   "tooltip": "<p>Loads results saved with Save results and shows them as after a Calculate, without measuring the stars again: the maps, their evaluations, the assessment, Save and the AI review all work with them. Optics, mount and observation values come from the saved FITS header (or the fields above), the layers from the current settings.</p><p>The background is the image when it is open (same view and file), else dark. The detection settings of the dialog do not apply to loaded results; the next Calculate measures the target image again.</p>"
+   "tooltip": "<p>Loads results saved with Save results and shows them as after a Calculate, without measuring the stars again: the maps, their evaluations, the assessment and Save all work with them. Optics, mount and observation values come from the saved FITS header (or the fields above), the layers from the current settings.</p><p>The background is the image when it is open (same view and file), else dark. The detection settings of the dialog do not apply to loaded results; the next Calculate measures the target image again.</p>"
   },
   "madSpin": {
    "label": "MAD outlier factor:",
@@ -197,10 +169,6 @@
   "seriesAddButton": {
    "text": "Add files..."
   },
-  "seriesAiButton": {
-   "text": "Ask Claude",
-   "tooltip": "<p>Sends the series (values per frame and the comparison of the sides) to Claude and shows its review on the AI review tab on the left (as on the Assessment tab). A current analysis of Calculate is sent along. API key, answer language and costs: see the Assessment tab.</p>"
-  },
   "seriesAnalyzeButton": {
    "text": "Analyze series",
    "tooltip": "<p>Measures every frame with the current settings (Setup > Star detection, debayer, tracking subtraction, optics) and compares the sides: tilt, FWHM, edge pattern, tracking, coma strength and coma-free point, each judged as stable or changing at the flip, plus drifts over the session.</p><p>Each frame takes about as long as a Calculate. <b>Stop</b> ends the run after the current frame; the frames measured so far are compared, pass 2 is skipped. The CSV export (Setup > General) writes one line per frame.</p><p><b>Pass 2</b> then pools the stars of all frames, and of each side, after taking out each frame's dynamic tracking (its own uniform term less the mean) and scaling its FWHM to the median center FWHM: the static optics with about √n smaller errors. The maps show it at once (Maps - Show: Series static); the report gives the static and the dynamic tracking. Calculate stays a single pass on the target image - to check the settings before a series.</p>"
@@ -222,7 +190,7 @@
   },
   "seriesShowMapsCheck": {
    "text": "Show each frame's map",
-   "tooltip": "<p>Draws the map of the selected tab (Star shape, Star size or Coma) of each frame in the preview as soon as it is measured, and keeps a reduced copy: clicking a frame in the list shows it again. This takes a few seconds more per frame.</p><p>Only the display changes: the analysis of Calculate, the Assessment tab and the AI review stay as they are (the AI review never gets the maps of the series).</p>"
+   "tooltip": "<p>Draws the map of the selected tab (Star shape, Star size or Coma) of each frame in the preview as soon as it is measured, and keeps a reduced copy: clicking a frame in the list shows it again. This takes a few seconds more per frame.</p><p>Only the display changes: the analysis of Calculate and the Assessment tab stay as they are.</p>"
   },
   "seriesSideLabel": {
    "text": "Side:",

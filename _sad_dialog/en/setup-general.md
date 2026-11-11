@@ -24,7 +24,7 @@ The optics values are only needed for the physical results (arcseconds, &Delta;z
 ### Load results...
 {: #loadResultsButton .button}
 
-Loads results saved with Save results and shows them as after a Calculate, without measuring the stars again: the maps, their evaluations, the assessment, Save and the AI review all work with them.
+Loads results saved with Save results and shows them as after a Calculate, without measuring the stars again: the maps, their evaluations, the assessment and Save all work with them.
 Optics, mount and observation values come from the saved FITS header (or the fields above), the layers from the current settings.
 
 The background is the image when it is open (same view and file), else dark.

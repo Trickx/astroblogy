@@ -24,7 +24,7 @@ Die Optikwerte braucht das Script nur für die physikalischen Ergebnisse (Bogens
 ### Load results...
 {: #loadResultsButton .button}
 
-Lädt mit Save results gespeicherte Ergebnisse und zeigt sie wie nach einem Calculate, ohne die Sterne neu zu vermessen: Karten, ihre Evaluation, das Assessment, Save und die KI-Auswertung arbeiten damit.
+Lädt mit Save results gespeicherte Ergebnisse und zeigt sie wie nach einem Calculate, ohne die Sterne neu zu vermessen: Karten, ihre Evaluation, das Assessment und Save arbeiten damit.
 Optik-, Montierungs- und Beobachtungswerte kommen aus dem gespeicherten FITS-Header (oder den Feldern oben), die Ebenen aus den aktuellen Einstellungen.
 
 Der Hintergrund ist das Bild, wenn es geöffnet ist (gleiche View und Datei), sonst dunkel.

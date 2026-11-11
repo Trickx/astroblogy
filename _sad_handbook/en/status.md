@@ -13,10 +13,6 @@ order: 10
 - **May contain errors.**
   Computations, verdicts and explanations can be wrong.
   Check the results against your own experience before you adjust your equipment.
-- **Recommendations of the AI review.**
-  The AI review sometimes suggests what to do, for example an adjustment or a piece of equipment.
-  These suggestions are not purchase recommendations.
-  There is no guarantee that following them improves anything.
 - **Feedback is welcome.**
   Found a mistake, have a question or a suggestion?
   Please get in touch via the [contact page](/contact/).

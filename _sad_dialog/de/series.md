@@ -2,20 +2,20 @@
 title: "Series"
 menu: "Series"
 order: 90
-shot: [SAD_Series_PreStart.png, SAD_Series_Postrun.png, SAD_Series_Report.png, SAD_Series_AIReview.png]
+shot: [SAD_Series_PreStart.png, SAD_Series_Postrun.png, SAD_Series_Report.png]
 handbook: [series, sip]
 ---
 Mehrere Frames, mit denselben Einstellungen vermessen und verglichen - vor allem vor und nach einem Meridian-Flip, der trennt, was am Sensor festsitzt (Optik), von dem, was sich mit der Montierung dreht (Nachführung, Durchbiegung).
 Die Erkennungseinstellungen, das Debayern, der Abzug der Nachführung und die Optik des Setup-Tabs gelten für jedes Frame.
 
-Solange der Series-Tab gewählt ist, ändert sich auch die linke Seite des Dialogs: Vor dem ersten Lauf zeigt sie Hinweise zur Serienanalyse, ab **Analyze series** drei Tabs - **Map**, **Series report** und **AI review**.
+Solange der Series-Tab gewählt ist, ändert sich auch die linke Seite des Dialogs: Vor dem ersten Lauf zeigt sie Hinweise zur Serienanalyse, ab **Analyze series** zwei Tabs - **Map** und **Series report**.
 
 ## Linke Seite
 
 ### Hinweise vor einem Lauf
 {: .display}
 
-Bis zum ersten Analyze series zu sehen: die bisher gelisteten Frames mit ihren Seiten und einer Schätzung der Laufzeit, die Dateien, die ein Lauf mit den aktuellen Einstellungen schreibt (CSV-Tabelle, Karten, Mosaike, Protokoll der KI-Auswertung - die Frames selbst werden nie verändert), sowie Tipps, wie viele Frames man nimmt, zu Frames vor und nach dem Meridian-Flip und zu den Frames selbst.
+Bis zum ersten Analyze series zu sehen: die bisher gelisteten Frames mit ihren Seiten und einer Schätzung der Laufzeit, die Dateien, die ein Lauf mit den aktuellen Einstellungen schreibt (CSV-Tabelle, Karten, Mosaike - die Frames selbst werden nie verändert), sowie Tipps, wie viele Frames man nimmt, zu Frames vor und nach dem Meridian-Flip und zu den Frames selbst.
 
 ### Map
 {: .display}
@@ -30,12 +30,6 @@ Der Vergleich der Frames und Seiten nach Analyze series.
 Er erscheint, sobald die Frames vermessen sind; das statische Ergebnis von Durchlauf 2 folgt darunter.
 Nach einem **Stop** nennen seine ersten Zeilen, nach welchem Frame der Lauf endete und wie viele Frames nicht vermessen wurden; Durchlauf 2 entfällt dann.
 Ein Frame, dessen Header nicht lesbar war und das deshalb übersprungen wurde, nennt die Konsole.
-
-### AI review
-{: .display}
-
-Claudes Antwort - dieselbe wie im Assessment-Tab.
-**Ask Claude** wechselt auf diesen Tab.
 
 ## Frames
 
@@ -92,7 +86,7 @@ Nach dem Flip: Teleskop östlich der Säule, zeigt nach Westen.
 Zeichnet die Karte des gewählten Tabs (Star shape, Star size oder Coma) jedes Frames in die Vorschau, sobald es vermessen ist, und behält eine verkleinerte Kopie: Ein Klick auf ein Frame in der Liste zeigt sie wieder.
 Das kostet einige Sekunden mehr pro Frame.
 
-Nur die Anzeige ändert sich: Die Analyse von Calculate, der Assessment-Tab und die KI-Auswertung bleiben, wie sie sind (die KI-Auswertung bekommt nie die Karten der Serie).
+Nur die Anzeige ändert sich: Die Analyse von Calculate und der Assessment-Tab bleiben, wie sie sind.
 
 ### Save maps next to the frames
 {: #seriesSaveMapsCheck .checkbox}
@@ -131,10 +125,3 @@ Der CSV-Export (Setup › General) schreibt eine Zeile pro Frame.
 **Durchgang 2** legt dann die Sterne aller Frames und jeder Seite zusammen, nachdem jedem Frame seine dynamische Nachführung abgezogen (sein eigener gleichförmiger Anteil abzüglich des Mittels) und seine FWHM auf die mediane Mitten-FWHM skaliert wurde: die statische Optik mit etwa √n-mal kleineren Fehlern.
 Die Karten zeigen sie sofort (Maps - Show: Series static); der Bericht nennt die statische und die dynamische Nachführung.
 Calculate bleibt ein einzelner Durchgang auf dem Zielbild - um die Einstellungen vor einer Serie zu prüfen.
-
-### Ask Claude
-{: #seriesAiButton .button}
-
-Sendet die Serie (Werte pro Frame und den Vergleich der Seiten) an Claude und zeigt die Auswertung links im Tab AI review (wie beim Assessment-Tab).
-Eine aktuelle Analyse von Calculate wird mitgesendet.
-API-Schlüssel, Antwortsprache und Kosten: siehe den Assessment-Tab.

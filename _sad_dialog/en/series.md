@@ -2,20 +2,20 @@
 title: "Series"
 menu: "Series"
 order: 90
-shot: [SAD_Series_PreStart.png, SAD_Series_Postrun.png, SAD_Series_Report.png, SAD_Series_AIReview.png]
+shot: [SAD_Series_PreStart.png, SAD_Series_Postrun.png, SAD_Series_Report.png]
 handbook: [series, sip]
 ---
 Several frames measured with the same settings and compared - above all before and after a meridian flip, which separates what is fixed to the sensor (optics) from what turns with the mount (tracking, flexure).
 The detection settings, debayering, tracking subtraction and optics of the Setup tab apply to every frame.
 
-While the Series tab is selected, the left side of the dialog changes too: before the first run it shows hints for the series analysis, from **Analyze series** on three tabs - **Map**, **Series report** and **AI review**.
+While the Series tab is selected, the left side of the dialog changes too: before the first run it shows hints for the series analysis, from **Analyze series** on two tabs - **Map** and **Series report**.
 
 ## Left side
 
 ### Hints before a run
 {: .display}
 
-Shown until the first Analyze series: the frames listed so far with their sides and an estimate of the run time, the files a run will write with the current settings (CSV table, maps, mosaics, log of the AI review - the frames themselves are never changed), and tips on how many frames to take, on frames before and after the meridian flip and on the frames themselves.
+Shown until the first Analyze series: the frames listed so far with their sides and an estimate of the run time, the files a run will write with the current settings (CSV table, maps, mosaics - the frames themselves are never changed), and tips on how many frames to take, on frames before and after the meridian flip and on the frames themselves.
 
 ### Map
 {: .display}
@@ -30,12 +30,6 @@ The comparison of the frames and sides after Analyze series.
 It is shown as soon as the frames are measured; the static result of pass 2 follows below.
 After a **Stop**, its first lines say after which frame the run ended and how many frames were not measured; pass 2 is then skipped.
 The console also names a frame whose header could not be read and that was skipped.
-
-### AI review
-{: .display}
-
-Claude\'s answer - the same as on the Assessment tab.
-**Ask Claude** switches to this tab.
 
 ## Frames
 
@@ -91,7 +85,7 @@ Takes the side from the header again (PIERSIDE, camera angle or hour angle).
 Draws the map of the selected tab (Star shape, Star size or Coma) of each frame in the preview as soon as it is measured, and keeps a reduced copy: clicking a frame in the list shows it again.
 This takes a few seconds more per frame.
 
-Only the display changes: the analysis of Calculate, the Assessment tab and the AI review stay as they are (the AI review never gets the maps of the series).
+Only the display changes: the analysis of Calculate and the Assessment tab stay as they are.
 
 ### Save maps next to the frames
 {: #seriesSaveMapsCheck .checkbox}
@@ -130,10 +124,3 @@ The CSV export (Setup > General) writes one line per frame.
 **Pass 2** then pools the stars of all frames, and of each side, after taking out each frame\'s dynamic tracking (its own uniform term less the mean) and scaling its FWHM to the median center FWHM: the static optics with about √n smaller errors.
 The maps show it at once (Maps - Show: Series static); the report gives the static and the dynamic tracking.
 Calculate stays a single pass on the target image - to check the settings before a series.
-
-### Ask Claude
-{: #seriesAiButton .button}
-
-Sends the series (values per frame and the comparison of the sides) to Claude and shows its review on the AI review tab on the left (as on the Assessment tab).
-A current analysis of Calculate is sent along.
-API key, answer language and costs: see the Assessment tab.

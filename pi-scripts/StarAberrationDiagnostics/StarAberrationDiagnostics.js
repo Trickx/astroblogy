@@ -99,7 +99,7 @@
 
 CoreApplication.ensureMinimumVersion(1, 9, 4);
 
-const VERSION = "0.10";
+const VERSION = "0.11";
 const TITLE = "Star Aberration Diagnostics";
 
 // ---- Spaltenindizes in DynamicPSF.psf --------------------------------
@@ -185,13 +185,9 @@ var ScriptParameters = class extends PersistentObject {
          ["opticsType",                  DataType.Int32],
          ["mountType",                   DataType.Int32],
          ["guidingType",                 DataType.Int32],
-         ["aiSendMap",                   DataType.Boolean],
-         ["aiLanguage",                  DataType.UTF16String],
          ["seriesShowMaps",              DataType.Boolean],
-         ["aiDetail",                    DataType.Int32],
          ["seriesSaveMaps",              DataType.Boolean],
-         ["seriesSaveMosaic",            DataType.Boolean],
-         ["aiSaveLog",                   DataType.Boolean]
+         ["seriesSaveMosaic",            DataType.Boolean]
       ]);
 
       this.threshold = 3.0;
@@ -244,13 +240,9 @@ var ScriptParameters = class extends PersistentObject {
       this.opticsType = 0; // optical system for the assessment's wording: index into OPTICS_TYPES (0 = unknown)
       this.mountType = 0; // the mount, when not read from the FITS header: index into MOUNT_TYPES (0 = unknown)
       this.guidingType = 0; // guiding: index into GUIDING_TYPES (0 = unknown; then a guide camera in the header counts)
-      this.aiSendMap = true; // AI review: attach the Star size, Star shape and Coma maps as images to the measured values
-      this.aiLanguage = "English"; // AI review: language of the answer
       this.seriesShowMaps = true; // series: draw each frame's map (of the selected tab) in the preview while measuring
-      this.aiDetail = 1; // AI review: index into AI_DETAIL_LEVELS (1 = step by step, for beginners)
       this.seriesSaveMaps = true; // series: save each frame's four maps (and 3D plot) as PNG next to the frame
       this.seriesSaveMosaic = true; // series: save a 3x3 corner/edge/center mosaic (as AberrationInspector) as PNG next to the frame
-      this.aiSaveLog = true; // AI review: save each request and answer as a text file (see saveAiLog())
    }
 
    // Takes the values of all settings from an object with the same
@@ -1287,14 +1279,6 @@ function fwhmCellStats(values) {
    if (n === 0)
       return { value: null, n: 0, se: null };
    return { value: trimmedMean25(values), n: n, se: n < 2 ? null : robustSpread(values) / Math.sqrt(n) };
-}
-
-// The trimmed mean FWHM per cell: a gridSize x gridSize array of arrays
-// (row-major, row 0 = top, column 0 = left), each entry a number or null.
-function computeFwhmGrid(stars, w, h, gridSize) {
-   return fwhmGridBuckets(stars, w, h, gridSize).map(function(row) {
-      return row.map(function(b) { return fwhmCellStats(b).value; });
-   });
 }
 
 // -----------------------------------------------------------------------
@@ -3941,7 +3925,7 @@ function analyzeRadialTangential(stars, w, h, haveAsymmetry, con) {
       }
    }
 
-   // The rings as values, for the AI review (the console shows the same).
+   // The rings as values (the console shows the same).
    let profile = [];
    for (let k = 0; k < NR; ++k) {
       let rg = rings[k];
@@ -4841,617 +4825,28 @@ function formatAssessment(assessment) {
 }
 
 // -----------------------------------------------------------------------
-// AI review: sends the measured values, the rule-based assessment and
-// (optionally) the vector map to Claude (Anthropic Messages API) and returns
-// its review as text. The rules above stay the reference; the AI weighs the
-// findings against each other, points out contradictions and explains the
-// suggested order. PJSR has no Anthropic SDK, so the request is a plain
-// HTTPS POST with NetworkTransfer, which blocks until the answer is in.
-const AI_API_URL = "https://api.anthropic.com/v1/messages";
-const AI_MODEL = "claude-opus-5-5";
-const AI_KEY_SETTING = SETTINGS_MODULE + "/anthropicApiKey";
-const AI_MAP_MAX_SIDE = 1092; // longer side of each map sent as an image, px (3 maps: about 1100 tokens each)
-const AI_TIMEOUT_S = 300;
+// The key of the Anthropic API key that versions up to 0.10 stored in
+// PixInsight's settings; main() removes it (the script has no network
+// access any more).
+const OLD_AI_KEY_SETTING = SETTINGS_MODULE + "/anthropicApiKey";
 
-const AI_SYSTEM_PROMPT = [
-   "You review the results of Star Aberration Diagnostics, a PixInsight script that measures the shape of every " +
-   "star in one astronomical frame (PSF fit: FWHM, elongation, orientation, and the asymmetry of the profile) to " +
-   "diagnose the optical train: focus, tracking/guiding, sensor tilt, corrector or flattener back focus (spacing), " +
-   "field curvature, coma and collimation.",
-   "",
-   "You get the measured values of a single frame as JSON with the rule-based assessment the script derived from " +
-   "them with fixed thresholds and possibly images of its maps, or the values of a series of frames " +
-   "before and after a meridian flip with the script's comparison of the two sides, or both. Give a second " +
-   "opinion that is more useful than the rules alone:",
-   "- Weigh the findings against each other. Several patterns share causes or mask each other: defocus, field " +
-   "curvature and tangential elongation; a tracking elongation and an offset coma-free point; tilt and an " +
-   "off-center sharpest point; too few stars in part of the field. Say which explanation fits all values best and " +
-   "which values contradict each other.",
-   "- Say where the rule-based assessment is too strict, too lenient or probably wrong, and why.",
-   "- Give the corrections in the order to work through them, each with a concrete first step and what to look " +
-   "for in the next test frame to confirm it. Stay with what one frame can tell; say when a verdict needs more " +
-   "frames or a different test frame.",
-   "- State your confidence in each conclusion (high, medium, low) and name the values it rests on.",
-   "Do not invent measurements that are not in the data. The script's thresholds are starting points, not " +
-   "calibrated limits.",
-   "",
-   "Conventions of the data:",
-   "- Image coordinates in pixels: x to the right, y downward, origin top left. Directions in degrees: 0 = right, " +
-   "90 = down, 180 = left, 270 = up. The top of the image need not be the top of the camera.",
-   "- Ellipticity = 1 - b/a of the fitted PSF. r is the distance from the image center divided by the half " +
-   "diagonal rMax (0 = center, 1 = corner). The image center is taken as the optical axis.",
-   "- tracking: the elongation shared by all stars (ellipticity ± se; angleDeg = elongation axis, 0-180). method " +
-   "\"model\": the uniform term of the optics model, fitted together with the radial and linear terms and corrected " +
-   "for an off-center axis - unlike the plain median (tracking.median, kept for comparison), which a radial pattern " +
-   "on a non-square sensor or an off-center axis biases. On one frame, astigmatism on the axis looks the same. When " +
-   "trackingSubtracted is true it was removed from every star before the other values were computed.",
-   "- rings.profile: rings of r from r0 to r1 with n stars, median FWHM (px), median ellipticity, epsRad " +
-   "(+ radial, - tangential/concentric elongation), asymRad (direction of the PSF flare: + outward, - inward; null " +
-   "if not measured) and align (+1: flare parallel to the elongation, i.e. coma shapes the star; -1: " +
-   "perpendicular). rings.eRad and rings.outerAsym are the medians over r > 2/3; rings.defocusSuspect: the center " +
-   "(r < 1/3) is more than 5% softer than the outer field.",
-   "- surface: fit FWHM^2 = c0 + c1*X + c2*Y + c3*(X^2 + Y^2), X and Y normalized by rMax. fCenter and fEdge: " +
-   "FWHM (px) at the center and at r = 1 from the symmetric part; c3 < 0 means the edge is sharper than the " +
-   "center. tiltDirDeg: direction of the softer side; fBad and fGood: FWHM at the edge on the softer and the " +
-   "sharper side. dzUm: defocus at the edge in micrometers (sign not determinable), tiltDeg the matching tilt " +
-   "angle, sagUm the field curvature sag between center and edge; null without pixel pitch, focal length and " +
-   "aperture. x0, y0: sharpest point of the fitted surface (only when c3 > 0).",
-   "- siril: 25%-trimmed mean FWHM (px) per quadrant (m1 top left, m2 top right, m3 bottom left, m4 bottom " +
-   "right), mInner (r < 0.25) and mOuter (r > 0.75).",
-   "- fwhmGrid: 5 x 5 grid of the 25%-trimmed mean FWHM (px), row 0 = top, column 0 = left; null = no stars.",
-   "- guiding: chosen by the user, or \"Guided, method unknown\" from a guide camera in the header (GUIDECAM). It " +
-   "decides what a common elongation means: not guided - the mount's periodic error and polar drift; guide scope - " +
-   "differential flexure or mirror flop when static, guiding quality when changing; off-axis guider - no " +
-   "differential flexure, so a static common elongation points rather to astigmatism on the axis.",
-   "- mount: the mount type (name), estimated from PIERSIDE or the mount driver's name in TELESCOP (source), or " +
-   "chosen by the user (source \"dialog\"). fieldRotationCornerPx: for an alt-azimuth mount, the arc a corner " +
-   "star describes during the exposure (exposureS) - field rotation makes stars tangential arcs around the " +
-   "rotation center, which mimics field curvature or too short a corrector spacing.",
-   "- shapeAssessment: star shapes in the distortion chi = (a²-b²)/(a²+b²) (≈ ellipticity), after the tracking " +
-   "subtraction if enabled, with standard errors (Se). centerElongation: mean of the inner 3 x 3 cells. " +
-   "edgeEpsRad / cornerEpsRad (TL, TR, BL, BR): mean radial component, + radial, - tangential. A model of what " +
-   "optics produce (uniform + linear + r² radial terms) was fitted: modelExplained = share of the cell pattern " +
-   "it explains, modelChi2dof = residual chi²/dof (about 1 = explained down to the noise; > 1.5 structure no optics " +
-   "produce), curvatureTerm = the radial term at the corner (+ radial, - tangential), uniformTerm, " +
-   "linearAstigmatism (binodal), axisX/Y = center of the radial pattern (px; null if not significant), " +
-   "unexplainedCells = cells > 3 sigma off the model. singularPlus/Minus: singular points of the smoothed axis " +
-   "field - optics give at most two + and no -, more means noise. cells: elongated (>= 2.45 sigma) / round / " +
-   "uncertain cells.",
-   "- fwhmGridAssessment: from an 11 x 11 grid. center: FWHM (px) of the inner 3 x 3 cells, centerSe its " +
-   "standard error. cornerRatios: FWHM of each corner (2 x 2 cells) / center, top left, top right, bottom left, " +
-   "bottom right; cornerRatio their median (<= 1.10 good, <= 1.25 slight, <= 1.50 clear, above strong). " +
-   "tiltRel: relative FWHM difference of the corners of the more unequal diagonal, tiltSigma its " +
-   "significance in standard errors, tiltSoftCorner the softer corner (< 5% unremarkable, 5-10% slight, " +
-   "> 10% worth correcting, significant from 2 sigma). edgeSpread: (max - min) / median FWHM of the outer " +
-   "ring cells. cells: number of cells per class (a cell counts only when it differs significantly from the " +
-   "center or is good; uncertain: fewer than 5 stars or a standard error above 10%).",
-   "- coma: fit of the PSF asymmetry vectors a = k * (p - P0) / rMax with the coma-free point P0 = (x0, y0) px. " +
-   "k > 0: the flares point away from P0 (under-corrected coma, e.g. a bare Newtonian or a corrector too close " +
-   "to the sensor); k < 0: toward P0 (over-corrected). kSd, x0Sd, y0Sd: bootstrap spreads; significant: " +
-   "|k| > 3 kSd; n: stars used. coma is missing when it was not measured and null when too few stars had a " +
-   "valid asymmetry.",
-   "- optics: pixelPitchUm is the effective pitch (doubled after SuperPixel debayering); 0 = unknown. opticsType " +
-   "is the user's description of the optical system.",
-   "- Refractors: they have hardly any coma by design, so a significant k or an offset coma-free point is weak " +
-   "and uncertain there; it points to a tilted focuser, adapter or flattener, a decentered lens cell, or lateral " +
-   "color rather than to collimation (the lens is collimated at the factory; only some cells are adjustable). " +
-   "Without a flattener, field curvature and astigmatism at the edge are expected and there is no spacing to " +
-   "adjust. Lateral color (the colors imaged at slightly different scales, also from a flattener or reducer) " +
-   "elongates the edge stars radially in a color or broadband frame and mimics under-corrected spacing; a " +
-   "narrowband frame or a single color channel tells it apart. Axial color of an achromat enlarges the FWHM " +
-   "everywhere. There is no mirror flop; a change at the flip comes from the focuser, the flattener, the " +
-   "camera connection or the lens cell. The PSF fit and the asymmetry use channel 0 (red) of a color image.",
-   "- Catadioptric systems (SCT, Maksutov, RASA/Hyperstar) focus by moving the primary mirror: the image can " +
-   "shift or tilt with it (mirror flop), at the flip and between focus runs. A classic SCT has coma and a curved " +
-   "field by design (a Maksutov little coma), with no spacing to adjust; most Maksutovs are collimated at the " +
-   "factory, SCTs via the secondary. An SCT with reducer has a reducer-sensor distance (usually 105 mm). An " +
-   "aplanatic SCT (EdgeHD), a RASA and an astrograph with built-in flattener are meant to be flat and coma-free: " +
-   "curvature or coma point to the back focus or a tilted or decentered corrector. A RASA at f/2 has a critical " +
-   "focus zone of only a few micrometers - tilt dominates. fRatio: focal length / aperture (null = unknown); the " +
-   "critical focus zone is about ±2.44 x 0.55 µm x fRatio²; from about f/8 tilt and curvature below it hardly " +
-   "show and the seeing sets the star size.",
-   "- series.frames: one row per light frame, the fields named in series.columns: side (West = before the flip, " +
-   "telescope pointing east; East = after the flip; Side A/B = two sides whose names are unknown; ? = unknown), " +
-   "where the side was read from, hour angle (h), altitude (deg), focuser position (steps), temperature (C), " +
-   "measured stars, FWHM center and edge (px), tilt as the relative one-sided blur with its direction (deg), " +
-   "epsRad, tracking ellipticity and axis (deg), coma k and the coma-free point offset (x, y as fractions of rMax " +
-   "from the center). Empty values: not measured. The frames are in time order.",
-   "- sipMaxShiftPx, sipCornerShiftsPx, sipTiltEquivDeg: the quadratic distortion terms of the frame's plate " +
-   "solve (SIP, from the header, written by the capture or solving software), as the shift of the four corners " +
-   "(dx, dy of top left, top right, bottom left, bottom right, px), its largest value, and the sensor tilt a pure " +
-   "perspective would need for their perspective part. Real sensor tilts stay below about 0.2 degrees; a larger " +
-   "value means the terms have other causes (decentered or tilted optics, a shifting mirror or corrector, the " +
-   "solver). Quadratic terms do not depend on the reference pixel. A change at the flip, in particular a " +
-   "reversal of sign, can be a real shift in the optics under gravity or a convention of the solver; compare " +
-   "with the coma-free point and the tilt. The distortion measures positions, independent of the star shapes.",
-   "- series.comparison: the script's comparison per value: median and robust spread per side, the difference " +
-   "(for vectors its length), a verdict (changes: at the flip, beyond 3 standard errors and a practical minimum; " +
-   "stable; unclear: a relevant difference within the scatter; few: fewer than 3 frames on a side) and a drift " +
-   "over the session (per hour, correlation, hours) when one was found. series.notes: the script's caveats.",
-   "- For a series, separate what changes with the pier side (gravity: sag, play, mirror flop, balance) from what " +
-   "is fixed in the optical train, and both from drifts with time, temperature or altitude. The frames of a side " +
-   "are consecutive in time, so a drift can look like a change at the flip; refocusing between the sides " +
-   "changes FWHM and the edge pattern. A single frame, if given as well, need not belong to the series.",
-   "- The maps, if attached, each on the stretched frame: Star shape - one ellipse per star (length and color = " +
-   "elongation, blue round to red elongated), streamlines of the elongation trend and a marker for the tracking " +
-   "component; Star size - the 11 x 11 FWHM grid, each cell labeled with its ratio to the center (x1.17) and " +
-   "filled by it where significant - green (good, <= 1.10), yellow, orange, red (>= 1.50); hatched: uncertain; Coma - the coma field in orange " +
-   "(flare direction) with the coma-free point. The Siril quadrants come as numbers (siril), not as a map.",
-   "",
-   "The answer is JSON in the given schema. Write every text in plain text without Markdown (no #, *, or " +
-   "tables); line breaks are allowed. List the findings in the order in which to work through them. Be " +
-   "concise: every sentence must add information - no restating of the data, no filler, no repetition " +
-   "between fields. The length limits are stated with each request; keep to them."
-].join("\n");
-
-// The answer's form, enforced by the API (structured outputs): per finding
-// the measurement, what it looks like, the derivation, the alternatives,
-// what to do and how to check it - so that the reasoning is always there.
-// labels: the field headings in the answer language, for formatAiReview().
-const AI_REVIEW_SCHEMA = {
-   type: "object",
-   properties: {
-      labels: {
-         type: "object",
-         properties: {
-            verdict: { type: "string" }, order: { type: "string" }, confidence: { type: "string" },
-            observation: { type: "string" }, appearance: { type: "string" }, reasoning: { type: "string" },
-            alternatives: { type: "string" }, action: { type: "string" }, check: { type: "string" },
-            disagreements: { type: "string" },
-            statusOk: { type: "string" }, statusNote: { type: "string" }, statusAction: { type: "string" },
-            high: { type: "string" }, medium: { type: "string" }, low: { type: "string" }
-         },
-         required: ["verdict", "order", "confidence", "observation", "appearance", "reasoning", "alternatives",
-                    "action", "check", "disagreements", "statusOk", "statusNote", "statusAction", "high", "medium",
-                    "low"],
-         additionalProperties: false
-      },
-      verdict: { type: "string" },
-      order: { type: "array", items: { type: "string" } },
-      findings: {
-         type: "array",
-         items: {
-            type: "object",
-            properties: {
-               topic: { type: "string" },
-               status: { type: "string", enum: ["ok", "note", "action"] },
-               confidence: { type: "string", enum: ["high", "medium", "low"] },
-               confidenceText: { type: "string" },
-               observation: { type: "string" },
-               appearance: { type: "string" },
-               reasoning: { type: "string" },
-               alternatives: { type: "string" },
-               action: { type: "string" },
-               check: { type: "string" }
-            },
-            required: ["topic", "status", "confidence", "confidenceText", "observation", "appearance", "reasoning",
-                       "alternatives", "action", "check"],
-            additionalProperties: false
-         }
-      },
-      disagreements: { type: "string" }
-   },
-   required: ["labels", "verdict", "order", "findings", "disagreements"],
-   additionalProperties: false
-};
-
-// How detailed the review is: the dialog's choice and the instruction sent
-// with each request.
-const AI_DETAIL_LEVELS = ["Short (for experienced users)", "Step by step (for beginners)"];
-const AI_DETAIL_INSTRUCTIONS = [
-   "Detail: short, for a reader who knows the terms. Hard limits: verdict at most 2 sentences; order at most 5 " +
-   "items of a few words; only the topics that need action or where you disagree with the rules, at most 5; " +
-   "each field at most 25 words, observation only the decisive numbers; leave appearance, alternatives and " +
-   "confidenceText empty unless they change the conclusion; disagreements at most 2 sentences or empty. " +
-   "Aim for 300 words in all.",
-   "Detail: for an amateur astrophotographer with little background in optics, who wants to understand the " +
-   "conclusions, not only follow them. Plain words, short sentences, no repetition between fields. Hard " +
-   "limits: verdict at most 3 sentences; order at most 6 items; at most 6 findings, only the topics that need " +
-   "attention or where you disagree with the rules - name the topics that are fine in one sentence of the " +
-   "verdict instead of a finding; each field at most 2 sentences (about 40 words):\n" +
-   "- observation: the decisive values with their numbers and what they mean.\n" +
-   "- appearance: what the stars look like, and where on the maps if attached; empty if obvious.\n" +
-   "- reasoning: the steps from the values to the cause.\n" +
-   "- alternatives: at most 2 other causes, each with the value that speaks against it; empty if none.\n" +
-   "- action: the part to adjust and by how much per step.\n" +
-   "- check: what the next test frame should show.\n" +
-   "- confidenceText: a few words.\n" +
-   "Explain a technical term in a few words only where it first appears. disagreements at most 3 sentences or " +
-   "empty. Aim for 700 words in all."
-];
-
-// The API key: the environment variable ANTHROPIC_API_KEY, else the key
-// entered on the Assessment page. That one is kept in PixInsight's settings
-// on its own, not in ScriptParameters, so it never ends up in a process icon.
-function aiApiKey() {
-   let env = System.getEnvironmentVariable("ANTHROPIC_API_KEY");
-   if (env && String(env).trim().length > 0)
-      return { key: String(env).trim(), source: "environment" };
-   let stored = Settings.read(AI_KEY_SETTING, DataType.UTF16String);
-   if (Settings.lastReadOK && stored && stored.trim().length > 0)
-      return { key: stored.trim(), source: "settings" };
-   return null;
-}
-
-function aiStoreApiKey(key) {
-   key = key.trim();
-   if (key.length > 0)
-      Settings.write(AI_KEY_SETTING, DataType.UTF16String, key);
-   else
-      Settings.remove(AI_KEY_SETTING);
-}
-
-// JSON with numbers rounded to 4 significant digits and every non-ASCII
-// character escaped: the request body is then pure ASCII, so its length in
-// characters is its length in bytes, whatever encoding post() uses.
-function aiJson(obj) {
-   return JSON.stringify(obj, function(key, v) {
-      return (typeof v === "number" && isFinite(v)) ? Number(v.toPrecision(4)) : v;
-   }).replace(/[\u007f-￿]/g, function(ch) {
-      return "\\u" + ("000" + ch.charCodeAt(0).toString(16)).slice(-4);
-   });
-}
-
-// The bitmap as a base64 PNG, reduced to maxSide pixels on its longer side.
-function bitmapToPngBase64(bmp, maxSide) {
-   let k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
-   if (k < 1)
-      bmp = bmp.scaledTo(Math.max(1, Math.round(bmp.width * k)), Math.max(1, Math.round(bmp.height * k)));
-   let path = File.systemTempDirectory + "/StarAberrationDiagnostics_ai_map.png";
-   if (bmp.save(path) === false)
-      throw new Error("Cannot write the vector map to " + path);
-   try {
-      return File.readFile(path).toBase64();
-   } finally {
-      if (File.exists(path))
-         File.remove(path);
-   }
-}
-
-// The data of a single frame for the AI review: optics, measured values
-// and the rule-based assessment. single: { analysis, stars, metrics,
-// optics, assessment }.
-function aiSingleFrameText(single, p) {
-   const LABELS = ["OK", "Note", "Action"];
-   let metrics = single.metrics, optics = single.optics;
-   let data = {
-      image: { w: metrics.w, h: metrics.h, stars: metrics.n, debayered: single.analysis.debayer },
-      optics: {
-         pixelPitchUm: optics.pixelPitchUm, focalLengthMm: optics.focalLengthMm, apertureMm: optics.apertureMm,
-         fRatio: (optics.focalLengthMm > 0 && optics.apertureMm > 0) ? optics.focalLengthMm / optics.apertureMm : 0,
-         opticsType: OPTICS_TYPES[p.opticsType]
-      },
-      tracking: metrics.tracking,
-      trackingSubtracted: metrics.trackingSubtracted,
-      rings: metrics.rings,
-      surface: metrics.surface,
-      siril: metrics.siril,
-      fwhmGrid: computeFwhmGrid(single.stars, metrics.w, metrics.h, 5),
-      fwhmGridAssessment: metrics.grid,
-      shapeAssessment: metrics.shape,
-      mount: metrics.mount,
-      guiding: metrics.guiding,
-      coma: metrics.coma === undefined ? "not measured" : metrics.coma
-   };
-   let rules = single.assessment.findings.map(function(f) {
-      return "[" + LABELS[f.level] + "] " + f.topic + ": " + f.text + (f.advice.length > 0 ? " -> " + f.advice : "");
-   });
-   return "Single frame - measured values (JSON):\n" + aiJson(data) + "\n\n" +
-      "Rule-based assessment of that frame:\n" + rules.join("\n");
-}
-
-// The data of a series for the AI review: one row per frame and the
-// comparison of compareSeries(), as JSON.
-function aiSeriesText(frames, result, p) {
-   const COLUMNS = ["file", "side", "sideFrom", "haH", "altDeg", "focusPos", "tempC", "stars", "fwhmCenter",
-                    "fwhmEdge", "tiltRel", "tiltDirDeg", "epsRad", "trackingEllipticity", "trackingAngleDeg",
-                    "comaK", "comaPointX", "comaPointY", "sipMaxShiftPx", "sipTiltEquivDeg", "sipCornerShiftsPx"];
-   let rows = frames.map(function(f) {
-      let m = f.metrics, s = m ? m.surface : null;
-      let tilt = m ? seriesMetric("tilt").get(m) : null;
-      let point = m ? seriesMetric("comaPoint").get(m) : null;
-      return [f.name, f.side, f.sideSource, f.haH, f.altDeg, f.focusPos, f.tempC, m ? m.n : null,
-         s ? s.fCenter : null, s ? s.fEdge : null,
-         tilt ? Math.hypot(tilt[0], tilt[1]) : null, s ? s.tiltDirDeg : null,
-         m && m.rings ? m.rings.eRad : null,
-         m && m.tracking ? m.tracking.ellipticity : null, m && m.tracking ? m.tracking.angleDeg : null,
-         m && m.coma ? m.coma.k : null, point ? point[0] : null, point ? point[1] : null,
-         f.sip ? sipMaxShift(sipCornerShifts(f)) : null, sipTiltEquivalentDeg(f), sipCornerShifts(f)];
-   });
-   let comparison = result.rows.map(function(row) {
-      let sides = {};
-      result.sides.forEach(function(side, k) {
-         if (row.stats[k])
-            sides[side] = row.stats[k];
-      });
-      return { value: row.metric.label, vector: !!row.metric.vector, sides: sides, difference: row.diff,
-               verdict: row.verdict, drift: row.drift };
-   });
-   let data = {
-      opticsType: OPTICS_TYPES[p.opticsType],
-      trackingSubtracted: p.subtractTracking,
-      columns: COLUMNS,
-      frames: rows,
-      failed: frames.filter(function(f) { return f.error; }).map(function(f) { return f.name + ": " + f.error; }),
-      comparison: comparison,
-      notes: result.notes
-   };
-   return "Series before and after a meridian flip (JSON, key series):\n" + aiJson({ series: data });
-}
-
-// The user message: the data of a single frame (or null) and of a series
-// (or null: { frames, result }), with the vector map (a Bitmap, or null) in
-// front.
-function buildAiMessage(p, single, series, maps) {
-   let parts = [];
-   if (single)
-      parts.push(aiSingleFrameText(single, p));
-   if (series)
-      parts.push(aiSeriesText(series.frames, series.result, p));
-   parts.push((maps ? "The maps of the single frame are attached above (" +
-      maps.map(function(m) { return m.label; }).join(", ") + ")." : "No maps attached.") +
-      "\n" + AI_DETAIL_INSTRUCTIONS[Math.range(p.aiDetail, 0, AI_DETAIL_INSTRUCTIONS.length - 1)] +
-      "\nWrite all texts, the labels included, in " +
-      (p.aiLanguage.trim().length > 0 ? p.aiLanguage.trim() : "English") + ".");
-
-   let content = [];
-   if (maps)
-      maps.forEach(function(m) {
-         content.push({ type: "text", text: "Map: " + m.label });
-         content.push({ type: "image", source: { type: "base64", media_type: "image/png",
-                        data: bitmapToPngBase64(m.bitmap, AI_MAP_MAX_SIDE) } });
-      });
-   content.push({ type: "text", text: parts.join("\n\n") });
-   return { role: "user", content: content };
-}
-
-// Asks Claude to go on with an answer cut off at the token limit: the
-// cut-off text goes back as Claude's own turn, followed by this request.
-// The continuation is sent without the schema (it is only the rest of the
-// JSON), and the two parts are joined and parsed together.
-const AI_CONTINUE_PROMPT =
-   "Your answer was cut off at the token limit. Continue it exactly where it stopped, even in the middle of a " +
-   "word or a string: output only the remaining characters of the JSON, without repeating anything, without " +
-   "any comment and without a code fence.";
-
-// Sends the message to Claude and returns { text, rawText, data, model,
-// usage, truncated }; throws an Error with a readable message when the
-// request fails. With previous (a truncated review), the cut-off answer is
-// continued instead and the result holds the joined answer and the summed
-// token usage. The server-side fallback ("fallbacks": "default") answers
-// with another model should the request be declined; the answer's model
-// field then says which one.
-function requestAiReview(apiKey, message, previous) {
-   let request = {
-      model: AI_MODEL,
-      max_tokens: 25000,
-      // Thinking is always on and billed as output; medium keeps it (and
-      // the time) in proportion to an analysis of one data set.
-      output_config: { effort: "medium" },
-      fallbacks: "default",
-      system: AI_SYSTEM_PROMPT,
-      messages: [message]
-   };
-   if (previous) {
-      request.messages.push({ role: "assistant", content: [{ type: "text", text: previous.rawText }] });
-      request.messages.push({ role: "user", content: [{ type: "text", text: AI_CONTINUE_PROMPT }] });
-   } else {
-      request.output_config.format = { type: "json_schema", schema: AI_REVIEW_SCHEMA };
-   }
-   let body = aiJson(request);
-
-   let T = new NetworkTransfer;
-   T.setURL(AI_API_URL);
-   T.setSSL();
-   T.setConnectionTimeout(AI_TIMEOUT_S);
-   T.setCustomHTTPHeaders([
-      "Content-Type: application/json",
-      "x-api-key: " + apiKey,
-      "anthropic-version: 2023-06-01",
-      "anthropic-beta: server-side-fallback-2026-07-01"
-   ]);
-   T.response = new ByteArray;
-   T.onDownloadDataAvailable = function(data) {
-      this.response.add(data);
-      return true;
-   };
-   // post() blocks; keep the dialog painted meanwhile.
-   T.onTransferProgress = function() {
-      CoreApplication.processEvents();
-      return true;
-   };
-
-   let ok = T.post(body);
-   let code = T.responseCode;
-   let json = null;
-   try {
-      json = JSON.parse(T.response.utf8ToString());
-   } catch (x) {
-   }
-   if (json && json.type === "error" && json.error)
-      throw new Error(format("Claude API error (HTTP %d, %s): %s", code, json.error.type, json.error.message));
-   if (!ok)
-      throw new Error("The request failed: " + T.errorInformation);
-   if (json === null || !json.content)
-      throw new Error(format("Unexpected answer from the Claude API (HTTP %d).", code));
-   if (json.stop_reason === "refusal")
-      throw new Error("Claude declined to answer this request.");
-
-   let rawText = json.content
-      .filter(function(b) { return b.type === "text"; })
-      .map(function(b) { return b.text; })
-      .join("\n");
-   let usage = json.usage || { input_tokens: 0, output_tokens: 0 };
-   if (previous) {
-      // Without the schema the rest may come in a code fence or repeat the
-      // last characters before the cut; both are removed.
-      rawText = rawText.replace(/^\s*```(?:json)?\n?/, "").replace(/\n?```\s*$/, "");
-      let prev = previous.rawText;
-      for (let k = Math.min(200, prev.length, rawText.length); k >= 20; --k)
-         if (prev.slice(-k) === rawText.slice(0, k)) {
-            rawText = rawText.slice(k);
-            break;
-         }
-      rawText = prev + rawText;
-      let u = previous.usage || { input_tokens: 0, output_tokens: 0 };
-      usage = { input_tokens: u.input_tokens + (usage.input_tokens || 0),
-                output_tokens: u.output_tokens + (usage.output_tokens || 0) };
-   }
-   // The schema guarantees valid JSON unless the answer was cut off (or a
-   // fallback model answered without it): then the raw text is shown.
-   let truncated = json.stop_reason === "max_tokens";
-   let text = rawText.trim();
-   let data = null;
-   if (!truncated) {
-      try {
-         data = JSON.parse(text);
-      } catch (x) {
-      }
-   } else {
-      text += "\n\n[The answer was cut off at the token limit - click Continue to get the rest.]";
-   }
-   return { text: text, rawText: rawText, data: data, model: json.model, usage: usage, truncated: truncated,
-            parts: previous ? (previous.parts || 1) + 1 : 1 };
-}
-
-// The review for a TextBox or the Console: the structured answer with its
-// own headings, or the raw text when there is none. Texts from the answer
-// are shown raw (no tags interpreted); the model and the token usage below.
-function formatAiReview(review) {
-   let raw = function(text) {
-      return String(text || "").split("\n").map(function(line) {
-         return "<raw>" + line.replace(/<\/raw>/g, "") + "</raw>";
-      }).join("<br>");
-   };
-   // A continued answer is not bound to the schema, so a text field can
-   // arrive as an array, an object or a number: shown as text all the same.
-   let text = function(v) {
-      if (v === null || v === undefined)
-         return "";
-      if (Array.isArray(v))
-         return v.map(text).filter(function(s) { return s.length > 0; }).join("\n");
-      if (typeof v === "object")
-         return Object.keys(v).map(function(key) { return key + ": " + text(v[key]); }).join("\n");
-      return String(v).trim();
-   };
-   let lines = [];
-   let r = review.data;
-   if (r && typeof r === "object" && Array.isArray(r.findings)) {
-      let L = r.labels && typeof r.labels === "object" ? r.labels : {};
-      let label = function(key) { return text(L[key]) || key; };
-      let status = { ok: label("statusOk"), note: label("statusNote"), action: label("statusAction") };
-      lines.push("<b>" + raw(label("verdict")) + ":</b> " + raw(text(r.verdict)));
-      let order = (Array.isArray(r.order) ? r.order.map(text) : [text(r.order)])
-         .filter(function(t) { return t.length > 0; });
-      if (order.length > 0) {
-         lines.push("");
-         lines.push("<b>" + raw(label("order")) + ":</b>");
-         order.forEach(function(t, i) { lines.push(format("   %d. ", i + 1) + raw(t)); });
-      }
-      r.findings.forEach(function(f) {
-         lines.push("");
-         if (!f || typeof f !== "object") {
-            lines.push(raw(text(f)));
-            return;
-         }
-         let s = text(f.status), c = text(f.confidence), ct = text(f.confidenceText);
-         lines.push("<b>[" + raw(status[s] || s) + "] " + raw(text(f.topic)) + "</b> - " + raw(label("confidence")) +
-            ": " + raw(text(L[c]) || c) + (ct ? " (" + raw(ct) + ")" : ""));
-         ["observation", "appearance", "reasoning", "alternatives", "action", "check"].forEach(function(key) {
-            if (text(f[key]).length > 0)
-               lines.push("<i>" + raw(label(key)) + ":</i> " + raw(text(f[key])));
-         });
-      });
-      if (text(r.disagreements).length > 0) {
-         lines.push("");
-         lines.push("<b>" + raw(label("disagreements")) + ":</b> " + raw(text(r.disagreements)));
-      }
-   } else {
-      lines.push(raw(review.text));
-   }
-   lines.push("");
-   lines.push(format("<i>%s - %d input / %d output tokens</i>", review.model,
-      review.usage ? review.usage.input_tokens : 0, review.usage ? review.usage.output_tokens : 0));
-   return lines.join("<br>");
-}
-
-// Saves an AI request and its answer (or error) as a UTF-8 text file:
-// a header with the date, the model and the analyzed files, the request as
-// sent (system prompt and message; images only as a placeholder), and the
-// answer, readable and as JSON. log: { timeMs, files: [{ label, path }],
-// settings: [text], message, review, error }. The file goes to dir as
-// StarAberrationAI_<date>_<time>.txt; returns its path.
-function saveAiLog(dir, log) {
-   let pad = function(n, w) { return ("000" + n).slice(-(w || 2)); };
-   let t = new Date(log.timeMs);
-   let local = format("%d-%s-%s %s:%s:%s", t.getFullYear(), pad(t.getMonth() + 1), pad(t.getDate()),
-      pad(t.getHours()), pad(t.getMinutes()), pad(t.getSeconds()));
-   let path = dir + "/StarAberrationAI_" + local.replace(" ", "_").replace(/:/g, "-") + ".txt";
-   let rule = "================================================================================";
-
-   let lines = [];
-   lines.push(TITLE + " " + VERSION + " - AI review");
-   lines.push("Date:     " + local + " (local), " + t.toISOString().replace(/\.\d+Z$/, "Z") + " (UTC)");
-   lines.push("Model:    " + AI_MODEL + (log.review && log.review.model && log.review.model !== AI_MODEL ?
-      " (answered by " + log.review.model + ")" : ""));
-   log.settings.forEach(function(line) { lines.push(line); });
-   lines.push("Analyzed files:");
-   if (log.files.length === 0)
-      lines.push("   (none)");
-   log.files.forEach(function(f) { lines.push("   " + f.label + (f.label && f.path ? "  " : "") + f.path); });
-
-   lines.push("");
-   lines.push(rule);
-   lines.push("REQUEST");
-   lines.push(rule);
-   lines.push("--- System prompt ---");
-   lines.push(AI_SYSTEM_PROMPT);
-   lines.push("");
-   lines.push("--- Message ---");
-   log.message.content.forEach(function(block) {
-      if (block.type === "image")
-         lines.push(format("[Image: a map as PNG, %d characters of base64 - not included here]",
-            block.source.data.length));
-      else if (block.type === "text")
-         lines.push(block.text);
-   });
-
-   lines.push("");
-   lines.push(rule);
-   lines.push("ANSWER");
-   lines.push(rule);
-   if (log.error) {
-      lines.push("The request failed: " + log.error);
-   } else {
-      // The readable form of formatAiReview() without its tags.
-      lines.push(formatAiReview(log.review).split("<br>").join("\n").replace(/<\/?(raw|b|i)>/g, ""));
-      if (log.review.data) {
-         lines.push("");
-         lines.push("--- As received (JSON) ---");
-         lines.push(JSON.stringify(log.review.data, null, 2));
-      }
-   }
-   File.writeTextFile(path, lines.join("\n") + "\n");
-   return path;
-}
-
+// -----------------------------------------------------------------------
 // The maps of an analysis. Each shows one measured quantity on the
 // stretched frame and has its own tab in the dialog; the preview shows the
 // map of the selected tab, Save opens one window per map, a series saves
-// one PNG per map and frame; the AI review gets those marked ai.
+// one PNG per map and frame.
 //   size   star size: the 11x11 FWHM grid
 //   shape  star shape: one ellipse per star (elongation and orientation),
 //          the streamlines of its trend, optionally the orientation heatmap
 //          as background, and the tracking marker
 //   coma   PSF asymmetry: the coma field (arrows, coma-free point), its
 //          streamlines and optionally one arrow per star
-//   tilt   Siril-style tilt: the quadrant polygon and the tilt axis (not
-//          sent to the AI review, which gets the quadrant values as numbers)
+//   tilt   Siril-style tilt: the quadrant polygon and the tilt axis
 const MAP_VIEWS = [
-   { key: "size", label: "Star size", windowPrefix: "AberrationSize", fileSuffix: "_Size.png", ai: true },
-   { key: "shape", label: "Star shape", windowPrefix: "AberrationShape", fileSuffix: "_Shape.png", ai: true },
-   { key: "coma", label: "Coma", windowPrefix: "AberrationComa", fileSuffix: "_Coma.png", ai: true },
-   { key: "tilt", label: "Tilt", windowPrefix: "AberrationTilt", fileSuffix: "_Tilt.png", ai: false }
+   { key: "size", label: "Star size", windowPrefix: "AberrationSize", fileSuffix: "_Size.png" },
+   { key: "shape", label: "Star shape", windowPrefix: "AberrationShape", fileSuffix: "_Shape.png" },
+   { key: "coma", label: "Coma", windowPrefix: "AberrationComa", fileSuffix: "_Coma.png" },
+   { key: "tilt", label: "Tilt", windowPrefix: "AberrationTilt", fileSuffix: "_Tilt.png" }
 ];
 
 function mapViewByKey(key) {
@@ -7299,7 +6694,7 @@ class StarAberrationDialog extends Dialog {
       this.loadResultsButton.text = "Load results...";
       this.loadResultsButton.toolTip =
          "<p>Loads results saved with Save results and shows them as after a Calculate, without measuring " +
-         "the stars again: the maps, their evaluations, the assessment, Save and the AI review all work " +
+         "the stars again: the maps, their evaluations, the assessment and Save all work " +
          "with them. Optics, mount and observation values come from the saved FITS header (or the fields " +
          "above), the layers from the current settings.</p>" +
          "<p>The background is the image when it is open (same view and file), else dark. The detection " +
@@ -7327,7 +6722,6 @@ class StarAberrationDialog extends Dialog {
          d.mapSourceCombo.currentItem = 0;
          d.updateTrackingInfo();
          d.updateResultsInfo();
-         d.clearAiReview();
          d.refreshPreview();
          d.showMapPage();
       };
@@ -8155,13 +7549,9 @@ class StarAberrationDialog extends Dialog {
             opticsType: d.opticsTypeCombo.currentItem,
             mountType: d.manualMount,
             guidingType: d.guidingCombo.currentItem,
-            aiSendMap: d.aiSendMapCheck.checked,
-            aiLanguage: d.aiLanguageEdit.text,
             seriesShowMaps: d.seriesShowMapsCheck.checked,
-            aiDetail: d.aiDetailCombo.currentItem,
             seriesSaveMaps: d.seriesSaveMapsCheck.checked,
-            seriesSaveMosaic: d.seriesSaveMosaicCheck.checked,
-            aiSaveLog: d.aiSaveLogCheck.checked
+            seriesSaveMosaic: d.seriesSaveMosaicCheck.checked
          };
       };
 
@@ -8323,259 +7713,6 @@ class StarAberrationDialog extends Dialog {
          d.assessmentBox.text = formatAssessment(assessImage(report.metrics, p.opticsType));
       };
 
-      // The AI review on the same page: a second opinion from Claude on the
-      // measured values and the script assessment (see requestAiReview()).
-      // It is asked only on request, and cleared with every new analysis.
-      this.aiKeyLabel = fieldLabel("API key:");
-      this.aiKeyEdit = new Edit(this);
-      this.aiKeyEdit.passwordMode = true;
-      this.aiKeyEdit.setScaledMinWidth(160);
-      this.aiKeyEdit.toolTip =
-         "<p>Your Anthropic API key (console.anthropic.com). The environment variable ANTHROPIC_API_KEY takes " +
-         "precedence when it is set.</p>" +
-         "<p>A key entered here is stored unencrypted in PixInsight's settings, but never in a process icon. " +
-         "Clear the field to remove it.</p>";
-      this.aiKeyEdit.onEditCompleted = function() {
-         aiStoreApiKey(d.aiKeyEdit.text);
-         d.updateAiKeyInfo();
-      };
-      this.updateAiKeyInfo = function() {
-         let k = aiApiKey();
-         d.aiKeyEdit.enabled = !(k && k.source === "environment");
-         if (k && k.source === "environment") {
-            d.aiKeyEdit.text = "";
-            d.aiKeyEdit.toolTip = "<p>Using the environment variable ANTHROPIC_API_KEY.</p>";
-         } else if (k) {
-            d.aiKeyEdit.text = k.key;
-         }
-      };
-
-      this.aiLanguageLabel = fieldLabel("Answer language:");
-      this.aiLanguageEdit = new Edit(this);
-      this.aiLanguageEdit.text = parameters.aiLanguage;
-      this.aiLanguageEdit.setScaledMinWidth(160);
-      this.aiLanguageEdit.toolTip = "<p>The language of the AI review, e.g. English or Deutsch.</p>";
-
-      this.aiDetailLabel = fieldLabel("Explanation:");
-      this.aiDetailCombo = new ComboBox(this);
-      for (let i = 0; i < AI_DETAIL_LEVELS.length; ++i)
-         this.aiDetailCombo.addItem(AI_DETAIL_LEVELS[i]);
-      this.aiDetailCombo.currentItem = Math.range(parameters.aiDetail, 0, AI_DETAIL_LEVELS.length - 1);
-      this.aiDetailCombo.toolTip =
-         "<p><b>Step by step</b>: for up to 6 findings that need attention, the measured values and what " +
-         "they mean, what the stars look like, the derivation of the cause, at most two other causes, what " +
-         "to do and how to check it - each in at most two sentences, terms explained briefly (about 700 " +
-         "words).</p>" +
-         "<p><b>Short</b>: up to 5 findings, at most 25 words per field (about 300 words) - faster and " +
-         "cheaper.</p>";
-
-      this.aiSendMapCheck = new CheckBox(this);
-      this.aiSendMapCheck.text = "Attach the maps";
-      this.aiSendMapCheck.checked = parameters.aiSendMap;
-      this.aiSendMapCheck.toolTip =
-         "<p>Sends the maps Star size, Star shape and Coma with their current layers as images (at most " +
-         AI_MAP_MAX_SIDE + " px each), so " +
-         "that Claude can see the patterns as well as the numbers. Without it, only the measured values and the " +
-         "assessment are sent.</p>";
-
-      this.aiSaveLogCheck = new CheckBox(this);
-      this.aiSaveLogCheck.text = "Save requests and answers";
-      this.aiSaveLogCheck.checked = parameters.aiSaveLog;
-      this.aiSaveLogCheck.toolTip =
-         "<p>Saves every request and its answer as a text file StarAberrationAI_<i>date</i>_<i>time</i>.txt: " +
-         "a header with the date and the analyzed files, the request as sent (the maps only as " +
-         "placeholders) and the answer, readable and as JSON. Failed requests are saved with the error.</p>" +
-         "<p>The file goes next to the series frames, else next to the target image, else to the temporary " +
-         "directory. The API key is never written.</p>";
-
-      this.aiBox = new TextBox(this);
-      this.aiBox.readOnly = true;
-      this.aiBox.setScaledMinSize(300, 150);
-      // The AI review is shown on the left of the Assessment tab and of the
-      // Series tab: one text in two boxes (a control has one place only).
-      this.seriesAiBox = new TextBox(this);
-      this.seriesAiBox.readOnly = true;
-      this.seriesAiBox.setScaledMinSize(300, 150);
-      this.setAiText = function(text) {
-         d.aiBox.text = text;
-         d.seriesAiBox.text = text;
-      };
-      this.clearAiReview = function() {
-         d.setAiText("<i>Click Ask Claude for a second opinion on the assessment of a Calculate, on the " +
-            "comparison of the Series tab, or both.</i>");
-         d.setAiPending(null);
-      };
-      // The last answer when it was cut off at the token limit, with what is
-      // needed to continue it: { review, message, ctx }; else null.
-      this.aiPending = null;
-      this.setAiPending = function(pending) {
-         d.aiPending = pending;
-         if (d.aiContinueButton)
-            d.aiContinueButton.enabled = pending !== null;
-      };
-      this.clearAiReview();
-
-      this.aiButton = new PushButton(this);
-      this.aiButton.text = "Ask Claude";
-      this.aiButton.toolTip =
-         "<p>Sends the measured values of the kept analysis (Calculate), the script assessment and optionally the " +
-         "three maps, and the comparison of the Series tab if there is one, to Claude (" + AI_MODEL + ", " +
-         "Anthropic API) and shows its review on the AI review tab left: which explanation fits all values, where the rules are " +
-         "too strict or too lenient, and what to do in which order. Either a Calculate or a series is enough.</p>" +
-         "<p>Needs an API key and an internet connection; each request is billed to the key (typically a few " +
-         "cents) and can take a minute. No image data other than the attached maps leaves the computer.</p>";
-      // Asks Claude about what there is: the kept analysis of a Preview (if
-      // current) and the series comparison (if any), at least one of them.
-      this.askClaude = function() {
-         let haveSingle = d.analysis !== null && !d.previewStale;
-         let haveSeries = d.seriesResult !== null && d.seriesResult.measured > 0;
-         if (!haveSingle && !haveSeries) {
-            (new MessageBox("Click Calculate, or Analyze series on the Series tab, first: the review needs a " +
-               "current analysis.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
-            return false;
-         }
-         let k = aiApiKey();
-         if (k === null) {
-            (new MessageBox("Enter an Anthropic API key first (Assessment tab), or set the environment variable " +
-               "ANTHROPIC_API_KEY.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
-            return false;
-         }
-         let p = d.collectParameters();
-         parameters.assign(p);
-         parameters.SaveSettings();
-         d.setAiText("<i>Waiting for Claude's answer - this can take a minute ...</i>");
-         d.showAiReviewTab();
-         let ctx = { p: p, haveSingle: haveSingle, haveSeries: haveSeries, message: null };
-         d.setAiPending(null);
-         let review = d.runBusy(function() {
-            try {
-               let single = null, maps = null;
-               if (haveSingle) {
-                  let optics = d.opticsFor(d.analysis, p);
-                  let stars = starsFor(d.analysis, p.subtractTracking);
-                  let report = reportAnalysis(d.analysis, stars, p, optics, SILENT_CONSOLE);
-                  single = { analysis: d.analysis, stars: stars, metrics: report.metrics, optics: optics,
-                             assessment: assessImage(report.metrics, p.opticsType) };
-                  if (p.aiSendMap)
-                     maps = MAP_VIEWS.filter(function(v) { return v.ai; }).map(function(v) {
-                        return { label: v.label, bitmap: renderVectorMap(d.analysis, p, optics, false, v.key) };
-                     });
-               }
-               let series = haveSeries ? { frames: d.seriesFrames, result: d.seriesResult } : null;
-               ctx.message = buildAiMessage(p, single, series, maps);
-               return requestAiReview(k.key, ctx.message);
-            } catch (x) {
-               return { error: x.message || String(x) };
-            }
-         });
-         d.showAiReview(review, ctx);
-         return true;
-      };
-      // Continues an answer cut off at the token limit (see
-      // requestAiReview()); the joined answer replaces the cut-off one.
-      this.continueClaude = function() {
-         let pending = d.aiPending;
-         if (pending === null)
-            return false;
-         let k = aiApiKey();
-         if (k === null) {
-            (new MessageBox("Enter an Anthropic API key first (Assessment tab), or set the environment variable " +
-               "ANTHROPIC_API_KEY.", TITLE, StdIcon.Information, StdButton.Ok)).execute();
-            return false;
-         }
-         d.setAiText("<i>Waiting for the rest of Claude's answer - this can take a minute ...</i>");
-         d.showAiReviewTab();
-         d.aiContinueButton.enabled = false;
-         let review = d.runBusy(function() {
-            try {
-               return requestAiReview(k.key, pending.message, pending.review);
-            } catch (x) {
-               return { error: x.message || String(x) };
-            }
-         });
-         if (review.error) {
-            // The cut-off answer stays, so that Continue can be tried again.
-            d.setAiText("<b>Continuing the AI review failed:</b> <raw>" + review.error + "</raw><br><br>" +
-               formatAiReview(pending.review));
-            Console.criticalln("Continuing the AI review failed: " + review.error);
-            d.aiContinueButton.enabled = true;
-            return true;
-         }
-         d.showAiReview(review, pending.ctx);
-         return true;
-      };
-      // Shows an answer (or error), saves it if wanted, and enables Continue
-      // when the answer was cut off. ctx: { p, haveSingle, haveSeries,
-      // message } of the request.
-      this.showAiReview = function(review, ctx) {
-         let p = ctx.p;
-         let log = { timeMs: Date.now(), files: [], settings: [], message: ctx.message,
-                     review: review.error ? null : review, error: review.error || null };
-
-         // The request and the answer as a text file (also when it failed,
-         // as long as a request was made).
-         if (p.aiSaveLog && log.message) {
-            let targetPath = "";
-            try {
-               targetPath = ctx.haveSingle ? d.view.window.filePath : "";
-            } catch (x) {
-            }
-            if (ctx.haveSingle)
-               log.files.push({ label: "Single frame (Calculate):",
-                                path: targetPath.length > 0 ? targetPath : d.view.id + " (not saved to a file)" });
-            if (ctx.haveSeries) {
-               log.files.push({ label: format("Series (%d frames, side, file):", d.seriesFrames.length), path: "" });
-               d.seriesFrames.forEach(function(f) {
-                  log.files.push({ label: "   " + (f.side + "     ").slice(0, 6), path: f.path +
-                     (f.metrics ? "" : "  (not measured" + (f.error ? ": " + f.error : "") + ")") });
-               });
-            }
-            log.settings.push("Settings: optics type " + OPTICS_TYPES[p.opticsType] + "; explanation " +
-               AI_DETAIL_LEVELS[p.aiDetail] + "; language " + p.aiLanguage + "; maps " +
-               (ctx.haveSingle && p.aiSendMap ? "attached" : "not attached"));
-            if (!review.error && review.parts > 1)
-               log.settings.push(format("Answer in %d parts: continued after the token limit was reached.",
-                  review.parts));
-            // Next to the series frames, else next to the target image, else
-            // in the temporary directory.
-            let dir = ctx.haveSeries ?
-               File.extractDrive(d.seriesFrames[0].path) + File.extractDirectory(d.seriesFrames[0].path) :
-               targetPath.length > 0 ? File.extractDrive(targetPath) + File.extractDirectory(targetPath) :
-               File.systemTempDirectory;
-            try {
-               let path = saveAiLog(dir, log);
-               Console.noteln("AI request and answer saved to: " + path);
-            } catch (x) {
-               Console.warningln("Cannot save the AI request and answer: " + (x.message || x));
-            }
-         }
-
-         if (review.error) {
-            d.setAiText("<b>The AI review failed:</b> <raw>" + review.error + "</raw>");
-            Console.criticalln("AI review failed: " + review.error);
-            return;
-         }
-         d.setAiText(formatAiReview(review));
-         Quiet.noteln("--- AI review (" + review.model + ") ---");
-         Quiet.writeln(formatAiReview(review));
-         d.setAiPending(review.truncated && review.rawText.trim().length > 0 ?
-            { review: review, message: ctx.message, ctx: ctx } : null);
-      };
-      this.aiButton.onClick = function() {
-         d.askClaude();
-      };
-
-      this.aiContinueButton = new PushButton(this);
-      this.aiContinueButton.text = "Continue";
-      this.aiContinueButton.enabled = false;
-      this.aiContinueButton.toolTip =
-         "<p>Only when Claude's answer was cut off at the token limit: asks Claude for the rest of the answer " +
-         "and shows the joined answer. Billed like a new request (the request and the answer so far are sent " +
-         "again).</p>";
-      this.aiContinueButton.onClick = function() {
-         d.continueClaude();
-      };
-
       // ---- Series (Series page) ------------------------------------------
 
       // Light frames before and after a meridian flip (see measureSeries()).
@@ -8638,7 +7775,7 @@ class StarAberrationDialog extends Dialog {
       };
 
       // A click on a measured frame shows its map (the reduced copy kept by
-      // Analyze series); the Preview's analysis and the AI review are not
+      // Analyze series); the Preview's analysis is not
       // affected, a Preview or a layer change draws the target's map again.
       this.seriesTree.onNodeClicked = function(node) {
          // The same node, or else (should PJSR hand out a new wrapper per
@@ -8663,8 +7800,8 @@ class StarAberrationDialog extends Dialog {
          "<p>Draws the map of the selected tab (Star shape, Star size or Coma) of each frame in the preview as " +
          "soon as it is measured, and keeps a reduced copy: clicking a frame in the list shows it again. This " +
          "takes a few seconds more per frame.</p>" +
-         "<p>Only the display changes: the analysis of Calculate, the Assessment tab and the AI review stay as " +
-         "they are (the AI review never gets the maps of the series).</p>";
+         "<p>Only the display changes: the analysis of Calculate and the Assessment tab stay as " +
+         "they are.</p>";
 
       this.seriesSaveMapsCheck = new CheckBox(this);
       this.seriesSaveMapsCheck.text = "Save maps next to the frames";
@@ -8915,7 +8052,6 @@ class StarAberrationDialog extends Dialog {
          d.seriesStop = run && run.stopped ? { after: run.after } : null;
          d.showSeriesResult();
          d.showSeriesTab(SERIES_TAB_REPORT);
-         d.clearAiReview();
 
          // Pass 2: pool the frames - the static optics, the dynamic tracking.
          // Skipped after a Stop: the pooled maps would leave frames out.
@@ -8952,18 +8088,6 @@ class StarAberrationDialog extends Dialog {
          if (p.doExport) // in the directory of the (first) frame
             exportSeriesCSV(d.seriesFrames, File.extractDrive(d.seriesFrames[0].path) +
                File.extractDirectory(d.seriesFrames[0].path) + "/StarAberrationSeries.csv");
-      };
-
-      // The AI review of the series (with the Preview's analysis, if any);
-      // the answer appears on the Assessment page, which is shown for it.
-      this.seriesAiButton = new PushButton(this);
-      this.seriesAiButton.text = "Ask Claude";
-      this.seriesAiButton.toolTip =
-         "<p>Sends the series (values per frame and the comparison of the sides) to Claude and shows its review " +
-         "on the AI review tab on the left (as on the Assessment tab). A current analysis of Calculate is sent " +
-         "along. API key, answer language and costs: see the Assessment tab.</p>";
-      this.seriesAiButton.onClick = function() {
-         d.askClaude(); // the answer appears on the AI review tab on the left
       };
 
       this.checkTarget = function() {
@@ -9004,8 +8128,7 @@ class StarAberrationDialog extends Dialog {
             d.updateGridEvaluation();
             d.updateShapeEvaluation();
             d.updateTiltEvaluation();
-            d.clearAiReview();
-            d.showMapPage();
+               d.showMapPage();
          }
       };
 
@@ -9264,7 +8387,6 @@ class StarAberrationDialog extends Dialog {
          d.updateGridEvaluation();
          d.updateShapeEvaluation();
          d.updateTiltEvaluation();
-         d.clearAiReview();
          d.previewStale = false;
          let bmp = null;
          d.viewBitmap = null;
@@ -9356,9 +8478,6 @@ class StarAberrationDialog extends Dialog {
          }
          items.push(p.seriesSaveMosaic ? "Next to each frame: <b><i>name</i>_Mosaic.png</b>" :
             "No mosaics - <i>Save a 3x3 mosaic next to the frames</i> is off");
-         if (p.aiSaveLog)
-            items.push("Ask Claude: <b>StarAberrationAI_<i>date</i>_<i>time</i>.txt</b> in " + dir +
-               " (Assessment tab)");
          items.push("Files of an earlier run are replaced; the frames themselves are never changed");
          return tipsSection("Files written", items);
       };
@@ -9395,9 +8514,8 @@ class StarAberrationDialog extends Dialog {
       this.seriesHintsPane.sizer.addStretch();
       this.seriesHintsPane.hide();
 
-      // On the Assessment tab, the left side shows the two assessments as
-      // tabs instead of a map: that of the script (assessImage()) and the
-      // AI review; the tab on the right keeps the settings of the AI review.
+      // On the Assessment tab, the left side shows the assessment of the
+      // script (assessImage()) instead of a map.
       let textPage = function(box) {
          let page = new Control(d);
          page.sizer = new VerticalSizer;
@@ -9405,9 +8523,7 @@ class StarAberrationDialog extends Dialog {
          page.sizer.add(box, 100);
          return page;
       };
-      this.assessmentPane = new TabBox(this);
-      this.assessmentPane.addPage(textPage(this.assessmentBox), "Script assessment");
-      this.assessmentPane.addPage(textPage(this.aiBox), "AI review");
+      this.assessmentPane = textPage(this.assessmentBox);
       this.assessmentPane.hide();
 
       // The map: the preview, or the tips in its place without an image
@@ -9419,26 +8535,21 @@ class StarAberrationDialog extends Dialog {
       this.mapHost.sizer.add(this.tipsPane, 100);
 
       // On the Series tab once a run has started: the map of the series
-      // (each frame's, or the static result), the report of the script and
-      // the AI review as tabs.
+      // (each frame's, or the static result) and the report of the script as
+      // tabs.
       this.seriesMapPage = new Control(this);
       this.seriesMapPage.sizer = new VerticalSizer;
       this.seriesMapPage.sizer.margin = 4;
       this.seriesPane = new TabBox(this);
       this.seriesPane.addPage(this.seriesMapPage, "Map");
       this.seriesPane.addPage(textPage(this.seriesBox), "Series report");
-      this.seriesPane.addPage(textPage(this.seriesAiBox), "AI review");
       this.seriesPane.hide();
       this.seriesPane.onPageSelected = function(index) {
          if (index === 0 && d.previewFull && d.previewFitting)
             d.fitPreview();
       };
-      const SERIES_TAB_MAP = 0, SERIES_TAB_REPORT = 1, SERIES_TAB_AI = 2;
+      const SERIES_TAB_MAP = 0, SERIES_TAB_REPORT = 1;
       this.showSeriesTab = function(index) { d.seriesPane.currentPageIndex = index; };
-      this.showAiReviewTab = function() {
-         d.assessmentPane.currentPageIndex = 1;
-         d.seriesPane.currentPageIndex = SERIES_TAB_AI;
-      };
 
       this.previewPane = new Control(this);
       this.previewPane.sizer = new VerticalSizer;
@@ -9702,22 +8813,22 @@ class StarAberrationDialog extends Dialog {
             checkRow(this.starAsymColorCheck)])
       ]);
 
-      // The settings of the AI review; the assessments themselves are shown
-      // on the left (assessmentPane).
+      // The assessment itself is shown on the left (assessmentPane); the
+      // tab on the right only says so.
+      this.assessmentInfoLabel = new Label(this);
+      this.assessmentInfoLabel.useRichText = true;
+      this.assessmentInfoLabel.wordWrapping = true;
+      this.assessmentInfoLabel.text =
+         "<p>The left side shows the assessment of the last Calculate (or Load results): the suggested " +
+         "order of corrections, then one entry per topic with its verdict and, where something is to be " +
+         "done, a suggestion.</p>" +
+         "<p>The settings of Setup › General - optics type, mount and guiding - shape the suggestions.</p>";
       this.assessment_Control = new Control(this);
       this.assessment_Control.sizer = new VerticalSizer;
       this.assessment_Control.sizer.margin = 6;
       this.assessment_Control.sizer.spacing = 6;
-      let aiButtonRow = indentRow([this.aiButton, this.aiContinueButton]);
-      this.assessment_Control.sizer.add(groupBox("AI review (Claude)", [
-         fieldRow(this.aiKeyLabel, this.aiKeyEdit),
-         fieldRow(this.aiLanguageLabel, this.aiLanguageEdit),
-         fieldRow(this.aiDetailLabel, this.aiDetailCombo),
-         checkRow(this.aiSendMapCheck),
-         checkRow(this.aiSaveLogCheck),
-         aiButtonRow]));
+      this.assessment_Control.sizer.add(this.assessmentInfoLabel);
       this.assessment_Control.sizer.addStretch();
-      this.updateAiKeyInfo();
 
       // A page holding a tab box of sub-pages.
       let subTabs = function(tabBox, pages) {
@@ -9805,7 +8916,6 @@ class StarAberrationDialog extends Dialog {
       let seriesRunRow = new HorizontalSizer;
       seriesRunRow.spacing = 4;
       seriesRunRow.add(this.seriesAnalyzeButton);
-      seriesRunRow.add(this.seriesAiButton);
       seriesRunRow.addStretch();
       let seriesMapRow = new VerticalSizer;
       seriesMapRow.spacing = 4;
@@ -9928,6 +9038,13 @@ class StarAberrationDialog extends Dialog {
 
 // -----------------------------------------------------------------------
 function main() {
+   // An API key stored by an earlier version (0.10 and before) is removed.
+   try {
+      Settings.read(OLD_AI_KEY_SETTING, DataType.UTF16String);
+      if (Settings.lastReadOK)
+         Settings.remove(OLD_AI_KEY_SETTING);
+   } catch (x) {
+   }
    Console.show();
    Console.writeln("=== " + TITLE + " v" + VERSION + " ===");
    Console.writeln("Script file: " + #__FILE__); // which copy PixInsight loaded (installed vs. repository)

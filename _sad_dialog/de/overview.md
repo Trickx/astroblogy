@@ -13,7 +13,7 @@ Der Dialog hat zwei Hälften.
 
 - [Setup](#setup-general) - Zielbild, Debayern, Optik und Ausgabe ([General](#setup-general)) sowie Sternerkennung und PSF-Fit ([Star detection](#setup-star-detection)).
 - [Maps](#maps) - ein Unter-Tab pro Karte: [Size](#maps-size), [Shape](#maps-shape), [Coma](#maps-coma) und [Tilt](#maps-tilt), jeweils mit ihren Ebenen und ihrer Auswertung.
-- [Assessment](#assessment) - die Bewertung mit Korrekturvorschlägen und die optionale KI-Auswertung.
+- [Assessment](#assessment) - die Bewertung mit Korrekturvorschlägen.
 - [Series](#series) - mehrere Frames, z. B. vor und nach dem Meridian-Flip, im Vergleich.
 
 ### Typischer Ablauf
