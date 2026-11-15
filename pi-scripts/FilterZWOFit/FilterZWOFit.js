@@ -2,7 +2,12 @@
 // FilterZWOFit.js  -  PixInsight 1.9.x (PJSR / V8)
 // ----------------------------------------------------------------------------
 // Writes the FILTER keyword in the FITS header of the active image or in
-// batch mode for all supported images in a selected folder.
+// batch mode for all supported images in a selected folder (including all
+// subfolders, recursively).
+//
+// In batch mode only light and flat frames are processed by default: files
+// whose IMAGETYP header identifies them as dark, dark flat or bias frames are
+// skipped. Files without IMAGETYP are treated as lights.
 //
 // Supports process icons and remembers the last-used batch folder and filter
 // value through PixInsight settings.
@@ -17,7 +22,7 @@
 
 #script-id     FilterZWOFit
 #feature-id    Tricx > FilterZWOFit
-#feature-info  Sets the FILTER value in the FITS header of the active image or in batch mode for a selected folder.
+#feature-info  Sets the FILTER value in the FITS header of the active image or in batch mode for a selected folder and its subfolders.
 #feature-icon  FilterZWOFit.svg
 
 #include <pjsr/StdButton.jsh>
@@ -30,6 +35,7 @@ var SETTINGS_PREFIX = "FilterZWOFit";
 var SETTINGS_KEY_LAST_BATCH_DIR = SETTINGS_PREFIX + "/LastBatchDirectory";
 var SETTINGS_KEY_LAST_FILTER = SETTINGS_PREFIX + "/LastFilter";
 var SETTINGS_KEY_FILTER_TEXT = SETTINGS_PREFIX + "/FilterText";
+var SETTINGS_KEY_LIGHTS_FLATS_ONLY = SETTINGS_PREFIX + "/LightsFlatsOnly";
 
 function logDebug( msg )
 {
@@ -73,6 +79,33 @@ function writeSettingString( key, value )
    try
    {
       Settings.write( key, DataType_String, value );
+      logDebug( "Setting stored: " + key + " = " + value );
+   }
+   catch ( ex )
+   {
+      logWarn( "Settings.write failed for " + key + ": " + ex );
+   }
+}
+
+function readSettingBoolean( key, defaultValue )
+{
+   try
+   {
+      var v = Settings.read( key, DataType_Boolean );
+      return Settings.lastReadOK ? Boolean( v ) : defaultValue;
+   }
+   catch ( ex )
+   {
+      logWarn( "Settings.read failed for " + key + ": " + ex );
+      return defaultValue;
+   }
+}
+
+function writeSettingBoolean( key, value )
+{
+   try
+   {
+      Settings.write( key, DataType_Boolean, value );
       logDebug( "Setting stored: " + key + " = " + value );
    }
    catch ( ex )
@@ -184,49 +217,146 @@ function isSupportedImageFile( filePath )
    return false;
 }
 
+// Recursively collects all supported image files in directory and all of
+// its subdirectories.
 function listBatchFiles( directory )
 {
    var files = [];
-   var pattern = directory;
-   if ( pattern.charAt( pattern.length-1 ) != '/' )
-      pattern += "/";
-   pattern += "*";
 
-   var f = new FileFind;
-   if ( f.begin( pattern ) )
+   function joinPath( dir, name )
    {
-      do
-      {
-         if ( f.isDirectory )
-            continue;
-
-         var filePath = directory;
-         if ( filePath.charAt( filePath.length-1 ) != '/' )
-            filePath += "/";
-         filePath += f.name;
-
-         if ( isSupportedImageFile( filePath ) )
-            files.push( filePath );
-      }
-      while ( f.next() );
+      return ( dir.charAt( dir.length-1 ) == '/' ) ? dir + name : dir + "/" + name;
    }
 
+   function scan( dir )
+   {
+      var f = new FileFind;
+      if ( !f.begin( joinPath( dir, "*" ) ) )
+         return;
+
+      // Collect first, then recurse, so only one FileFind is active per level.
+      var subDirs = [];
+      do
+      {
+         if ( f.name == "." || f.name == ".." )
+            continue;
+
+         var fullPath = joinPath( dir, f.name );
+
+         if ( f.isDirectory )
+            subDirs.push( fullPath );
+         else if ( isSupportedImageFile( fullPath ) )
+            files.push( fullPath );
+      }
+      while ( f.next() );
+      f.end();
+
+      var i;
+      for ( i = 0; i < subDirs.length; ++i )
+         scan( subDirs[i] );
+   }
+
+   scan( directory );
+   files.sort();
    return files;
 }
 
-function processBatchDirectory( directory, filterText )
+// ----------------------------------------------------------------------------
+// Frame type detection (IMAGETYP)
+// ----------------------------------------------------------------------------
+// Typical values: ASIAIR "Light"/"Dark"/"Bias"/"Flat"/"Dark Flat",
+// N.I.N.A. "LIGHT"/"DARK"/"BIAS"/"FLAT"/"DARKFLAT",
+// MaxIm/SGP/APT "Light Frame"/"Dark Frame"/"Bias Frame"/"Flat Field".
+
+function keywordStringValue( keyword )
 {
-   var files = listBatchFiles( directory );
-   return processBatchFiles( files, filterText );
+   var v = ( keyword.strippedValue !== undefined ) ? keyword.strippedValue : keyword.value;
+   v = trimText( String( v ) );
+   if ( v.length >= 2 && v.charAt( 0 ) == "'" && v.charAt( v.length-1 ) == "'" )
+      v = trimText( v.substr( 1, v.length-2 ).replace( /''/g, "'" ) );
+   return v;
 }
 
-function processBatchFiles( files, filterText )
+// Returns the IMAGETYP value, "" if the keyword is missing, or null if the
+// keyword list is not available.
+function imageTypeFromKeywords( keywords )
+{
+   if ( keywords == null )
+      return null;
+   var i;
+   for ( i = 0; i < keywords.length; ++i )
+      if ( keywords[i].name.toUpperCase() == "IMAGETYP" )
+         return keywordStringValue( keywords[i] );
+   return "";
+}
+
+// Reads the header keywords without loading pixel data. Returns null on
+// failure.
+function readHeaderKeywords( filePath )
+{
+   try
+   {
+      var fmt = new FileFormat( File.extractExtension( filePath ), true/*toRead*/, false/*toWrite*/ );
+      if ( fmt.isNull )
+         return null;
+
+      var f = new FileFormatInstance( fmt );
+      if ( f.isNull )
+         return null;
+
+      var descriptions = f.open( filePath, "verbosity 0" );
+      if ( descriptions == null || descriptions.length < 1 )
+         return null;
+
+      var keywords = fmt.canStoreKeywords ? f.keywords : [];
+      f.close();
+      return keywords;
+   }
+   catch ( ex )
+   {
+      logWarn( "Could not read header of " + filePath + ": " + ex );
+      return null;
+   }
+}
+
+// Classifies an IMAGETYP value.
+// Returns { process: Boolean, kind: String }.
+function classifyImageType( imageType )
+{
+   var t = imageType.toLowerCase();
+
+   if ( t.length == 0 )
+      return { process: true, kind: "unknown (no IMAGETYP, treated as light)" };
+
+   // Check calibration types first: "Dark Flat" also contains "flat".
+   if ( t.indexOf( "dark" ) >= 0 )
+      return { process: false, kind: "dark" };
+   if ( t.indexOf( "bias" ) >= 0 || t.indexOf( "offset" ) >= 0 || t == "zero" )
+      return { process: false, kind: "bias" };
+
+   if ( t.indexOf( "flat" ) >= 0 )
+      return { process: true, kind: "flat" };
+   if ( t.indexOf( "light" ) >= 0 || t.indexOf( "object" ) >= 0 || t.indexOf( "science" ) >= 0 )
+      return { process: true, kind: "light" };
+
+   return { process: false, kind: "other (" + imageType + ")" };
+}
+
+function processBatchDirectory( directory, filterText, lightsFlatsOnly )
+{
+   var files = listBatchFiles( directory );
+   return processBatchFiles( files, filterText, lightsFlatsOnly );
+}
+
+function processBatchFiles( files, filterText, lightsFlatsOnly )
 {
    logDebug( "Batch files found: " + files.length );
+   logDebug( "Lights/flats only: " + ( lightsFlatsOnly ? "yes" : "no" ) );
 
    var result = {
       total: files.length,
       success: 0,
+      skipped: 0,
       failed: 0
    };
 
@@ -236,6 +366,26 @@ function processBatchFiles( files, filterText )
       var filePath = files[i];
       logDebug( "Batch processing: " + filePath );
 
+      // Fast pre-check on the header only. If the header cannot be read
+      // here, the check is repeated after opening the image.
+      var typeChecked = false;
+      if ( lightsFlatsOnly )
+      {
+         var preType = imageTypeFromKeywords( readHeaderKeywords( filePath ) );
+         if ( preType != null )
+         {
+            typeChecked = true;
+            var preClass = classifyImageType( preType );
+            if ( !preClass.process )
+            {
+               console.writeln( "[FilterZWOFit] Skipped (" + preClass.kind + "): " + filePath );
+               ++result.skipped;
+               continue;
+            }
+            logDebug( "Frame type: " + preClass.kind );
+         }
+      }
+
       var windows = null;
       try
       {
@@ -244,6 +394,19 @@ function processBatchFiles( files, filterText )
             throw "File could not be opened.";
 
          var w = windows[0];
+
+         if ( lightsFlatsOnly && !typeChecked )
+         {
+            var postClass = classifyImageType( imageTypeFromKeywords( w.keywords ) );
+            if ( !postClass.process )
+            {
+               console.writeln( "[FilterZWOFit] Skipped (" + postClass.kind + "): " + filePath );
+               ++result.skipped;
+               continue;
+            }
+            logDebug( "Frame type: " + postClass.kind );
+         }
+
          var action = upsertFilterKeyword( w, filterText );
          if ( !w.saveAs( filePath, false, false, false, false ) )
             throw "File could not be saved.";
@@ -358,6 +521,7 @@ class FilterDialog extends Dialog {
       this.batchSelectionMode = "folder";
       this.lastBatchDirectory = readSettingString( SETTINGS_KEY_LAST_BATCH_DIR, File.currentWorkingDirectory );
       this.lastFilterValue = readSettingString( SETTINGS_KEY_LAST_FILTER, "" );
+      this.lightsFlatsOnly = readSettingBoolean( SETTINGS_KEY_LIGHTS_FLATS_ONLY, true );
 
       this.helpLabel = new Label( this );
       this.helpLabel.useRichText = true;
@@ -365,7 +529,7 @@ class FilterDialog extends Dialog {
       var tooltipFromList = "Filter List: Select a filter loaded from your saved filter list.";
       var tooltipManual = "Filter String: Enter or edit the FILTER value that will be written to FITS headers.";
       var tooltipApply = "Apply: Write FILTER to the active image.";
-      var tooltipBatch = "Batch...: Process all supported files from the selected folder or files.";
+      var tooltipBatch = "Batch...: Process all supported files from the selected folder (including all subfolders) or files.";
       var tooltipEdit = "Edit...: Open the filter-list editor.";
       var tooltipCancel = "Cancel: Close this dialog without changes.";
       this.helpLabel.text =
@@ -440,6 +604,24 @@ class FilterDialog extends Dialog {
       this.inputSizer.spacing = 6;
       this.inputSizer.add( this.filterLabel );
       this.inputSizer.add( this.filterEdit, 100 );
+
+      this.lightsFlatsCheck = new CheckBox( this );
+      this.lightsFlatsCheck.text = "Batch: only Lights and Flats (skip Darks, Dark Flats, Bias)";
+      this.lightsFlatsCheck.toolTip =
+         "<p>Batch mode only: reads IMAGETYP from each file header and processes only " +
+         "light and flat frames. Darks, dark flats and bias frames are skipped.</p>" +
+         "<p>Files without IMAGETYP are treated as lights.</p>";
+      this.lightsFlatsCheck.checked = this.lightsFlatsOnly;
+      this.lightsFlatsCheck.onCheck = function( checked )
+      {
+         this.dialog.lightsFlatsOnly = checked;
+         writeSettingBoolean( SETTINGS_KEY_LIGHTS_FLATS_ONLY, checked );
+      };
+
+      this.checkSizer = new HorizontalSizer;
+      this.checkSizer.addSpacing( labelWidth + 6 );
+      this.checkSizer.add( this.lightsFlatsCheck );
+      this.checkSizer.addStretch();
 
       this.okButton = new PushButton( this );
       this.okButton.text = "Apply";
@@ -583,6 +765,7 @@ class FilterDialog extends Dialog {
       this.sizer.add( this.helpLabel );
       this.sizer.add( this.selectSizer );
       this.sizer.add( this.inputSizer );
+      this.sizer.add( this.checkSizer );
       this.sizer.addSpacing( 4 );
       this.sizer.add( this.buttonSizer );
 
@@ -693,7 +876,7 @@ function main()
       var batchTarget;
       if ( dlg.runMode == "batch-files" )
       {
-         r = processBatchFiles( dlg.batchFiles, dlg.filterText );
+         r = processBatchFiles( dlg.batchFiles, dlg.filterText, dlg.lightsFlatsOnly );
          batchTarget = "Selected files: " + dlg.batchFiles.length;
       }
       else
@@ -704,7 +887,7 @@ function main()
             return;
          }
 
-         r = processBatchDirectory( batchDir, dlg.filterText );
+         r = processBatchDirectory( batchDir, dlg.filterText, dlg.lightsFlatsOnly );
          batchTarget = "Folder: " + batchDir;
       }
 
@@ -713,6 +896,7 @@ function main()
          batchTarget + "\n" +
          "Total files: " + r.total + "\n" +
          "Successful: " + r.success + "\n" +
+         "Skipped (not light/flat): " + r.skipped + "\n" +
          "Errors: " + r.failed;
 
       console.show();

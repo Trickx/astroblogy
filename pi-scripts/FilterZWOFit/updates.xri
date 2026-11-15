@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="FilterZWOFit20260924v0117.tar.gz" sha1="996e5560cd07c7deb5dd2d3788dcad5e6fffafa8" type="script" releaseDate="20260924">
+      <package fileName="FilterZWOFit20261115v0118.tar.gz" sha1="b52e4ad74c0b7f708c2c4f9bc6ca6ac266dc5703" type="script" releaseDate="20261115">
          <title>
-         FilterZWOFit 1.0.17
+         FilterZWOFit 1.0.18
          </title>
          <remove>
             src/scripts/FilterZWOFit/FilterZWOFit.js
@@ -28,6 +28,11 @@
                Installs the FilterZWOFit PixInsight feature script with single-image and batch FILTER keyword updates.
             </p>
             <p>
+               New in 1.0.18:
+               <br/>- Folder batch mode now includes all subfolders recursively.
+               <br/>- Batch mode processes only light and flat frames by default (IMAGETYP header); darks, dark flats and bias frames are skipped. Can be disabled in the dialog.
+            </p>
+            <p>
                Installed files:
                <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.js
                <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.svg
@@ -37,4 +42,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:57:20.784Z" encoding="Base64">RhcpV90gaFkMFReybV0edVay2wda0gomMYj93x0V8+XAL8O4/OUs86Nxrziw8G10fyB35NWi+Wgp10JqHfh8Bw==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-15T15:19:45.989Z" encoding="Base64">ireHoB6QZ5xT9DZmeN00bHcbTxBnD9RWypt+lgTk/yTkD22M/1eJvWi95vj+Uyo0hwxKOK/NnvzSTif/pH+HAA==</Signature>
