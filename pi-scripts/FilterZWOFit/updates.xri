@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="FilterZWOFit20261115v0118.tar.gz" sha1="b52e4ad74c0b7f708c2c4f9bc6ca6ac266dc5703" type="script" releaseDate="20261115">
+      <package fileName="FilterZWOFit20261117v0119.tar.gz" sha1="aa722e84d5e9ad8a19523d75aaf761f26467a916" type="script" releaseDate="20261117">
          <title>
-         FilterZWOFit 1.0.18
+         FilterZWOFit 1.0.19
          </title>
          <remove>
             src/scripts/FilterZWOFit/FilterZWOFit.js
@@ -33,6 +33,10 @@
                <br/>- Batch mode processes only light and flat frames by default (IMAGETYP header); darks, dark flats and bias frames are skipped. Can be disabled in the dialog.
             </p>
             <p>
+               New in 1.0.19:
+               <br/>- The script name is now shown in the History Explorer.
+            </p>
+            <p>
                Installed files:
                <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.js
                <br/>src/scripts/Tricx/FilterZWOFit/FilterZWOFit.svg
@@ -42,4 +46,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-11-15T15:19:45.989Z" encoding="Base64">ireHoB6QZ5xT9DZmeN00bHcbTxBnD9RWypt+lgTk/yTkD22M/1eJvWi95vj+Uyo0hwxKOK/NnvzSTif/pH+HAA==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-17T15:38:20.132Z" encoding="Base64">U7v9PA+PoL2CeWtXHsRA8VATbSbjeZf4BAnnPTDZviyTlUURlKvdir1JY4Bo0IGX87UjkcKRetjMWm2QcyPxCQ==</Signature>

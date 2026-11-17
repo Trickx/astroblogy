@@ -121,8 +121,7 @@ CoreApplication.ensureMinimumVersion( 1, 9, 4 );
 
 // ======== #features ==============================================================
 
-#script-id     SensorDestripe
-#feature-id    Tricx > SensorDestripe
+#feature-id    SensorDestripe : Tricx > SensorDestripe
 
 #feature-info \
 Reduces the horizontal banding along the sensor rows that affects images from some \

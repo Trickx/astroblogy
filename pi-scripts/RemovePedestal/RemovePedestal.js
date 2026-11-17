@@ -18,8 +18,7 @@
 // (new instance triangle) and drag & drop of the icon onto an image.
 // ============================================================================
 
-#script-id     RemovePedestal
-#feature-id    Tricx > RemovePedestal
+#feature-id    RemovePedestal : Tricx > RemovePedestal
 #feature-info  Subtracts a pedestal (image minimum, low percentile or first \
                non-zero value) per channel or globally. Port of Remove \
                Pedestal from Seti Astro Suite Pro.

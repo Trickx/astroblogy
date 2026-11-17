@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="RemovePedestal20260924v0104.tar.gz" sha1="d51b3279ac99a66d253effa282c94c6dd114dde6" type="script" releaseDate="20260924">
+      <package fileName="RemovePedestal20261117v0105.tar.gz" sha1="528886b35c0d66b847c332394a0b2d034bb9ada0" type="script" releaseDate="20261117">
          <title>
-         RemovePedestal 1.0.4
+         RemovePedestal 1.0.5
          </title>
          <remove>
             src/scripts/RemovePedestal/RemovePedestal.js
@@ -25,6 +25,10 @@
                Installs the RemovePedestal PixInsight feature script for subtracting image pedestal values.
             </p>
             <p>
+               New in 1.0.5:
+               <br/>- The script name is now shown in the History Explorer.
+            </p>
+            <p>
                Installed files:
                <br/>src/scripts/Tricx/RemovePedestal/RemovePedestal.js
                <br/>src/scripts/Tricx/RemovePedestal/RemovePedestal.svg
@@ -34,4 +38,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-09-24T17:44:46.205Z" encoding="Base64">ZRFX8IXJ5dHS1myecwCen22ms22PQE9eAgiBxzsW0sV6U8Uc/jvBxNUzmPk7mPaVRTSxOJaFlys/J46qAH7bCA==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-17T15:38:20.135Z" encoding="Base64">MBaws1kBmZOiczUUBxKxEtKaaqHDkobzM8d/Id1Q3xsfNPDEr/IANbCMoQ86XC0LwVIotzR3vgBFtxrqzPpCDQ==</Signature>

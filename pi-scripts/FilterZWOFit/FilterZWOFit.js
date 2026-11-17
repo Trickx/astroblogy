@@ -20,8 +20,7 @@
 
 #engine v8
 
-#script-id     FilterZWOFit
-#feature-id    Tricx > FilterZWOFit
+#feature-id    FilterZWOFit : Tricx > FilterZWOFit
 #feature-info  Sets the FILTER value in the FITS header of the active image or in batch mode for a selected folder and its subfolders.
 #feature-icon  FilterZWOFit.svg
 

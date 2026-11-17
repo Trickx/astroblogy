@@ -6,9 +6,9 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.4:1.9.99">
-      <package fileName="SensorDestripe20261111v0110.tar.gz" sha1="9054c72f5ab96ff86a55bf14d49645a0098ee522" type="script" releaseDate="20261111">
+      <package fileName="SensorDestripe20261117v0111.tar.gz" sha1="3e4161629482c4966f1a51e1b96318d8d2ed14fa" type="script" releaseDate="20261117">
          <title>
-         SensorDestripe 0.11.0
+         SensorDestripe 0.11.1
          </title>
          <remove>
             src/scripts/CanonBandingReduction/CanonBandingReduction.js
@@ -35,6 +35,10 @@
                Based on CanonBandingReduction by Georg Viehoever (GPLv3).
             </p>
             <p>
+               New in 0.11.1:
+               <br/>- The script name is now shown in the History Explorer.
+            </p>
+            <p>
                Installed files:
                <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.js
                <br/>src/scripts/Tricx/SensorDestripe/SensorDestripe.svg
@@ -44,4 +48,4 @@
       </package>
    </platform>
 </xri>
-<Signature developerId="SvenKopetzki" timestamp="2026-11-11T06:54:59.924Z" encoding="Base64">G82Dt60LUefJNMDxIO1mFUMMI0/+T3EM65YDikmB4h0S7hjuKxABRbkgzgzPDMQP9H7Cr11MkrnNf1NJr93RBQ==</Signature>
+<Signature developerId="SvenKopetzki" timestamp="2026-11-17T15:38:20.134Z" encoding="Base64">vZFRTwck3mjaAya8ctYLxQJcstILivXnVkOEJ9i/1iD+zPB6WOBmh1lEwhuPMed6XIo2SvNxXb9cBFkCiyhKDg==</Signature>
